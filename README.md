@@ -29,17 +29,18 @@ In all examples, a direct access to registers approach was used. It means that n
 * 04-Blink:             Blink LEDs with a HAL for LEDs without a HAL for GPIO 
 * 05-Blink:             Blink LEDs changing the core frequency
 * 06-Blink:             Blink LEDs using SysTick
-* 07-Blink:             Blink LEDs using Time Triggered Tasks
-* 08-Button:            Control LEDs using buttons (without debounce)
-* 09-Debounce:          Control LEDs using buttons (without debounce)
+* 07-Blink\*:             Blink LEDs using Time Triggered Tasks
+* 08-Button\*:            Control LEDs using buttons (without debounce)
+* 09-Debounce\*:          Control LEDs using buttons (without debounce)
 * 10-UART:              Uses 
-* 11-UART: 
+* 11-UART\*: 
 * 12-Ministdio:         Implements a mini stdio package (printf, gets, etc).
 * 13-Newlib:            Implements full access to newlib
 * 14-TimeTriggered:     Uses a Time-Triggered approach (Pont. Patterns for time-triggered embedded systems 2001)
-* 15-Protothreads:      Uses a proto thread approach      
-* 16-FreeRTOS:          Uses a (free) preemptive real time kernel
+* 15-Protothreads\*:      Uses a proto thread approach      
+* 16-FreeRTOS\*:          Uses a (free) preemptive real time kernel
 
+Those marked with an asterisk are unfinished!!!
 
 # Access to registers
 
