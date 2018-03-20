@@ -176,15 +176,13 @@ Or using a multi step approach.
 |-------------------------------------|-----------------------------------------------------------|
 | void NVIC_EnableIRQ(IRQn_Type IRQn) |   Enables an interrupt or exception.                      |
 | void NVIC_DisableIRQ(IRQn_Type IRQn)	| Disables an interrupt or exception. | 
-
-
-
-| void NVIC_SetPendingIRQ(IRQn_Type IRQn) | 	Sets the pending status of interrupt or exception to 1. | 
+| void NVIC_SetPendingIRQ(IRQn_Type IRQn) | 	Sets the pending status of interrupt or exception to 1. |
 | void NVIC_ClearPendingIRQ(IRQn_Type IRQn) | 	Clears the pending status of interrupt or exception to 0. | 
-| uint32_t NVIC_GetPendingIRQ(IRQn_Type IRQn) | Reads the pending status of interrupt or exception. This function returns non- zero value if the pending status is set to 1. | 
-| void NVIC_SetPriority(IRQn_Type IRQn, uint32_t priority) | Sets the priority of an interrupt or exception with configurable priority level to 1. | 
+| uint32_t NVIC_GetPendingIRQ(IRQn_Type IRQn) | Reads the pending status of interrupt or exception. This function returns non-zero value if the pending status is set to 1. | 
+| void NVIC_SetPriority(IRQn_Type IRQn, uint32_t priority) | Sets the priority of an interrupt or exception with configurable priority level to 1. |
 | uint32_t NVIC_GetPriority(IRQn_Type IRQn) |  Reads the priority of an interrupt or exception with configurable priority level. This function return the current priority level. | 
 | void 	NVIC_SystemReset (void)        | 	Reset the system. |
+
 
 
 ## Special functions 
