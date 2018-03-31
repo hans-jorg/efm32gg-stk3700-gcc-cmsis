@@ -40,7 +40,7 @@ In all examples, a direct access to registers approach was used. It means that n
 * 15-Protothreads\*:      Uses a proto thread approach      
 * 16-FreeRTOS\*:          Uses a (free) preemptive real time kernel
 
-Those marked with an asterisk are unfinished!!!
+>**Those marked with an asterisk are unfinished!!!**
 
 # Access to registers
 

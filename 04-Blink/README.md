@@ -26,7 +26,7 @@ The main functions for a LED are:
 - Turn if off
 - Toggle it
 
-The symbols to access the LEDs are defined to easy the access the corresponding pins of the GPIO Port E.
+The symbols to access the LEDs are defined as bit masks to easy the access the corresponding pins of the GPIO Port E.
 
     #define LED0 BIT(2)
     #define LED1 BIT(3)

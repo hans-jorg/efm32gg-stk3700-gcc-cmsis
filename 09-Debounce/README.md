@@ -8,6 +8,7 @@ It uses the HAL for LEDs (STK3700) used in the last Blink example.
 
 # Bounce
 
+When a contact occurs between two metal parts, there is a cycle of contact and release pulses until in settles in the expected level. The main cause is the elastic colision between the two parts. It generally takes about 10-50 ms to get a stable read.
 
 For more information about bouncing in mechanical contacts, see:
 
@@ -18,7 +19,16 @@ For more information about bouncing in mechanical contacts, see:
 * [Hackday](https://hackaday.com/2010/11/09/debounce-code-one-post-to-rule-them-all/)
 * [Cleghorn](https://github.com/tcleg/Button_Debouncer)
     
-The basics of debouncing is to wait until the tranistories vanished. The primitive delay routines (* volatile int b= 1000; while (b--) {} *) can only be used in very simple cases, because is monopolizes the CPU. This is the same problem, of reading multiple times.
+The basics of debouncing is to wait until the transitories vanished. 
 
-Using interrupts, it is necessary to handle a timer interrupt, and sometimes,  the button interrupt.
+The basic approaches are:
+
+1 - Implement a state machine where an stable output is generated then the read is confirmed (repeated) after a predetermined time, 
+
+2 - Read multiple times, and generates an output when the read is repeated (confirmed) N times, where N corresponds to the debounce time.
+
+
+The primitive delay routines (* volatile int b= 1000; while (b--) {} *) can only be used in very simple cases, because is monopolizes the CPU. This is the same problem of reading multiple times.
+
+A better approach, is to use interrupts. In this case it is necessary to handle a timer interrupt, and sometimes,  the button interrupt.
 

@@ -4,8 +4,8 @@
 This is the 3th version of Blink. It uses direct access to register of the EFM32GG990F1024 
 microcontroller but with a simple Hardware Abstraction Layer for the LED module. This HAL is built upon
 the GPIO HAL (See version 2 of Blink).
-
-The main objective is to control the LEDs without knowing about GPIO.
+ani
+The main objective is to control the LEDs without knowing anything about GPIO.
 
 The architecture is shown below.
 
@@ -28,7 +28,7 @@ The main functions for a LED are:
 - Turn if off
 - Toggle it
 
-The symbols to access the LEDs are defined to easy the access the corresponding pins of the GPIO Port E.
+The symbols to access the LEDs are defined as bit masks to easy the access the corresponding pins of the GPIO Port E.
 
     #define LED0 BIT(2)
     #define LED1 BIT(3)
@@ -55,8 +55,7 @@ The symbols to access the LEDs are defined to easy the access the corresponding 
 
 
 
-Acessing LEDs
--------------
+##Acessing LEDs
 
 
 To configure the LED pins, the instruction below can do the job.

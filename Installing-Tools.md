@@ -4,7 +4,7 @@ DEVELOPING FOR SILICON LABS EFM32  MICROCONTROLLERS IN LINUX
 
 # 1 Introduction
 
-The family of Silicon Labs (former Energy Micro) EFM32 microcontrollers has many subfamilies with different Cortex-M architectures .
+The EFM32 microcontroller family of Silicon Labs (former Energy Micro) has many subfamilies with different Cortex-M architectures.
 
 
 | Family         |  Core             | Features                |    Flash (kB)    |     RAM (kB)     |
@@ -23,6 +23,7 @@ The family of Silicon Labs (former Energy Micro) EFM32 microcontrollers has many
 
 The development board EMF32GG-STK3700 features a EFM32GG990F1024 microcontroller from the Giant Gecko family.
 It means it is a Cortex M3. Its main features are:
+
 
 
 |  Flash (KB) | RAM (KB) | GPIO | USB | LCD   | USART+UART | LEUART | Timer/PWMRTC | ADC   |   DAC  | OpAmp |
@@ -77,10 +78,10 @@ There is a connector on the board that permits the debugging of external microco
      |   Host   |-> USB ->|  Controller  |->----------------------->-|               |
      |    PC    |         |              |                           |               |
      |          |         |              |->-----Serial------------>-|               |
-     +----------+         +--------------+      (opcional)           +---------------+
+     +----------+         +--------------+      (optional)           +---------------+
 
 
-Generally, there is a serial interface between the Target and the Board Controller. It can be implemented using a physical channel with 2 lines or a virtual, using the SWD/JTAG channel. Both appears to the Host PC as a serial virtual port (COMx or /dev/ttyACMx). In this board the serial channel uses the UART0 unit (PE0 and PE1).
+Generally, there is a serial interface between the Target and the Board Controller. It can be implemented using a physical channel with 2 lines or a virtual, using the SWD/JTAG channel. Both appears to the Host PC as a serial virtual port (COMx or /dev/ttyACMx). In the STK3700 board the serial channel uses the UART0 unit (PE0 and PE1).
  
  
 # 4 Tools

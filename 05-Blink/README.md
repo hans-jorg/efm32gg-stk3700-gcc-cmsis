@@ -5,7 +5,7 @@
 This is the 5th version of Blink. It uses the same HAL for LEDs (STK3700).
 The main modification is the use of a non default clock frequency.
 
-The routines to change it are not part of CMSIS because the clock circuitry is up to the fabricant. The routines to control clock frequency for the EFM32GG are in the system-efm32gg-ext.c files, with the interface in system-efm32gg-ext.h.
+The routines to change it are not part of CMSIS because the clock circuitry is up to the manufacturer. The routines to control clock frequency for the EFM32GG are in the system-efm32gg-ext.c file, with the interface defined in system-efm32gg-ext.h.
 
     +--------------------------------------------+
     |              Application                   |
