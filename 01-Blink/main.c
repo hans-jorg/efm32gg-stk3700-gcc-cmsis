@@ -32,8 +32,7 @@
 ///@}
 
 /// Default delay value.
-#define DELAYVAL 2
-
+#define DELAYVAL 5
 /**
  * @brief  Quick and dirty delay function
  */
@@ -55,6 +54,7 @@ int i;
  * @note   HFCLK     = HFRCO 14 MHz
  * @note   HFCORECLK = HFCLK
  * @note   HFPERCLK  = HFCLK
+ 
  */
 
 int main(void) {

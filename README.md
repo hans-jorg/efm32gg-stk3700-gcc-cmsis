@@ -37,9 +37,11 @@ In all examples, a direct access to registers approach was used. It means that n
 * 12-Ministdio:         Implements a mini stdio package (printf, gets, etc).
 * 13-Newlib:            Implements full access to newlib
 * 14-TimeTriggered:     Uses a Time-Triggered approach (Pont. Patterns for time-triggered embedded systems 2001)
-* 15-Protothreads\*:      Uses a proto thread approach      
+* 15-Protothreads\*:      Uses a proto thread approach
 * 16-FreeRTOS\*:          Uses a (free) preemptive real time kernel
-
+* 17-ucos2\*:             Uses ucos version 2
+* 18-ucos3\*:             Uses ucos version 3
+* 
 >**Those marked with an asterisk are unfinished!!!**
 
 # Access to registers
