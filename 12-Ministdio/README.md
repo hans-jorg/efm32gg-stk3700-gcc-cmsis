@@ -1,4 +1,3 @@
-
 12 - Mini STDIO {#mainpage}
 ============
 

@@ -8,17 +8,34 @@
 #define LCD_H
 #include <stdint.h>
 
-void LCD_Init(void);
-void LCD_Clear(void);
-void LCD_WriteChar(uint8_t c, uint8_t pos);
+uint32_t LCD_Init(void);
+uint32_t LCD_Config(uint32_t presc, uint32_t div);
 
+void LCD_Clear(void);
+void LCD_SetAll(void);
+void LCD_WriteChar(uint8_t c, uint8_t pos);
 void LCD_WriteString(char *s);
 void LCD_WriteAlphanumericField(char *s);
 void LCD_WriteNumericField(char *s);
 void LCD_SetSpecial(uint8_t c, uint8_t v);
 
-uint32_t LCD_SetClock(uint32_t div);
+uint32_t SetLFAClock(uint32_t clock);
+uint32_t SetLCDClock(uint32_t presc, uint32_t div);
 
+#define LCD_CLOCK_DEFAULT         0
+#define LCD_CLOCK_LFRCO           1
+#define LCD_CLOCK_LFXO            2
+#define LCD_CLOCK_HFCORECLK_2     3
+#define LCD_CLOCK_HFCORECLK_4     4
+#define LCD_CLOCK_ULFRCO          5
+
+#define LCD_PRESC_DEFAULT         0
+#define LCD_PRESC_DIV16           0
+#define LCD_PRESC_DIV32           1
+#define LCD_PRESC_DIV64           2
+#define LCD_PRESC_DIV128          3
+
+#define LCD_DIV_DEFAULT           0
 /**
  * Symbols used in the WriteSpecial function
  */

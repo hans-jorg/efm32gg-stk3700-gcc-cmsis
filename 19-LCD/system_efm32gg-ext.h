@@ -65,7 +65,7 @@ uint32_t ClockConfigureForFrequency(uint32_t freq);
 uint32_t ClockSetHFCLKDivisor(uint32_t div);
 uint32_t ClockSetHFPrescalers(uint32_t corediv, uint32_t perdiv);
 uint32_t ClockSetLFCLKA(ClockSource_t source);
-uint32_t ClockSetLFCLKB(ClockSource_t source, uint32_t div);
+uint32_t ClockSetLFCLKB(ClockSource_t source);
 
 uint32_t nearestpower2exp(uint32_t n);
 

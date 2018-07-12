@@ -1,4 +1,3 @@
-
 13 - Newlib {#mainpage}
 ============
 

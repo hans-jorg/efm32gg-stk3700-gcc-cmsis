@@ -1,17 +1,15 @@
-
-05 - LCD {#mainpage}
+19 - LCD {#mainpage}
 ==========
 
-This implements an HAL (hardware abstraction Layer) for the LCD on the STK3700 board. 
+This implements an HAL (hardware abstraction Layer) for the LCD on the STK3700 board.
 
 ---------------------------------
-    Application
-    LCD HAL
-    Hardware
 
-
-
-The STK3700 board has a 160 segment LCD display. It is multiplexed and user 20 segments pins and 8 common pins of the microcontroller. The onchip LCD controller can driver up to 288 segments using 8 common signals. It uses non standard voltages to get null average voltages to avoid eletrolysis See [AN0057.0: EFM32 Series 0 LCD Driver](https://www.silabs.com/documents/public/application-notes/AN0057.pdf).
+The STK3700 board has a 160 segment LCD display. It is multiplexed and user 20 segments pins and
+8 common pins of the microcontroller. The onchip LCD controller can driver up to 288 segments
+using 8 common signals. It uses non standard voltages to get null average voltages to avoid
+eletrolysis See [AN0057.0: EFM32 Series 0 LCD Driver]
+(https://www.silabs.com/documents/public/application-notes/AN0057.pdf).
 
 The pins used are shown below.
 
@@ -48,7 +46,9 @@ PE6	  |	LCD_COM2       |    COM5
 PE5	  |	LCD_COM1       |    COM6
 PE4	  |	LCD_COM0       |    COM7
 
-There are two groups of not used segments pins: one between LCD27 and LCD20 and other, betwen LCD11 and LCD0. The LCD segments and the corresponding activation are show below. Not the reversal of the numbering of the common lines.
+There are two groups of not used segments pins: one between LCD27 and LCD20 and other, betwen
+LCD11 and LCD0. The LCD segments and the corresponding activation are show below. Note the reversal
+ of numbering of the common lines.
 
 ![LCD Map](lcd.png)
 
@@ -77,7 +77,7 @@ COM7 | COL5| 6A | ANT| BAT| .C | .F | B1 | B0 | B2 | EM0
 
 ###API (Application Programming Interface)
 
-The LCD display is divided in segments: 
+The LCD display is divided in segments:
 * a alfanumerical field with 14 segments characters (position 1 to 7)
 * a numerical field with 7-segments digits (position 8 to 11)
 * a special field containing miscelaneous signs. Internally codified as postions 12 to 14.
@@ -85,16 +85,26 @@ The LCD display is divided in segments:
 The functions implementes are:
 
 <dl>
-<dt>**void LCD_Init(void)**</dt><dd>Initializes the LCD module. Set the LCD clock, if not already set.</dd>
-<dt>**void LCD_WriteString(char *s)**</dt><dd>Writes the string *s* into display. The first 7 characters go into alphanumerical field (positions 1 to 7) and the next 4 character into the numerical field (position 8 to 11). The remaining characters are ignored.</dd>
-<dt>**void LCD_Clear(void)**</dt><dd>Clear all segments.</dd>
-<dt>**void LCD_WriteChar(uint8_t c, uint8_t pos)**</dt><dd>Writes the char c into position pos. Position is a number between 1 and 14.</dd>
-<dt>**void LCD_WriteAlpha(uint8_t c, uint8_t pos)**</dt><dd>Writes the ASCII coded character in c into position 1 to 7 (14-segments displays).</dd>
-<dt>**void LCD_WriteDigit(uint8_t c, uint8_t pos)**</dt><dd>Writes the ASCII coded digit in c into position 8 to 11 (7-segments displays).</dd>
-<dt>**void LCD_SetSpecial(uint8_t c, uint8_t v)**</dt><dd>Set the sign c coded as below according the v parameter on (LCD_ON) or off (LCD_OFF).</dd>
+<dt>uint32_t LCD_Init(void)</dt><dd>Initializes the LCD module. Set the LCD clock,
+if not already set to default values</dd>
+<dt>uint32_t LCD_Config(uint32_t presc, uint32_t div)</dt><dd>Configure and initializes the LCD
+module</dd>
+<dt>void LCD_WriteChar(uint8_t c, uint8_t pos)</dt><dd>Writes the char c into position pos.
+Position is a number between 1 and 14.</dd>
+<dt>void LCD_WriteString(char \*s)</dt><dd>Writes the string *s* into display.
+The first 7 characters go into alphanumerical field (positions 1 to 7) and the next 4 character
+ into the numerical field (position 8 to 11). The remaining characters are ignored.</dd>
+<dt>void LCD_Clear(void)</dt><dd>Clear all segments.</dd>
+<dt>void LCD_SetAll(void)</dt><dd>Lit all segments.</dd>
+<dt>void LCD_WriteAlphanumericField(char \*s)</dt><dd>Writes the ASCII coded character in c
+into position 1 to 7 (14-segments displays).</dd>
+<dt>void LCD_WriteNumericField(char \*s)</dt><dd>Writes the ASCII coded digit in c into
+position 8 to 11 (7-segments displays).</dd>
+<dt>void LCD_SetSpecial(uint8_t c, uint8_t v)</dt><dd>Set the sign c coded as below according the
+v parameter on (LCD_ON) or off (LCD_OFF).</dd>
 </dl>
 
-| Special signs encoding        |
+| Special signs encoding       ||
 |------------------------|------|
 |LCD_GECKO | Gecko in the upper left |
 |LCD_MINUS | Minus in the left |
@@ -140,15 +150,15 @@ The functions implementes are:
 
 ###References
 
-[Example code for Segment LCD on EFM32 Giant Gecko delvelopment kit EFM32GG-DK3750 (Without using Emlib)](http://embeddedelectrons.blogspot.com.br/2016/12/example-code-for-segment-lcd-on-efm32.html)
+[Example code for Segment LCD on EFM32 Giant Gecko delvelopment kit EFM32GG-DK3750
+(Without using Emlib)]
+(http://embeddedelectrons.blogspot.com.br/2016/12/example-code-for-segment-lcd-on-efm32.html)
 
-[Segmented LED Display - ASCII Library](https://github.com/dmadison/LED-Segment-ASCII)
+[Segmented LED Display - ASCII Library]
+(https://github.com/dmadison/LED-Segment-ASCII)
 
-http:////www.silabs.com/documents/public/application-notes/an0009.0-efm32-ezr32-series-0-getting-started.pdf
+[AN0009: EFM32 and EZR32 Series Getting Started]
+(http:////www.silabs.com/documents/public/application-notes/an0009.0-efm32-ezr32-series-0-getting-started.pdf)
 
-[AN0057.0: EFM32 Series 0 LCD Driver](https://www.silabs.com/documents/public/application-notes/AN0057.pdf)
-
-
-----8<---------8<---------8<---------8<---------8<---------8<---------8<-----
-
-
+[AN0057.0: EFM32 Series 0 LCD Driver]
+(https://www.silabs.com/documents/public/application-notes/AN0057.pdf)

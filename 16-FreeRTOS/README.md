@@ -1,4 +1,3 @@
-
 16 - FreeRTOS {#mainpage}
 ============
 

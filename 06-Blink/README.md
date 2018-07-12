@@ -1,4 +1,3 @@
-
 06 - Blink {#mainpage}
 ==========
 

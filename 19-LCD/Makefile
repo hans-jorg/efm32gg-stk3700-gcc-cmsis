@@ -262,6 +262,8 @@ CFLAGS=-mthumb                                  \
        -pedantic                                \
        $(SPECFLAGS)
 
+#       -DTWO_STEPS_ENCODING
+
 
 #
 # The flags passed to the linker.

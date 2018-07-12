@@ -1,4 +1,3 @@
-
 11 - Serial Communication {#mainpage}
 ============
 

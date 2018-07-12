@@ -3,39 +3,47 @@
  * @brief   LCD HAL for EFM32GG STK
  * @version 1.0
  *
- * @note    There are at least two segment numbering methods. One of the LCD device. Other of the LCD controller
- *          in the microcontroller.
+ * @note    To debug there is a LCD_EMULATION compiler flag. By defining it, all writes of
+ *          segments are directed to a 8x2 array in memory
+ *
+ * @note    There are at least two segment numbering methods. One of them is the LCD device.
+ *          Other of the LCD controller in the microcontroller.
  * @note    The same for common numbering. The numbering of the LCD device is the reverse of the
  *          numbering used in the LCD controller.
  */
 
-//#define EMULATION
+//#define LCD_EMULATION
 
 
 #include  <stdint.h>
+#include "lcd.h"
 
-#ifndef EMULATION
+#ifndef LCD_EMULATION
 #include "em_device.h"/////////
 //#include "efm32gg_lcd.h"
 //#include "efm32gg_cmu.h"
 #endif
 
-/**
- * Flag. When set, clock is initialized.
- */
-
-static uint8_t lcdclock_set = 0;
-
-/**
- * Default divisor for LCD clock
- */
-#ifndef LCDCLOCKDIV_DFLT
-#define LCDCLOCKDIV_DFLT 100
-#endif
-
+/** BIT macro generates a 1 bit in the N position */
 #define BIT(N) (1U<<(N))
 
 
+/**
+ * Flag. When set, clock is initialized.
+ */
+static uint8_t lcdclock_set = 0;
+
+/**
+ *  @brief  Table for 14 segments displays
+ *
+ *  @note   For each character, it gives the segments to be lit
+ *  @note   It uses a 16 bit word and each bit corresponds to a segment
+ *  @note   0 position corresponds to space (0x20=32)
+ *  @note   To get the segments for character c use segments14forchar[c-' ']
+ *
+ */
+
+// bit-segment association
 #define _DP 0x4000
 #define _L  0x2000
 #define _M  0x1000
@@ -53,7 +61,7 @@ static uint8_t lcdclock_set = 0;
 #define _A  0x1
 
 const uint16_t segments14forchar[96] = {
-            0                                                          , /* (space) */
+            0                                                        , /* (space) */
           _DP                                            |_C |_B     , /* ! */
                               _J                             |_B     , /* " */
                   _M         |_J     |_G2|_G1        |_D |_C |_B     , /* # */
@@ -151,8 +159,30 @@ const uint16_t segments14forchar[96] = {
           0                                                          , /* (del) */
 };
 
+
+/**
+ *  @brief  Table for 7 segments displays
+ *
+ *  @note   Only used when trying to display alphabetic characters in the numeric display
+ *  @note   For each character, it gives the segments to be lit
+ *  @note   It uses a 16 bit word and each bit corresponds to a segment
+ *  @note   0 position corresponds to space (0x20=32)
+ *  @note   To get the segments for character c use segments14forchar[c-' ']
+
+ *
+ */
+
+// bit-segment association. Symbols are reused!!!!
 #if USE_7SEGMENTS_FOR_CHARS
 #undef _DP
+#undef _DP
+#undef _G
+#undef _F
+#undef _E
+#undef _D
+#undef _C
+#undef _B
+#undef _A
 
 #define _DP 0x80
 #define _G  0x40
@@ -164,114 +194,114 @@ const uint16_t segments14forchar[96] = {
 #define _A  0x1
 
 const uint8_t segment7forchar[96] = {
-	 0                              , /* (space) */
-	 _DP                |_C |_B     , /* ! */
-	         _F             |_B     , /* " */
-	     _G |_F |_E |_D |_C |_B     , /* # */
-	     _G |_F     |_D |_C     |_A , /* $ */
-	 _DP|_G     |_E         |_B     , /* % */
-	     _G             |_C |_B     , /* & */
-	         _F                     , /* ' */
-	         _F     |_D         |_A , /* ( */
-	                 _D     |_B |_A , /* ) */
-	         _F                 |_A , /* * */
-	     _G |_F |_E                 , /* + */
-	             _E                 , /* , */
-	     _G                         , /* - */
-	 _DP                            , /* . */
-	     _G     |_E         |_B     , /* / */
-	         _F |_E |_D |_C |_B |_A , /* 0 */
-	                     _C |_B     , /* 1 */
-	     _G     |_E |_D     |_B |_A , /* 2 */
-	     _G         |_D |_C |_B |_A , /* 3 */
-	     _G |_F         |_C |_B     , /* 4 */
-	     _G |_F     |_D |_C     |_A , /* 5 */
-	     _G |_F |_E |_D |_C     |_A , /* 6 */
-	                     _C |_B |_A , /* 7 */
-	     _G |_F |_E |_D |_C |_B |_A , /* 8 */
-	     _G |_F     |_D |_C |_B |_A , /* 9 */
-	                 _D         |_A , /* : */
-	                 _D |_C     |_A , /* ; */
-	     _G |_F                 |_A , /* < */
-	     _G         |_D             , /* = */
-	     _G                 |_B |_A , /* > */
-	 _DP|_G     |_E         |_B |_A , /* ? */
-	     _G     |_E |_D |_C |_B |_A , /* @ */
-	     _G |_F |_E     |_C |_B |_A , /* A */
-	     _G |_F |_E |_D |_C         , /* B */
-	         _F |_E |_D         |_A , /* C */
-	     _G     |_E |_D |_C |_B     , /* D */
-	     _G |_F |_E |_D         |_A , /* E */
-	     _G |_F |_E             |_A , /* F */
-	         _F |_E |_D |_C     |_A , /* G */
-	     _G |_F |_E     |_C |_B     , /* H */
-	         _F |_E                 , /* I */
-	             _E |_D |_C |_B     , /* J */
-	     _G |_F |_E     |_C     |_A , /* K */
-	         _F |_E |_D             , /* L */
-	             _E     |_C     |_A , /* M */
-	         _F |_E     |_C |_B |_A , /* N */
-	         _F |_E |_D |_C |_B |_A , /* O */
-	     _G |_F |_E         |_B |_A , /* P */
-	     _G |_F     |_D     |_B |_A , /* Q */
-	         _F |_E         |_B |_A , /* R */
-	     _G |_F     |_D |_C     |_A , /* S */
-	     _G |_F |_E |_D             , /* T */
-	         _F |_E |_D |_C |_B     , /* U */
-	         _F |_E |_D |_C |_B     , /* V */
-	         _F     |_D     |_B     , /* W */
-	     _G |_F |_E     |_C |_B     , /* X */
-	     _G |_F     |_D |_C |_B     , /* Y */
-	     _G     |_E |_D     |_B |_A , /* Z */
-	         _F |_E |_D         |_A , /* [ */
-	     _G |_F         |_C         , /* \ */
-	                 _D |_C |_B |_A , /* ] */
-	         _F             |_B |_A , /* ^ */
-	                 _D             , /* _ */
-	                         _B     , /* ` */
-	     _G     |_E |_D |_C |_B |_A , /* a */
-	     _G |_F |_E |_D |_C         , /* b */
-	     _G     |_E |_D             , /* c */
-	     _G     |_E |_D |_C |_B     , /* d */
-	     _G |_F |_E |_D     |_B |_A , /* e */
-	     _G |_F |_E             |_A , /* f */
-	     _G |_F     |_D |_C |_B |_A , /* g */
-	     _G |_F |_E     |_C         , /* h */
-	             _E                 , /* i */
-	                 _D |_C         , /* j */
-	     _G |_F |_E     |_C     |_A , /* k */
-	         _F |_E                 , /* l */
-	             _E     |_C         , /* m */
-	     _G     |_E     |_C         , /* n */
-	     _G     |_E |_D |_C         , /* o */
-	     _G |_F |_E         |_B |_A , /* p */
-	     _G |_F         |_C |_B |_A , /* q */
-	     _G     |_E                 , /* r */
-	     _G |_F     |_D |_C     |_A , /* s */
-	     _G |_F |_E |_D             , /* t */
-	             _E |_D |_C         , /* u */
-	             _E |_D |_C         , /* v */
-	             _E     |_C         , /* w */
-	     _G |_F |_E     |_C |_B     , /* x */
-	     _G |_F     |_D |_C |_B     , /* y */
-	     _G     |_E |_D     |_B |_A , /* z */
-	     _G             |_C |_B     , /* { */
-	         _F |_E                 , /* | */
-	     _G |_F |_E                 , /* } */
-	                             _A , /* ~ */
-	 0                              , /* (del) */
+         0                              , /* (space) */
+         _DP                |_C |_B     , /* ! */
+                 _F             |_B     , /* " */
+             _G |_F |_E |_D |_C |_B     , /* # */
+             _G |_F     |_D |_C     |_A , /* $ */
+         _DP|_G     |_E         |_B     , /* % */
+             _G             |_C |_B     , /* & */
+                 _F                     , /* ' */
+                 _F     |_D         |_A , /* ( */
+                         _D     |_B |_A , /* ) */
+                 _F                 |_A , /* * */
+             _G |_F |_E                 , /* + */
+                     _E                 , /* , */
+             _G                         , /* - */
+         _DP                            , /* . */
+             _G     |_E         |_B     , /* / */
+                 _F |_E |_D |_C |_B |_A , /* 0 */
+                             _C |_B     , /* 1 */
+             _G     |_E |_D     |_B |_A , /* 2 */
+             _G         |_D |_C |_B |_A , /* 3 */
+             _G |_F         |_C |_B     , /* 4 */
+             _G |_F     |_D |_C     |_A , /* 5 */
+             _G |_F |_E |_D |_C     |_A , /* 6 */
+                             _C |_B |_A , /* 7 */
+             _G |_F |_E |_D |_C |_B |_A , /* 8 */
+             _G |_F     |_D |_C |_B |_A , /* 9 */
+                         _D         |_A , /* : */
+                         _D |_C     |_A , /* ; */
+             _G |_F                 |_A , /* < */
+             _G         |_D             , /* = */
+             _G                 |_B |_A , /* > */
+         _DP|_G     |_E         |_B |_A , /* ? */
+             _G     |_E |_D |_C |_B |_A , /* @ */
+             _G |_F |_E     |_C |_B |_A , /* A */
+             _G |_F |_E |_D |_C         , /* B */
+                 _F |_E |_D         |_A , /* C */
+             _G     |_E |_D |_C |_B     , /* D */
+             _G |_F |_E |_D         |_A , /* E */
+             _G |_F |_E             |_A , /* F */
+                 _F |_E |_D |_C     |_A , /* G */
+             _G |_F |_E     |_C |_B     , /* H */
+                 _F |_E                 , /* I */
+                     _E |_D |_C |_B     , /* J */
+             _G |_F |_E     |_C     |_A , /* K */
+                 _F |_E |_D             , /* L */
+                     _E     |_C     |_A , /* M */
+                 _F |_E     |_C |_B |_A , /* N */
+                 _F |_E |_D |_C |_B |_A , /* O */
+             _G |_F |_E         |_B |_A , /* P */
+             _G |_F     |_D     |_B |_A , /* Q */
+                 _F |_E         |_B |_A , /* R */
+             _G |_F     |_D |_C     |_A , /* S */
+             _G |_F |_E |_D             , /* T */
+                 _F |_E |_D |_C |_B     , /* U */
+                 _F |_E |_D |_C |_B     , /* V */
+                 _F     |_D     |_B     , /* W */
+             _G |_F |_E     |_C |_B     , /* X */
+             _G |_F     |_D |_C |_B     , /* Y */
+             _G     |_E |_D     |_B |_A , /* Z */
+                 _F |_E |_D         |_A , /* [ */
+             _G |_F         |_C         , /* \ */
+                         _D |_C |_B |_A , /* ] */
+                 _F             |_B |_A , /* ^ */
+                         _D             , /* _ */
+                                 _B     , /* ` */
+             _G     |_E |_D |_C |_B |_A , /* a */
+             _G |_F |_E |_D |_C         , /* b */
+             _G     |_E |_D             , /* c */
+             _G     |_E |_D |_C |_B     , /* d */
+             _G |_F |_E |_D     |_B |_A , /* e */
+             _G |_F |_E             |_A , /* f */
+             _G |_F     |_D |_C |_B |_A , /* g */
+             _G |_F |_E     |_C         , /* h */
+                     _E                 , /* i */
+                         _D |_C         , /* j */
+             _G |_F |_E     |_C     |_A , /* k */
+                 _F |_E                 , /* l */
+                     _E     |_C         , /* m */
+             _G     |_E     |_C         , /* n */
+             _G     |_E |_D |_C         , /* o */
+             _G |_F |_E         |_B |_A , /* p */
+             _G |_F         |_C |_B |_A , /* q */
+             _G     |_E                 , /* r */
+             _G |_F     |_D |_C     |_A , /* s */
+             _G |_F |_E |_D             , /* t */
+                     _E |_D |_C         , /* u */
+                     _E |_D |_C         , /* v */
+                     _E     |_C         , /* w */
+             _G |_F |_E     |_C |_B     , /* x */
+             _G |_F     |_D |_C |_B     , /* y */
+             _G     |_E |_D     |_B |_A , /* z */
+             _G             |_C |_B     , /* { */
+                 _F |_E                 , /* | */
+             _G |_F |_E                 , /* } */
+                                     _A , /* ~ */
+         0                              , /* (del) */
 };
 #endif
 
 
+/**
+  *
+  *  @brief  Configuration for LCD Segments
+  *
+  *  @note   There are two segment information. One in the display and the other in the controller
+  *
+  */
 
-/**********************************************************************************************//**
- *
- *  @brief  Configuration for LCD Segments
- *
- *  @note   There are two segment information. One in the display and the other in the controller
- *
- **************************************************************************************************/
 //
 // LCD Matriz 20x8
 //
@@ -312,6 +342,13 @@ const uint8_t segment7forchar[96] = {
 //                              EXT                  PA14           L3
 //
 
+
+/**
+ *  Segment information is encoded in a 16 bit word
+ *  Each segment of display is addressed by a segment signal AND a common signal
+ *  The high order byte contains the segment
+ *  The lower order byte containts the common
+ */
 #define SEGS    20
 #define COMMS   8
 
@@ -320,11 +357,11 @@ const uint8_t segment7forchar[96] = {
 #define GET_COMMON(M) ((M)&0xFF)
 
 #ifdef TWO_STEPS_ENCODING
-/////////////////////////// BEGIN OF TWO STEPS ENCODING ////////////////////////////////////////////
-//
-// In Two Steps Encoding, the LCD Segment Pin and Common Pin is found
-// in lookup tables seg_encoding and com_encoding
-//
+/**
+ *  TWO STEPS ENCODING
+ *  In Two Steps Encoding, the LCD Segment Pin and Common Pin is found
+ *  in lookup tables seg_encoding and com_encoding
+ */
 
 #define S00 SEGMASK(0)
 #define S01 SEGMASK(1)
@@ -421,6 +458,9 @@ uint16_t tablcd[15][12] = {
 };
 
 
+/**
+ *  @brief  struct to hold information about segment
+ */
 typedef struct {
     uint32_t    hi;
     uint32_t    lo;
@@ -645,162 +685,352 @@ static const SegEncoding_t tablcdclear[12][8] = {
     },
 };
 
-
-
-#ifndef EMULATION
-/**
- * @brief   Data structure for the divisors used to generate LCD Clock
+/*
+ * This array emulates the LCD data registers
  */
-
+#ifdef LCD_EMULATION
 typedef struct {
-    uint16_t    lfapresc_lcd;   // div = (1<<(lfapresc_lcd+4)); lcd values in [0-3]
-    uint16_t    ldcctrl_fdiv;   // div = (lcdctrl_fdiv+1); fdiv values in [0-7]
-} LCD_divconfig_t;
+    uint32_t hi;
+    uint32_t lo;
+} lcddata_t;
 
-/**
- * @brief   Find divisor configuration for LCD
- *
- *
- * @note    Possible values
- *      |    div1    |   div2   |   divisor    |
- *      |------------|----------|--------------|
- *      |      16    |     1    |      16      |
- *      |      16    |     2    |      32      |
- *      |      16    |     3    |      48      |
- *      |      16    |     4    |      64      |
- *      |      16    |     5    |      80      |
- *      |      16    |     6    |      96      |
- *      |      16    |     7    |     112      |
- *      |      16    |     8    |     128      |
- *      |      32    |     5    |     160      |
- *      |      32    |     6    |     192      |
- *      |      32    |     7    |     224      |
- *      |      32    |     8    |     256      |
- *      |      64    |     5    |     320      |
- *      |      64    |     6    |     384      |
- *      |      64    |     7    |     448      |
- *      |      64    |     8    |     512      |
- *      |     128    |     5    |     640      |
- *      |     128    |     6    |     768      |
- *      |     128    |     7    |     896      |
- *      |     128    |     8    |    1024      |
- */
-
-static LCD_divconfig_t
-finddivconfig(int n) {
-int d,e,r,emin;
-LCD_divconfig_t ret;
-
-    emin = 1024;
-    ret.lfapresc_lcd = 0;
-    ret.ldcctrl_fdiv = 0;
-    for(d=4;d<=7;d++) {
-            r = n>>d;
-            if( r >= 1 && r <= 8 ) {
-                e = n - (r<<d);
-                if( e < 0 ) e = -e;
-                if( e < emin ) {
-                    emin = e;
-                    ret.ldcctrl_fdiv = r-1;
-                    ret.lfapresc_lcd = d-4;
-                }
-            }
-            r++;
-            if( r >= 1 && r <= 8 ) {
-                e = n - (r<<d);
-                if( e < 0 ) e = -e;
-                if( e < emin ) {
-                    emin = e;
-                    ret.ldcctrl_fdiv = r-1;
-                    ret.lfapresc_lcd = d-4;
-                }
-            }
-    }
-    return ret;
-}
+lcddata_t lcd[8];
 #endif
 
 
 /**
- * @brief   Set Clock for LCD
+ * @brief   Set Clock for LCD module
  *
- * @note    Clock Source is LFACLK. Must be set before.
+ * @note    LFACLK is the clock Source for the LCD module. Must be set before using LCD.
+ *          It can be driven by LFRCOCLK, HFCORECLK/2, LFXOCLK and UFLCDOCLK
+ *
+ * @param   source can be
+ *               LCD_CLK_DEFAULT : uses LFRCO as source
+ *               LCD_CLK_LFRCO   : uses the internal RC oscillator with 32768 Hz
+ *               LCD_CLK_ULRCO   : uses the internal RC oscillator with 1 or 2 kHz
+ *               LCD_CLK_HFCORECLK_2 : user HFCORE clock signal divided by 2
+ *               LCD_CLK_LFXO    : uses externa crystal oscillator with 32768 Hz
+ *
+ * @note     It disables clock for LCD, LETIMER0, RTC and LESENSE but restore them at the end.
+ * @note     It disables the LCD module.
  */
 uint32_t
-LCD_SetClock(uint32_t div) {
-#ifdef EMULATION
-    return 0;
-#else
-uint32_t oldctrl,oldlfaclken0;
-LCD_divconfig_t divconfig;
+SetLFAClock(uint32_t source) {
 
-    /* If LCD active stop it */
-    oldctrl = LCD->CTRL;
-    if( oldctrl&LCD_CTRL_EN ) {
-        LCD->CTRL &= ~(LCD_CTRL_EN);
-    }
-
-    /* if LFACK no active then return */
-    if( (CMU->LFCLKSEL & (_CMU_LFCLKSEL_LFA_MASK|CMU_LFCLKSEL_LFAE)) != 0 ) {
-        return 0;
-    }
-
-    /* If clock for LCD enabled, disable it */
-    oldlfaclken0 = CMU->LFACLKEN0;
-    if( (oldlfaclken0 & CMU_LFACLKEN0_LCD) != 0 ) {
-        CMU->LFACLKEN0 &= ~(CMU_LFACLKEN0_LCD);
-    }
-    /* Configure LCD Clock */
-    divconfig = finddivconfig(div);
-    CMU->LFAPRESC0 =    (CMU->LFAPRESC0&(~_CMU_LFAPRESC0_LCD_MASK))
-                     |  (divconfig.lfapresc_lcd<<_CMU_LFAPRESC0_LCD_SHIFT);
-    CMU->LCDCTRL   =    (CMU->LCDCTRL&(~_CMU_LCDCTRL_FDIV_MASK))
-                     |  (divconfig.ldcctrl_fdiv<<_CMU_LCDCTRL_FDIV_SHIFT);
-
-    /* IF clock for LCD was enabled, reenable it */
-    CMU->LFACLKEN0 = oldlfaclken0;
-
-    /* If LCD was active, reenable it */
-    LCD->CTRL = oldctrl;
-
+#ifdef LCD_EMULATION
     /* Set flag to signalize clock is set */
     lcdclock_set = 1;
     return 0;
+#else
+uint32_t oldlfaclken0,lfclksel;
+
+    if( source == LCD_CLOCK_DEFAULT )
+        source = LCD_CLOCK_LFRCO;
+
+    /* If LCD active, disable it. It is not restored */
+    if( LCD->CTRL&LCD_CTRL_EN ) {
+        LCD->CTRL &= ~(LCD_CTRL_EN);
+    }
+
+    /*
+     * LFACLK is the selected clock for these Low Energy A Peripherals:
+     *    LCD, LETIMER0, RTC and LESENSE
+     *
+     * The clocks for these devices are disabled, but configuration is saved to be restored later
+     */
+    oldlfaclken0 = CMU->LFACLKEN0;
+    CMU->LFACLKEN0 &= ~(CMU_LFACLKEN0_LCD|CMU_LFACLKEN0_LETIMER0
+                         |CMU_LFACLKEN0_RTC|CMU_LFACLKEN0_LESENSE);
+
+    /*
+     * It can be driven by LFRCO (default), LFXO, HFCORECLK/2, HFCORECLK/4 or ULFRCO (BURTC)
+     * Note that LFRCO is disabled at reset !!!!!! It is enabled bt writing a word with the
+     * LFRCOEN bit set to the OSCENCMD register.
+     *
+     *
+     * The source for the LFACLK in selected by the LFA and LFAE fields in CMU->LFCLKSEL
+     * More information in section 11.5.11 of reference manual
+     *
+     *    LFA   LFAE      source
+     *     00     0       disabled
+     *     00     1       UFLRCO
+     *     01     0       LFRCO
+     *     10     0       LFXO
+     *     11     0       HFCORECLK/2
+     *
+     * The LCD clock has:
+     *    a prescaler (CMU->LFAPRESC0.LCD) and
+     *    a frame rate controller (CMU->LCDCTRL.FDIV)
+     *    a clock enable (CMU->LFACLKEN0.LCD)
+     */
+
+    /* ??
+     * Ensure LE modules are accessible, by setting LE bit to enable the clock for the
+     * low energy modules. It enables bus access to Low Energy peripherals.
+     *
+     * To use LCD module, the LE interface clock must be enabled in CMU_HFCORECLKEN0,
+     * in addition to the module clock
+     */
+     CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_LE;
+
+    /*
+     * First, configure and enable the clock source for the LCD module
+     */
+    switch ( source ) {
+    case LCD_CLOCK_LFRCO:
+        /*
+         * Set LFRCO as LFACLK clock source
+         *
+         * LFRCO is a RC oscillator withe a nominal frequency of 32768 Hz.
+         * Following contents of
+         * http://embeddedelectrons.blogspot.com/2016/12/example-code-for-segment-lcd-on-efm32.html
+         */
+
+        /*
+         * Set LFRCOEN bit to enable the low frequency RC oscillator (LFRCO)
+         */
+        CMU->OSCENCMD = CMU_OSCENCMD_LFRCOEN;
+        /*
+         * Wait until LFRCO is enabled and start-up time has exceeded
+         */
+        while ( !(CMU->STATUS&CMU_STATUS_LFRCORDY) ) {}
+
+        /*
+         * Set the LFACLK to use LFRCO as clock source
+         *
+         */
+        lfclksel  = CMU->LFCLKSEL;
+        lfclksel &= ~CMU_LFCLKSEL_LFAE_ULFRCO;  // Clear LFAE bit
+        lfclksel &= ~_CMU_LFCLKSEL_LFA_MASK;    // Clear LFA field
+        lfclksel |= CMU_LFCLKSEL_LFA_LFRCO;    // Set LFRCO as LFACLK clock source
+        CMU->LFCLKSEL = lfclksel;
+        break;
+    case LCD_CLOCK_HFCORECLK_2:
+        /*
+         * Additional division factor for HFCORECLKLE
+         * See 11.5.2
+         * This can only be done when HFCORECLK <= 32 MHz
+         */
+        if( SystemCoreClock < 32000000 ) {
+             CMU->HFCORECLKDIV &= ~CMU_HFCORECLKDIV_HFCORECLKLEDIV;
+        }
+
+
+        /*
+         * Set HFCORECLK/2 as LFACLK clock source
+         * HFCORECLK is derived from the HFCORECLK
+         * This is configured in the LFCLKSEL register
+         * See RM section 11.5.11
+         */
+        lfclksel  = CMU->LFCLKSEL;
+        lfclksel &= ~CMU_LFCLKSEL_LFAE_ULFRCO;  // Clear LFAE bit
+        lfclksel &= ~_CMU_LFCLKSEL_LFA_MASK;    // Clear LFA field
+        lfclksel |= CMU_LFCLKSEL_LFA_HFCORECLKLEDIV2;
+                                                // Set HFCOREPERCLK_2 as LFACLK clock source
+        CMU->LFCLKSEL = lfclksel;
+        break;
+    case LCD_CLOCK_HFCORECLK_4:
+        /*
+         * Additional division factor for HFCORECLKLE
+         * See 11.5.2
+         */
+         CMU->HFCORECLKDIV |= CMU_HFCORECLKDIV_HFCORECLKLEDIV;
+
+        /*
+         * Set HFCORECLK/4 as LFACLK clock source
+         * HFCORECLK is derived from the HFCORECLK
+         * This is configured in the LFCLKSEL register
+         * See RM section 11.5.11
+         */
+        lfclksel  = CMU->LFCLKSEL;
+        lfclksel &= ~CMU_LFCLKSEL_LFAE_ULFRCO;  // Clear LFAE bit
+        lfclksel &= ~_CMU_LFCLKSEL_LFA_MASK;    // Clear LFA field
+        lfclksel |= CMU_LFCLKSEL_LFA_HFCORECLKLEDIV2;
+                                                // Set HFCOREPERCLK_2 as LFACLK clock source
+        CMU->LFCLKSEL = lfclksel;
+        break;
+    case LCD_CLOCK_ULFRCO:
+        /*
+         * Set ULFRCO as LFACLK clock source
+         *
+         * ULFRCO is a RC oscillator with a nominal frequency of 1 or 2 KHz (depends on the chip??)
+         * ULFRCO is enable by default. It can only be disabled by selection other
+         * clock source in the OSC field of the EMU_EMF4CONF register
+         *
+         * NOTE: The instruction below changes the clock source for the Energy Mode 4 (EM4)!!!!!!
+         *       This can be disable by defining DO_NOT_RECONFIGURE_EM4OSC compiler flag
+         *
+         */
+#ifndef DO_NOT_RECONFIGURE_EM4OSC
+        EMU->EM4CONF &= ~_EMU_EM4CONF_OSC_MASK;
+#endif
+
+        /*
+         * Configure ULFRCO as LFACLK clock source
+         * This is configured in the LFCLKSEL register
+         * See RM section 11.5.11
+         */
+        lfclksel  = CMU->LFCLKSEL;
+        lfclksel |= CMU_LFCLKSEL_LFAE_ULFRCO;  // Clear LFAE bit
+        lfclksel &= ~_CMU_LFCLKSEL_LFA_MASK;   // Clear LFA field
+        CMU->LFCLKSEL = lfclksel;
+        break;
+
+    case LCD_CLOCK_LFXO:
+        /*
+         * Set ULFRCO as LFACLK clock source
+         *
+         * LFXO is an oscillator that uses a external 32768 Hz crystal
+         */
+
+        // If LFXO is NOT enabled, enable it
+        if ( (CMU->STATUS&CMU_STATUS_LFXOENS) == 0 ) {
+            CMU->OSCENCMD  = CMU_OSCENCMD_LFXOEN;
+        }
+
+        lfclksel  = CMU->LFCLKSEL;
+        lfclksel &= ~CMU_LFCLKSEL_LFAE_ULFRCO;  // Clear LFAE bit
+        lfclksel &= ~_CMU_LFCLKSEL_LFA_MASK;    // Clear LFA field
+        lfclksel |= CMU_LFCLKSEL_LFA_LFXO;      // Set LFXCO as LFACLK clock source
+        CMU->LFCLKSEL = lfclksel;
+        break;
+    }
+
+    /* if LFACK not active then return and signalizes error */
+    if( (CMU->LFCLKSEL & (_CMU_LFCLKSEL_LFA_MASK|CMU_LFCLKSEL_LFAE)) == 0 ) {
+        return 1;
+    }
+
+    /* Restore clocks for devices */
+    CMU->LFACLKEN0 = oldlfaclken0;
+
+    /* Set flag to signalize clock is set */
+    lcdclock_set = 1;
+
+    return 0;
 #endif
 }
 
+
+
 /**
- *  @brief  Initializes LCD
- *
- *  @note   When emulation is set, all writes happen to a 8 position array
+ *  @brief  SetLCDClock
  *
  */
-void LCD_Init(void) {
-#ifdef EMULATION
+uint32_t SetLCDClock(uint32_t presc, uint32_t div) {
+
+
+    if( presc == LCD_PRESC_DEFAULT )
+        presc = LCD_PRESC_DIV16;
+
+    if( div == LCD_DIV_DEFAULT ) {
+        div = 0;
+    } else {
+        div--;
+        if ( div > 7 ) div = 7;
+    }
+
+    /* Configure LCD Clock */
+    CMU->LFAPRESC0 =    (CMU->LFAPRESC0&(~_CMU_LFAPRESC0_LCD_MASK))
+                    |   presc<<_CMU_LFAPRESC0_LCD_SHIFT;
+
+    CMU->LCDCTRL =      (CMU->LCDCTRL&(~_CMU_LCDCTRL_FDIV_MASK))
+                    |   (div<<_CMU_LCDCTRL_FDIV_SHIFT);
+
+    return 0;
+}
+/**
+ *  @brief  Initializes LCD
+ */
+uint32_t LCD_Init(void) {
+uint32_t rc;
+
+    rc = LCD_Config(LCD_PRESC_DEFAULT,LCD_DIV_DEFAULT);
+
+    return rc;
+}
+
+/*
+ *  @brief  Configure LCD
+ *
+ *  @param  div:  set the frame rate according the formulas below
+ *
+ *  @note   frame_rate = (LFACK_freq/PRESC)/DIV/(MUX*2)
+ *          where LFACLK_freq is the frequency of the LFACLK clock signal
+ *                PRESC is the prescaler (16,32,64 or 128) set on LFAPRESC0 register
+ *                DIV is the divisor set in the FDIV field of LCDCTRL register  (= DIV-1)
+ *                MUX is the divisor set by the multiplexing mode
+ *                    = 1 static
+ *                      2 duplex
+ *                      3 triples
+ *                      4 quadruplex
+ *                      6 hexplex
+ *                      8 octaplex
+ *
+ *  @note   DIV = (LFACLK_freq/PRESC)/(frame_rate*MUX*2)
+ *  @note   FDIV = DIV - 1
+ *
+ *  @note   When LCD_EMULATION is set, all write operations happen to a 8 position array
+ *
+ *  @note The table below show values of PRESC and FDIC that gives frame rate between 24 and 150
+ *
+  LFACLK freq |PRESC| LFACLK_presc|   DIV | FDIV | LFACLK_lcd  | Multiplexing | MUX |  Frame rate
+ -------------|-----|-------------|-------|------|-------------|--------------|-----|------------
+      32678   | 16  |      2048   |     1 |   0  |      2.048  |    Octaplex  |   8 |      128
+      32678   | 16  |      2048   |     2 |   1  |      1.024  |    Octaplex  |   8 |       64
+      32678   | 16  |      2048   |     3 |   2  |        683  |    Octaplex  |   8 |       43
+      32678   | 16  |      2048   |     4 |   3  |        512  |    Octaplex  |   8 |       32
+      32678   | 16  |      2048   |     5 |   4  |        410  |    Octaplex  |   8 |       26
+      32678   | 32  |      1024   |     1 |   0  |      1.024  |    Octaplex  |   8 |       64
+      32678   | 32  |      1024   |     2 |   1  |        512  |    Octaplex  |   8 |       32
+      32678   | 64  |       512   |     1 |   0  |        512  |    Octaplex  |   8 |       32
+ *
+ *  @note  The default is PRESC=16 and FDIV=0 resulting in a 128 Hz frame rate
+ *
+ */
+uint32_t LCD_Config(uint32_t presc, uint32_t div) {
+#ifdef LCD_EMULATION
 int i;
 
+    /* Initializes area for segment information */
     for(i=0;i<8;i++) {
         lcd[i].hi = 0;
         lcd[i].lo = 0;
     }
 #else
 uint32_t segen;
+int i;
+uint32_t dispctrl;
 #ifdef TWO_STEPS_ENCODING
 uint32_t m,m4;
-SegEncoding used = { 0,0 };
+SegEncoding_t used = { 0,0 };
+#else
+int j;
+#endif
 
-    /* If clock no set, set it to default */
+    /*
+     * Disable LCD module before fussing around with it
+     */
+    LCD->CTRL &= ~(LCD_CTRL_EN);
+
+    /* If clock no set, configure it */
     if( !lcdclock_set ) {
-        LCD_SetClock(LCDCLOCKDIV_DFLT);
+        SetLFAClock(LCD_CLOCK_DEFAULT);
+        SetLCDClock(LCD_PRESC_DEFAULT,LCD_DIV_DEFAULT);
     }
+#ifdef TWO_STEPS_ENCODING
+
+    /*
+     * Scan all character encoding and accumulates all bits used */
     for(i=0;i<sizeof(seg_encoding)/sizeof(SegEncoding_t);i++) {
         used.hi |= seg_encoding[i].hi;
         used.lo |= seg_encoding[i].lo;
     }
 
-    // Disable LCD Controller
-    LCD->CTRL &= ~LCD_CTRL_EN;
-    // Configure pins
+    /*
+     * Configure pins
+     * A bit in the segen register corresponds to 4 segment pins
+     */
     m = 1;
     m4 = 0xF;
     segen = 0;
@@ -819,115 +1049,168 @@ SegEncoding used = { 0,0 };
         m4 <<= 4;
     }
 #else
-int i,j;
-
+    /* Accumulate all segments used in the tablcd table and configure the corresponding pins */
     segen = 0;
     for(i=0;i<15;i++) {
         for(j=0;j<12;j++) {
             segen |= (1<<(GET_SEG(tablcd[i][j]))/4);
         }
     }
-
 #endif
 
     LCD->SEGEN = segen;
-    // 8 common pins
-    // LCD_COM7-LCD_COM4 (SEG23-SEG20) . LCD_COM3-LCD_COM0
-    LCD->DISPCTRL |= LCD_DISPCTRL_MUX_QUADRUPLEX|LCD_DISPCTRL_MUXE;
-    // 1/4 bias
-    LCD->DISPCTRL |= LCD_DISPCTRL_BIAS_ONEFOURTH;
-    // Normal wave
-    LCD->DISPCTRL |= LCD_DISPCTRL_WAVE_NORMAL;
-    // Enable (After configuration)
+
+    dispctrl = LCD->DISPCTRL;
+    dispctrl &= ~(   _LCD_DISPCTRL_MUXE_MASK
+                   | _LCD_DISPCTRL_MUX_MASK
+                   | _LCD_DISPCTRL_BIAS_MASK
+                   | _LCD_DISPCTRL_WAVE_MASK
+                   | _LCD_DISPCTRL_VLCDSEL_MASK
+                   | _LCD_DISPCTRL_CONCONF_MASK   );
+
+    // 8 common pins: LCD_COM7-LCD_COM4 (SEG23-SEG20) . LCD_COM3-LCD_COM0
+    dispctrl  |=   LCD_DISPCTRL_MUX_QUADRUPLEX      // QUADRUPLEX+MUXE -> OCTAPLEX
+                 | LCD_DISPCTRL_MUXE                //
+                 | LCD_DISPCTRL_BIAS_ONEFOURTH      // 1/4 bias
+                 | LCD_DISPCTRL_WAVE_NORMAL;        // Normal wave
+    LCD->DISPCTRL = dispctrl;
+
+    /*
+     * Enable LCD after configuration
+     */
     LCD->CTRL |= LCD_CTRL_EN;
 #endif
+    return 0;
 }
 
 /**
- *  @brief  Write an ASCII character
+ *  @brief  Write an ASCII character at the specified position
  *
- *  @note   When emulation is set, all writes happen to a 8 position array
+ *  @param  c:   character to be written
+ *  @param  pos: position where character is to be written
+ *
+ *  @note   When LCD_EMULATION is set, all writes happen to a 8 position array
  *
  */
 void LCD_WriteChar(uint8_t c, uint8_t pos) {
 uint32_t segments,m;
-uint8_t s,com,seg;
-SegEncoding_t lcd[8] = { {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0} };
+uint8_t sn,com,seg;
+SegEncoding_t s[8] = { {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0} };
 
+    /*
+     * looks for segments to be lit
+     * table contains only character with
+     */
     segments = segments14forchar[c-' '];
 
-    s = 0;
+    sn = 0;
     while( segments ) {
         if( segments&1 ) {
-            m = tablcd[s][pos];
+            m = tablcd[sn][pos];
             com = GET_COMMON(m);
             seg = GET_SEG(m);
 #ifdef TWO_STEPS_ENCODING
             com = com_encoding[com]; // it is reversed on STK3700
-            lcd[com].hi |= seg_encoding[seg].hi;
-            lcd[com].lo |= seg_encoding[seg].lo;
+            s[com].hi |= seg_encoding[seg].hi;
+            s[com].lo |= seg_encoding[seg].lo;
 #else
             if( seg < 32 ) {
-                lcd[com].lo |= seg_encoding[seg];
+                s[com].lo |= seg_encoding[seg];
             } else {
-                lcd[com].hi |= seg_encoding[seg-32];
+                s[com].hi |= seg_encoding[seg-32];
             }
 #endif
         }
         segments>>=1;
-        s++;
+        sn++;
     }
-#ifndef EMULATION
+#ifndef LCD_EMULATION
+    LCD->FREEZE |= LCD_FREEZE_REGFREEZE;
     for(com=0;com<8;com++) {
         switch(com) {
         case 0:
-            LCD->SEGD0L = (LCD->SEGD0L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD0H = (LCD->SEGD0H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD0L = (LCD->SEGD0L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD0H = (LCD->SEGD0H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 1:
-            LCD->SEGD1L = (LCD->SEGD1L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD1H = (LCD->SEGD1H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD1L = (LCD->SEGD1L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD1H = (LCD->SEGD1H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 2:
-            LCD->SEGD2L = (LCD->SEGD2L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD2H = (LCD->SEGD2H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD2L = (LCD->SEGD2L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD2H = (LCD->SEGD2H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 3:
-            LCD->SEGD3L = (LCD->SEGD3L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD3H = (LCD->SEGD3H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD3L = (LCD->SEGD3L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD3H = (LCD->SEGD3H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 4:
-            LCD->SEGD4L = (LCD->SEGD4L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD4H = (LCD->SEGD4H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD4L = (LCD->SEGD4L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD4H = (LCD->SEGD4H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 5:
-            LCD->SEGD5L = (LCD->SEGD5L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD5H = (LCD->SEGD5H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD5L = (LCD->SEGD5L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD5H = (LCD->SEGD5H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 6:
-            LCD->SEGD6L = (LCD->SEGD6L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD6H = (LCD->SEGD6H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD6L = (LCD->SEGD6L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD6H = (LCD->SEGD6H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         case 7:
-            LCD->SEGD7L = (LCD->SEGD7L&~tablcdclear[com][pos].lo)|lcd[com].lo;
-            LCD->SEGD7H = (LCD->SEGD7H&~tablcdclear[com][pos].hi)|lcd[com].hi;
+            LCD->SEGD7L = (LCD->SEGD7L&~tablcdclear[com][pos].lo)|s[com].lo;
+            LCD->SEGD7H = (LCD->SEGD7H&~tablcdclear[com][pos].hi)|s[com].hi;
             break;
         }
     }
-
+    LCD->FREEZE &= ~LCD_FREEZE_REGFREEZE;
 #else
-    (void) seg;
-    (void) com;
-    (void) tablcdclear;
+    for(com=0;com<8;com++) {
+        switch(com) {
+        case 0:
+            lcd[0].lo = (lcd[0].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[0].hi = (lcd[0].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 1:
+            lcd[1].lo = (lcd[1].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[1].hi = (lcd[1].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 2:
+            lcd[2].lo = (lcd[2].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[2].hi = (lcd[2].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 3:
+            lcd[3].lo = (lcd[3].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[3].hi = (lcd[3].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 4:
+            lcd[4].lo = (lcd[4].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[4].hi = (lcd[4].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 5:
+            lcd[5].lo = (lcd[5].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[5].hi = (lcd[5].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 6:
+            lcd[6].lo = (lcd[6].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[6].hi = (lcd[6].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        case 7:
+            lcd[7].lo = (lcd[7].lo&~tablcdclear[com][pos].lo)|s[com].lo;
+            lcd[7].hi = (lcd[7].hi&~tablcdclear[com][pos].hi)|s[com].hi;
+            break;
+        }
+    }
 #endif
 
 
 }
 
-
 /**
- *  @brief  Write a string into positions 1 to 7 (with 14 segments display)
+ *  @brief  Write a string to positions 1 to 7 (with 14 segments displays)
  *
+ *  @param  s: string to be written
+ *
+ *  @note   if the string is shorten than 7, it is padded with spaces
  */
 
 void LCD_WriteAlphanumericField(char *s) {
@@ -946,6 +1229,10 @@ int pos;
 /**
  *  @brief  Write a string into positions 8 to 11 (with 7 segments displays)
  *
+ *  @param  s: string to be written
+ *
+ *  @note   if the string is shorten than 12, it is padded with spaces
+ *
  */
 void LCD_WriteNumericField(char *s) {
 int pos;
@@ -961,8 +1248,12 @@ int pos;
 }
 
 /**
- *  @brief  Write a digit to positions 8 to 11 (with 7 segments displays)
+ *  @brief  Write a string to positions 1 to 12 (with 14 segments displays in position 1 to 7)
+ *          and 7 segments display in position 8 to 12)
  *
+ *  @param  s: string to be written
+ *
+ *  @note   if the string is shorten than 12, it is padded with spaces
  */
 
 void LCD_WriteString(char *s) {
@@ -985,10 +1276,69 @@ int pos;
  *
  */
 void LCD_SetSpecial(uint8_t c, uint8_t v) {
-
+    // TBD
 }
 
-
+/**
+ *  @brief  Turns off all segments
+ *
+ */
 void LCD_Clear(void) {
+#ifdef LCD_EMULATION
+int i;
 
+    for(i=0;i<8;i++) {
+        lcd[i].hi = 0;
+        lcd[i].lo = 0;
+    }
+#else
+    LCD->SEGD0L = 0;
+    LCD->SEGD0H = 0;
+    LCD->SEGD1L = 0;
+    LCD->SEGD1H = 0;
+    LCD->SEGD2L = 0;
+    LCD->SEGD2H = 0;
+    LCD->SEGD3L = 0;
+    LCD->SEGD3H = 0;
+    LCD->SEGD4L = 0;
+    LCD->SEGD4H = 0;
+    LCD->SEGD5L = 0;
+    LCD->SEGD5H = 0;
+    LCD->SEGD6L = 0;
+    LCD->SEGD6H = 0;
+    LCD->SEGD7L = 0;
+    LCD->SEGD7H = 0;
+#endif
+}
+
+/**
+ *  @brief  Turns on all segments
+ *
+ */
+void LCD_SetAll(void) {
+#ifdef LCD_EMULATION
+int i;
+
+    for(i=0;i<8;i++) {
+        lcd[i].hi = 0xFF;
+        lcd[i].lo = 0xFFFFFFFF;
+    }
+#else
+    LCD->SEGD0L = 0xFFFFFFFF;
+    LCD->SEGD0H = 0xFF;
+    LCD->SEGD1L = 0xFFFFFFFF;
+    LCD->SEGD1H = 0xFF;
+    LCD->SEGD2L = 0xFFFFFFFF;
+    LCD->SEGD2H = 0xFF;
+    LCD->SEGD3L = 0xFFFFFFFF;
+    LCD->SEGD3H = 0xFF;
+    LCD->SEGD4L = 0xFFFFFFFF;
+    LCD->SEGD4H = 0xFF;
+    LCD->SEGD5L = 0xFFFFFFFF;
+    LCD->SEGD5H = 0xFF;
+    LCD->SEGD6L = 0xFFFFFFFF;
+    LCD->SEGD6H = 0xFF;
+    LCD->SEGD7L = 0xFFFFFFFF;
+    LCD->SEGD7H = 0xFF;
+#endif
 }

@@ -1,10 +1,9 @@
 /** *************************************************************************//**
  * @file system_efm32gg-ext.c
- * @brief Additional CMSIS-like routines for Cortex-M3 System Layer for EFM32GG devices.
+ * @brief Additional CMSIS-like routines for Cortex-M3 System Layer for
+ *         EFM32GG devices.
  * @version 1.0
  * @author  Hans
- ******************************************************************************
- *
  *
  *****************************************************************************/
 
@@ -19,7 +18,7 @@
 #include "system_efm32gg-ext.h"
 
 /**
- * @function        GetProdRev
+ * @brief           GetProdRev
  * @brief           Inline function to get the chip's Production Revision.
  *
  * @note            From Silicon Labs system_efm32gg.c
@@ -71,8 +70,7 @@ uint32_t err2;
 
 
 
-/******************************************************************************/
-/**
+/************************************************************************** /**
  * @brief
  *   Set the clock frequency and source
  *
@@ -294,6 +292,15 @@ SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
 }
 
 
+/************************************************************************** /**
+ * @brief
+ *   Get clock information
+ *
+ * @param p is a pointer to a ClockConfiguration_t struct
+ *
+ * @note
+ *   This function is provided to make it easier to configure clock frequency
+ *****************************************************************************/
 
 
 uint32_t
@@ -374,19 +381,19 @@ uint32_t perfreq,perdiv;
 
     return basefreq;
 }
-/*
- * Configure for clock frequency
+
+/**
+ *  @brief  Configure for clock frequency
  *
- * See 11.3.4 Configuration For Operating Frequencies
+ *  @note   See 11.3.4 Configuration For Operating Frequencies
  *
  *  Clock       Flash wait states                       HFCLKLE < 16
  *  16 MHz      WS0/WS0SCBTP/WS1/WS1SCBTP/WS2/WS2SCBTP                      BOOSTUPTO32MHZ (1)
  *  32 MHz      WS1/WS1SCBTP/WS2/WS2SCBTP                                   BOOSTUPTO32MHZ (1)
  *  48 MHz      WS2/WS2SCBTP                             HFCORECLKLEDIV(2)  BOOSTABOVE32MHZ
  *
- *  OBS:
- *  1 - Default is BOOSTUPTO32MHZ in CMU_CTRL
- *  2 - You can set HFCORECLKLEDIV in CMU_HFCORECLKDIV or HFLE in CMU_CTRL
+ *  @note       Default is BOOSTUPTO32MHZ in CMU_CTRL
+ *  @note       You can set HFCORECLKLEDIV in CMU_HFCORECLKDIV or HFLE in CMU_CTRL
  */
 
 uint32_t
@@ -423,7 +430,7 @@ uint32_t newctrl;
 /**
  * @brief       Change HF Divisor
  *
- * @param       divisor must be in range [1 to 8]
+ * @param       div must be in range [1 to 8]
  *
  */
 
@@ -456,8 +463,7 @@ ClockSetHFCLKDivisor(uint32_t div) {
  * @param       corediv: prescaler for HFCORECLOCK
  * @param       perdiv:  prescaler for HFPERCLOCK
  *
- * @obs
- *              Prescalers must be a power of 2 in the range [1..512]. If it is not,
+ * @note        Prescalers must be a power of 2 in the range [1..512]. If it is not,
  *              it will be rounded
  *
  */
@@ -500,7 +506,7 @@ const uint32_t PERDIVMASK  = (_CMU_HFPERCLKDIV_HFPERCLKDIV_MASK<<_CMU_HFPERCLKDI
  *
  * @param       source:  CLOCK_LFRCO, CLOCK_ULFRCO, CLOCK_LFXO,CLOCK_HFCORECLOCK_2
  *
- * @obs         CLOCK_HFCORECLOCK_2 can mean SystemCoreClock/2 or SystemCoreClock/4
+ * @note        CLOCK_HFCORECLOCK_2 can mean SystemCoreClock/2 or SystemCoreClock/4
  *              if SystemCoreClock > 32 MHz, then the divider must be 4
  */
 
@@ -565,8 +571,17 @@ uint32_t freq;
     return freq;
 }
 
+/**
+ * @brief       Configure Low Frequency CLock B
+ *
+ * @param       source:  CLOCK_LFRCO, CLOCK_ULFRCO, CLOCK_LFXO,CLOCK_HFCORECLOCK_2
+ *
+ * @note        CLOCK_HFCORECLOCK_2 can mean SystemCoreClock/2 or SystemCoreClock/4
+ *              if SystemCoreClock > 32 MHz, then the divider must be 4
+ */
+
 uint32_t
-ClockSetLFCLKB(ClockSource_t source, uint32_t div) {
+ClockSetLFCLKB(ClockSource_t source) {
 uint32_t lfclocksel;
 uint32_t freq;
 
