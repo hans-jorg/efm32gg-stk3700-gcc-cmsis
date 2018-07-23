@@ -13,6 +13,7 @@
  */
 #include "em_device.h"
 #include "led.h"
+#include "lcd.h"
 
 #define DELAYVAL 1000000
 
@@ -38,23 +39,34 @@ int i;
  *         HFCORECLK = HFCLK
  *         HFPERCLK  = HFCLK
  */
-
 int main(void) {
+static char *string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>:,.;"
+                      "abcdefghijklmnopqrstuvwzyz!@#$%*()[]";
+char *s = string;
 
     /* Configure Pins in GPIOE */
     LED_Init(LED0|LED1);
+
+    /* Configure LCD */
+    LCD_Init();
 
     /* Blink loop */
     while (1) {
 
         Delay(DELAYVAL);
         LED_Toggle(LED0);                                // Toggle LED0
+        LCD_WriteString(s++);
+        if (*s == '\0') s = string;
 
         Delay(DELAYVAL);
         LED_Toggle(LED1);                                // Toggle LED1
+        LCD_WriteString(s++);
+        if (*s == '\0') s = string;
 
         Delay(DELAYVAL);
         LED_Write(0,LED0|LED1);                          // Turn On All LEDs
+        LCD_WriteString(s++);
+        if (*s == '\0') s = string;
 
     }
 }

@@ -36,6 +36,10 @@ uint32_t SetLCDClock(uint32_t presc, uint32_t div);
 #define LCD_PRESC_DIV128          3
 
 #define LCD_DIV_DEFAULT           0
+
+#define LCD_REF_VDD     0
+#define LCD_REF_GND     1
+
 /**
  * Symbols used in the WriteSpecial function
  */

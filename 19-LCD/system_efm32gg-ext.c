@@ -18,7 +18,6 @@
 #include "system_efm32gg-ext.h"
 
 /**
- * @brief           GetProdRev
  * @brief           Inline function to get the chip's Production Revision.
  *
  * @note            From Silicon Labs system_efm32gg.c
@@ -37,10 +36,6 @@ __STATIC_INLINE uint8_t GetProdRev(void)
 #define EFM32_HFXO_FREQ (48000000UL)
 #endif
 
-
-void ndelay(volatile uint32_t v) {
-    while( v-- ) {}
-}
 
 #define GETBYTEFROMWORD(WORD,POS)     *((uint8_t *) (WORD) +(POS))
 
@@ -70,7 +65,7 @@ uint32_t err2;
 
 
 
-/************************************************************************** /**
+/**************************************************************************//**
  * @brief
  *   Set the clock frequency and source
  *
@@ -292,7 +287,7 @@ SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
 }
 
 
-/************************************************************************** /**
+/**************************************************************************//**
  * @brief
  *   Get clock information
  *
