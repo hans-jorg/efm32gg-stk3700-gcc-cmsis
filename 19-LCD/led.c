@@ -28,7 +28,7 @@ void LED_Init(uint32_t leds) {
     GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);  // Set bits
 
     // Turn Off LEDs
-    LED_Off(LED0|LED1);
+    LED_On(LED0|LED1);
 
 }
 

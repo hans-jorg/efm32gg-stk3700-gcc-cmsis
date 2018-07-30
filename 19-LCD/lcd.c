@@ -1,15 +1,47 @@
 /**
  * @file    lcd.c
- * @brief   LCD HAL for EFM32GG STK
+ * @brief   LCD HAL for EFM32GG STK3700
  * @version 1.0
  *
- * @note    To debug there is a LCD_EMULATION compiler flag. By defining it, all writes of
+ * @note    To debug, there is a LCD_EMULATION compiler flag. By defining it, all writes of
  *          segments are directed to a 8x2 array in memory
  *
- * @note    There are at least two segment numbering methods. One of them is the LCD device.
- *          Other of the LCD controller in the microcontroller.
- * @note    The same for common numbering. The numbering of the LCD device is the reverse of the
+ * @note    There are at least two segment numbering methods. One of them uses the LCD device
+ *          numbering. The other uses the LCD controller ()in the microcontroller) numbering.
+ *          The same for common numbering. The numbering of the LCD device is the reverse of the
  *          numbering used in the LCD controller.
+ *
+ * @note    This implementation uses a two step approch: First a table is used to
+ *          get the segments to be lit (from 7 and 14 bit displays), then for each segment the
+ *          display segment and correspoding common numbers are found and finally another table
+ *          is used to get the controller segment.
+ *
+ * @note    The display is divided in fields:
+ *          Positions 1 to 7 correspond to the alphanumeric (14 segment) display
+ *          Positions 8 to 11 correspond to the numeric (7 segment) display
+ *          Position 12 to the pizza display (9 values, from 0 to 8)
+ *          Position 13 to the battery level display (4 values, from 0 to 3)
+ *          Position 14 to the target display (6 values from 0 to 4)
+ *
+ *
+ * LCD Map (using display segment numbering)
+ *
+ * Seg   S0   S1  S2  S3  S4  S5  S6  S7  S8  S9  S10  S11 S12 S13 S14 S15 S16 S17 S18 S19
+ * COM0  DP2  1E  1D  2E  2D  3E  3D  4E  4D  DP5 5D   DP6 6D  7E  7D  11A 10A 9A  8A  EM2
+ * COM1  DP4  1Q  1N  2Q  2N  3Q  3N  4Q  4N  5E  5N   6E  6N  7Q  7N  11F 10F 9F  8F  EM4
+ * COM2  DP3  1P  1C  2P  2C  3P  3C  4P  4C  5Q  5C   6Q  6C  7P  7C  11B 10B 9B  8B  COL10
+ * COM3  COL3 1G  1M  2G  2M  3G  3M  4G  4M  5P  5M   6P  6M  7G  7M  11G 10G 9G  8G  DP10
+ * COM4  MIN  1F  1J  2F  2J  3F  3J  4F  4J  5G  5J   6G  6J  7F  7J  11E 10E 9E  8E  PAD0
+ * COM5  PAD1 1H  1K  2H  2K  3H  3K  4H  4K  5F  5K   6F  6K  7H  7K  11C 10C 9C  8C  EM3
+ * COM6  GEK  1A  1B  2A  2B  3A  3B  4A  4B  5H  5B   6H  6B  7A  7B  11D 10D 9D  8D  EM1
+ * COM7  A7   A6  A5  A4  A3  A2  A1  A0  EFM 5A  COL5 6A  ANT BAT .C  .F  B1  B0  B2  EM0
+ *
+ *
+ * Controller pin Map
+ *
+ * Display Seg#          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+ * Controller Seg#      12 13 14 15 16 17 18 19 28 29 30 31 32 33 34 35 36 37 38 39
+ *
  */
 
 //#define LCD_EMULATION
@@ -19,19 +51,37 @@
 #include "lcd.h"
 
 #ifndef LCD_EMULATION
-#include "em_device.h"/////////
-//#include "efm32gg_lcd.h"
-//#include "efm32gg_cmu.h"
+#include "em_device.h"
 #endif
 
-/** BIT macro generates a 1 bit in the N position */
+/**
+ * @brief  BIT macros
+ * @note   generates a 1 bit in the N position
+ * @note   BIT32 truncates, ie. BIT32(33) == BIT(1)
+ */
 #define BIT(N) (1U<<(N))
+#define BITLONG(N) (1UL<<(N))
+#define BITTRUNCATED(N) ( (N)>=32?(1UL<<((N)-32)):(1UL<<(N)) )
+#define BIT32(N) (1UL<<((N)%32))
 
+
+/**
+ * @brief Macros to control Freeze/Unfreeze
+ * @note  Can be overridden for debugging
+ */
+#ifdef DO_NOT_USE_FREEZE
+#define LCD_FREEZE
+#define LCD_UNFREEZE
+#else
+#define LCD_FREEZE   LCD->FREEZE |=  LCD_FREEZE_REGFREEZE
+#define LCD_UNFREEZE LCD->FREEZE &= ~LCD_FREEZE_REGFREEZE
+#endif
 
 /**
  *  @brief  struct to hold information about segment
  *
  *  @note   used two 32-bit words to simplify operations with the segment registers
+ *  @note   an alternative would be the use of 64 bit words
  */
 typedef struct {
     uint32_t    hi;
@@ -40,7 +90,7 @@ typedef struct {
 
 
 /**
- * Flag. When set, clock is initialized.
+ * Flag. When set, LCD clock is initialized.
  */
 static uint8_t lcdclock_set = 0;
 
@@ -49,21 +99,20 @@ static uint8_t lcdclock_set = 0;
  *
  *  @note   For each character, it gives the segments to be lit
  *  @note   It uses a 16 bit word and each bit corresponds to a segment
- *  @note   0 position corresponds to space (0x20=32)
+ *  @note   0 index corresponds to space (=0x20=32)
  *  @note   To get the segments for character c use segments14forchar[c-' ']
- *
  */
 
 // bit-segment association
 #define _DP 0x4000
-#define _L  0x2000
-#define _M  0x1000
+#define _Q  0x2000
+#define _P  0x1000
 #define _N  0x800
-#define _K  0x400
-#define _J  0x200
-#define _H  0x100
-#define _G2 0x80
-#define _G1 0x40
+#define _M  0x400
+#define _K  0x200
+#define _J  0x100
+#define _H  0x80
+#define _G  0x40
 #define _F  0x20
 #define _E  0x10
 #define _D  0x8
@@ -71,103 +120,103 @@ static uint8_t lcdclock_set = 0;
 #define _B  0x2
 #define _A  0x1
 
-const uint16_t segments14forchar[96] = {
-            0                                                        , /* (space) */
-          _DP                                            |_C |_B     , /* ! */
-                              _J                             |_B     , /* " */
-                  _M         |_J     |_G2|_G1        |_D |_C |_B     , /* # */
-                  _M         |_J     |_G2|_G1|_F     |_D |_C     |_A , /* $ */
-              _L |_M |_N |_K |_J |_H |_G2|_G1|_F         |_C         , /* % */
-              _L             |_J |_H     |_G1    |_E |_D         |_A , /* & */
-                              _J                                     , /* ' */
-              _L         |_K                                         , /* ( */
-                      _N         |_H                                 , /* ) */
-              _L |_M |_N |_K |_J |_H |_G2|_G1                        , /* * */
-                  _M         |_J     |_G2|_G1                        , /* + */
-                      _N                                             , /* , */
-                                      _G2|_G1                        , /* - */
-          _DP                                                        , /* . */
-                      _N |_K                                         , /* / */
-                      _N |_K                 |_F |_E |_D |_C |_B |_A , /* 0 */
-                          _K                             |_C |_B     , /* 1 */
-                                      _G2|_G1    |_E |_D     |_B |_A , /* 2 */
-                                      _G2            |_D |_C |_B |_A , /* 3 */
-                                      _G2|_G1|_F         |_C |_B     , /* 4 */
-              _L                         |_G1|_F     |_D         |_A , /* 5 */
-                                      _G2|_G1|_F |_E |_D |_C     |_A , /* 6 */
-                                                          _C |_B |_A , /* 7 */
-                                      _G2|_G1|_F |_E |_D |_C |_B |_A , /* 8 */
-                                      _G2|_G1|_F     |_D |_C |_B |_A , /* 9 */
-                  _M         |_J                                     , /* : */
-                      _N     |_J                                     , /* ; */
-              _L         |_K             |_G1                        , /* < */
-                                      _G2|_G1        |_D             , /* = */
-                      _N         |_H |_G2                            , /* > */
-          _DP    |_M                 |_G2                    |_B |_A , /* ? */
-                              _J     |_G2    |_F |_E |_D     |_B |_A , /* @ */
-                                      _G2|_G1|_F |_E     |_C |_B |_A , /* A */
-                  _M         |_J     |_G2            |_D |_C |_B |_A , /* B */
-                                              _F |_E |_D         |_A , /* C */
-                  _M         |_J                     |_D |_C |_B |_A , /* D */
-                                          _G1|_F |_E |_D         |_A , /* E */
-                                          _G1|_F |_E             |_A , /* F */
-                                      _G2    |_F |_E |_D |_C     |_A , /* G */
-                                      _G2|_G1|_F |_E     |_C |_B     , /* H */
-                  _M         |_J                     |_D         |_A , /* I */
-                                                  _E |_D |_C |_B     , /* J */
-              _L         |_K             |_G1|_F |_E                 , /* K */
-                                              _F |_E |_D             , /* L */
-                          _K     |_H         |_F |_E     |_C |_B     , /* M */
-              _L                 |_H         |_F |_E     |_C |_B     , /* N */
-                                              _F |_E |_D |_C |_B |_A , /* O */
-                                      _G2|_G1|_F |_E         |_B |_A , /* P */
-              _L                             |_F |_E |_D |_C |_B |_A , /* Q */
-              _L                     |_G2|_G1|_F |_E         |_B |_A , /* R */
-                                      _G2|_G1|_F     |_D |_C     |_A , /* S */
-                  _M         |_J                                 |_A , /* T */
-                                              _F |_E |_D |_C |_B     , /* U */
-                      _N |_K                 |_F |_E                 , /* V */
-              _L     |_N                     |_F |_E     |_C |_B     , /* W */
-              _L     |_N |_K     |_H                                 , /* X */
-                                      _G2|_G1|_F     |_D |_C |_B     , /* Y */
-                      _N |_K                         |_D         |_A , /* Z */
-                                              _F |_E |_D         |_A , /* [ */
-              _L                 |_H                                 , /* \ */
-                                                      _D |_C |_B |_A , /* ] */
-              _L     |_N                                             , /* ^ */
-                                                      _D             , /* _ */
-                                  _H                                 , /* ` */
-                  _M                     |_G1    |_E |_D             , /* a */
-              _L                         |_G1|_F |_E |_D             , /* b */
-                                      _G2|_G1    |_E |_D             , /* c */
-                      _N             |_G2            |_D |_C |_B     , /* d */
-                      _N                 |_G1    |_E |_D             , /* e */
-                  _M     |_K         |_G2|_G1                        , /* f */
-                          _K         |_G2            |_D |_C |_B     , /* g */
-                  _M                     |_G1|_F |_E                 , /* h */
-                  _M                                                 , /* i */
-                      _N     |_J                 |_E                 , /* j */
-              _L |_M     |_K |_J                                     , /* k */
-                                              _F |_E                 , /* l */
-                  _M                 |_G2|_G1    |_E     |_C         , /* m */
-                  _M                     |_G1    |_E                 , /* n */
-                                      _G2|_G1    |_E |_D |_C         , /* o */
-                                  _H     |_G1|_F |_E                 , /* p */
-                          _K         |_G2                |_C |_B     , /* q */
-                                          _G1    |_E                 , /* r */
-              _L                     |_G2            |_D             , /* s */
-                                          _G1|_F |_E |_D             , /* t */
-                                                  _E |_D |_C         , /* u */
-                      _N                         |_E                 , /* v */
-              _L     |_N                         |_E     |_C         , /* w */
-              _L     |_N |_K     |_H                                 , /* x */
-                              _J     |_G2            |_D |_C |_B     , /* y */
-                      _N                 |_G1        |_D             , /* z */
-                      _N         |_H     |_G1        |_D         |_A , /* { */
-                  _M         |_J                                     , /* | */
-              _L         |_K         |_G2            |_D         |_A , /* } */
-                      _N |_K         |_G2|_G1                        , /* ~ */
-          0                                                          , /* (del) */
+static const uint16_t segments14forchar[96] = {
+0                                                                ,  /* SPC */
+      _B |_C                                                 |_DP,  /*  ! */
+      _B                         |_J                             ,  /*  " */
+      _B |_C |_D         |_G     |_J         |_M     |_P         ,  /*  # */
+  _A     |_C |_D     |_F |_G     |_J         |_M     |_P         ,  /*  $ */
+          _C         |_F |_G |_H |_J |_K     |_M |_N |_P |_Q     ,  /*  % */
+  _A         |_D |_E     |_G |_H |_J             |_N             ,  /*  & */
+                                  _J                             ,  /*  ' */
+                                      _K         |_N             ,  /*  ( */
+                              _H                         |_Q     ,  /*  ) */
+                          _G |_H |_J |_K     |_M |_N |_P |_Q     ,  /*  * */
+                          _G     |_J         |_M     |_P         ,  /*  + */
+                                                          _Q     ,  /*  , */
+                          _G                 |_M                 ,  /*  - */
+                                                              _DP,  /*  . */
+                                      _K                 |_Q     ,  /*  / */
+  _A |_B |_C |_D |_E |_F             |_K                 |_Q     ,  /*  0 */
+      _B |_C                         |_K                         ,  /*  1 */
+  _A |_B     |_D |_E     |_G                 |_M                 ,  /*  2 */
+  _A |_B |_C |_D                             |_M                 ,  /*  3 */
+      _B |_C         |_F |_G                 |_M                 ,  /*  4 */
+  _A         |_D     |_F |_G                     |_N             ,  /*  5 */
+  _A     |_C |_D |_E |_F |_G                 |_M                 ,  /*  6 */
+  _A |_B |_C                                                     ,  /*  7 */
+  _A |_B |_C |_D |_E |_F |_G                 |_M                 ,  /*  8 */
+  _A |_B |_C |_D     |_F |_G                 |_M                 ,  /*  9 */
+                                  _J                 |_P         ,  /*  : */
+                                  _J                     |_Q     ,  /*  ; */
+                          _G         |_K         |_N             ,  /*  < */
+              _D         |_G                 |_M                 ,  /*  = */
+                              _H             |_M         |_Q     ,  /*  > */
+  _A |_B                                     |_M     |_P     |_DP,  /*  ? */
+  _A |_B     |_D |_E |_F         |_J         |_M                 ,  /*  @ */
+  _A |_B |_C     |_E |_F |_G                 |_M                 ,  /*  A */
+  _A |_B |_C |_D                 |_J         |_M     |_P         ,  /*  B */
+  _A         |_D |_E |_F                                         ,  /*  C */
+  _A |_B |_C |_D                 |_J                 |_P         ,  /*  D */
+  _A         |_D |_E |_F |_G                                     ,  /*  E */
+  _A             |_E |_F |_G                                     ,  /*  F */
+  _A     |_C |_D |_E |_F                     |_M                 ,  /*  G */
+      _B |_C     |_E |_F |_G                 |_M                 ,  /*  H */
+  _A         |_D                 |_J                 |_P         ,  /*  I */
+      _B |_C |_D |_E                                             ,  /*  J */
+                  _E |_F |_G         |_K         |_N             ,  /*  K */
+              _D |_E |_F                                         ,  /*  L */
+      _B |_C     |_E |_F     |_H     |_K                         ,  /*  M */
+      _B |_C     |_E |_F     |_H                 |_N             ,  /*  N */
+  _A |_B |_C |_D |_E |_F                                         ,  /*  O */
+  _A |_B         |_E |_F |_G                 |_M                 ,  /*  P */
+  _A |_B |_C |_D |_E |_F                         |_N             ,  /*  Q */
+  _A |_B         |_E |_F |_G                 |_M |_N             ,  /*  R */
+  _A     |_C |_D     |_F |_G                 |_M                 ,  /*  S */
+  _A                             |_J                 |_P         ,  /*  T */
+      _B |_C |_D |_E |_F                                         ,  /*  U */
+                  _E |_F             |_K                 |_Q     ,  /*  V */
+      _B |_C     |_E |_F                         |_N     |_Q     ,  /*  W */
+                              _H     |_K         |_N     |_Q     ,  /*  X */
+      _B |_C |_D     |_F |_G                 |_M                 ,  /*  Y */
+  _A         |_D                     |_K                 |_Q     ,  /*  Z */
+  _A         |_D |_E |_F                                         ,  /*  [ */
+                              _H                 |_N             ,  /*  \ */
+  _A |_B |_C |_D                                                 ,  /*  ] */
+                                                  _N     |_Q     ,  /*  ^ */
+              _D                                                 ,  /*  _ */
+                              _H                                 ,  /*  ` */
+              _D |_E     |_G                         |_P         ,  /*  a */
+              _D |_E |_F |_G                     |_N             ,  /*  b */
+              _D |_E     |_G                 |_M                 ,  /*  c */
+      _B |_C |_D                             |_M         |_Q     ,  /*  d */
+              _D |_E     |_G                             |_Q     ,  /*  e */
+                          _G         |_K     |_M     |_P         ,  /*  f */
+      _B |_C |_D                     |_K     |_M                 ,  /*  g */
+                  _E |_F |_G                         |_P         ,  /*  h */
+                                                      _P         ,  /*  i */
+                  _E             |_J                     |_Q     ,  /*  j */
+                                  _J |_K         |_N |_P         ,  /*  k */
+                  _E |_F                                         ,  /*  l */
+          _C     |_E     |_G                 |_M     |_P         ,  /*  m */
+                  _E     |_G                         |_P         ,  /*  n */
+          _C |_D |_E     |_G                 |_M                 ,  /*  o */
+                  _E |_F |_G |_H                                 ,  /*  p */
+      _B |_C                         |_K     |_M                 ,  /*  q */
+                  _E     |_G                                     ,  /*  r */
+              _D                             |_M |_N             ,  /*  s */
+              _D |_E |_F |_G                                     ,  /*  t */
+          _C |_D |_E                                             ,  /*  u */
+                  _E                                     |_Q     ,  /*  v */
+          _C     |_E                             |_N     |_Q     ,  /*  w */
+                              _H     |_K         |_N     |_Q     ,  /*  x */
+      _B |_C |_D                 |_J         |_M                 ,  /*  y */
+              _D         |_G                             |_Q     ,  /*  z */
+  _A         |_D         |_G |_H                         |_Q     ,  /*  { */
+                                  _J                 |_P         ,  /*  | */
+  _A         |_D                     |_K     |_M |_N             ,  /*  } */
+                          _G         |_K     |_M         |_Q     ,  /*  ~ */
+0                                                                   /* DEL */
 };
 
 
@@ -177,15 +226,12 @@ const uint16_t segments14forchar[96] = {
  *  @note   Only used when trying to display alphabetic characters in the numeric display
  *  @note   For each character, it gives the segments to be lit
  *  @note   It uses a 16 bit word and each bit corresponds to a segment
- *  @note   0 position corresponds to space (0x20=32)
- *  @note   To get the segments for character c use segments14forchar[c-' ']
-
- *
+ *  @note   0 position corresponds to space (=0x20=32)
+ *  @note   To get the segments for character c use segments7forchar[c-' ']
  */
 
-// bit-segment association. Symbols are reused!!!!
-#if USE_7SEGMENTS_FOR_CHARS
-#undef _DP
+// bit-segment association. Symbols _A,_B,...,_G,_DP are reused!!!!
+
 #undef _DP
 #undef _G
 #undef _F
@@ -204,112 +250,112 @@ const uint16_t segments14forchar[96] = {
 #define _B  0x2
 #define _A  0x1
 
-const uint8_t segment7forchar[96] = {
-         0                              , /* (space) */
-         _DP                |_C |_B     , /* ! */
-                 _F             |_B     , /* " */
-             _G |_F |_E |_D |_C |_B     , /* # */
-             _G |_F     |_D |_C     |_A , /* $ */
-         _DP|_G     |_E         |_B     , /* % */
-             _G             |_C |_B     , /* & */
-                 _F                     , /* ' */
-                 _F     |_D         |_A , /* ( */
-                         _D     |_B |_A , /* ) */
-                 _F                 |_A , /* * */
-             _G |_F |_E                 , /* + */
-                     _E                 , /* , */
-             _G                         , /* - */
-         _DP                            , /* . */
-             _G     |_E         |_B     , /* / */
-                 _F |_E |_D |_C |_B |_A , /* 0 */
-                             _C |_B     , /* 1 */
-             _G     |_E |_D     |_B |_A , /* 2 */
-             _G         |_D |_C |_B |_A , /* 3 */
-             _G |_F         |_C |_B     , /* 4 */
-             _G |_F     |_D |_C     |_A , /* 5 */
-             _G |_F |_E |_D |_C     |_A , /* 6 */
-                             _C |_B |_A , /* 7 */
-             _G |_F |_E |_D |_C |_B |_A , /* 8 */
-             _G |_F     |_D |_C |_B |_A , /* 9 */
-                         _D         |_A , /* : */
-                         _D |_C     |_A , /* ; */
-             _G |_F                 |_A , /* < */
-             _G         |_D             , /* = */
-             _G                 |_B |_A , /* > */
-         _DP|_G     |_E         |_B |_A , /* ? */
-             _G     |_E |_D |_C |_B |_A , /* @ */
-             _G |_F |_E     |_C |_B |_A , /* A */
-             _G |_F |_E |_D |_C         , /* B */
-                 _F |_E |_D         |_A , /* C */
-             _G     |_E |_D |_C |_B     , /* D */
-             _G |_F |_E |_D         |_A , /* E */
-             _G |_F |_E             |_A , /* F */
-                 _F |_E |_D |_C     |_A , /* G */
-             _G |_F |_E     |_C |_B     , /* H */
-                 _F |_E                 , /* I */
-                     _E |_D |_C |_B     , /* J */
-             _G |_F |_E     |_C     |_A , /* K */
-                 _F |_E |_D             , /* L */
-                     _E     |_C     |_A , /* M */
-                 _F |_E     |_C |_B |_A , /* N */
-                 _F |_E |_D |_C |_B |_A , /* O */
-             _G |_F |_E         |_B |_A , /* P */
-             _G |_F     |_D     |_B |_A , /* Q */
-                 _F |_E         |_B |_A , /* R */
-             _G |_F     |_D |_C     |_A , /* S */
-             _G |_F |_E |_D             , /* T */
-                 _F |_E |_D |_C |_B     , /* U */
-                 _F |_E |_D |_C |_B     , /* V */
-                 _F     |_D     |_B     , /* W */
-             _G |_F |_E     |_C |_B     , /* X */
-             _G |_F     |_D |_C |_B     , /* Y */
-             _G     |_E |_D     |_B |_A , /* Z */
-                 _F |_E |_D         |_A , /* [ */
-             _G |_F         |_C         , /* \ */
-                         _D |_C |_B |_A , /* ] */
-                 _F             |_B |_A , /* ^ */
-                         _D             , /* _ */
-                                 _B     , /* ` */
-             _G     |_E |_D |_C |_B |_A , /* a */
-             _G |_F |_E |_D |_C         , /* b */
-             _G     |_E |_D             , /* c */
-             _G     |_E |_D |_C |_B     , /* d */
-             _G |_F |_E |_D     |_B |_A , /* e */
-             _G |_F |_E             |_A , /* f */
-             _G |_F     |_D |_C |_B |_A , /* g */
-             _G |_F |_E     |_C         , /* h */
-                     _E                 , /* i */
-                         _D |_C         , /* j */
-             _G |_F |_E     |_C     |_A , /* k */
-                 _F |_E                 , /* l */
-                     _E     |_C         , /* m */
-             _G     |_E     |_C         , /* n */
-             _G     |_E |_D |_C         , /* o */
-             _G |_F |_E         |_B |_A , /* p */
-             _G |_F         |_C |_B |_A , /* q */
-             _G     |_E                 , /* r */
-             _G |_F     |_D |_C     |_A , /* s */
-             _G |_F |_E |_D             , /* t */
-                     _E |_D |_C         , /* u */
-                     _E |_D |_C         , /* v */
-                     _E     |_C         , /* w */
-             _G |_F |_E     |_C |_B     , /* x */
-             _G |_F     |_D |_C |_B     , /* y */
-             _G     |_E |_D     |_B |_A , /* z */
-             _G             |_C |_B     , /* { */
-                 _F |_E                 , /* | */
-             _G |_F |_E                 , /* } */
-                                     _A , /* ~ */
-         0                              , /* (del) */
+static const uint8_t segments7forchar[96] = {
+0                                    ,  /* SPC */
+      _B |_C                 |_DP    ,  /*  ! */
+      _B             |_F             ,  /*  " */
+      _B |_C |_D |_E |_F |_G         ,  /*  # */
+  _A     |_C |_D     |_F |_G         ,  /*  $ */
+      _B         |_E     |_G |_DP    ,  /*  % */
+      _B |_C             |_G         ,  /*  & */
+                      _F             ,  /*  ' */
+  _A         |_D     |_F             ,  /*  ( */
+  _A |_B     |_D                     ,  /*  ) */
+  _A                 |_F             ,  /*  * */
+                  _E |_F |_G         ,  /*  + */
+                  _E                 ,  /*  , */
+                          _G         ,  /*  - */
+                              _DP    ,  /*  . */
+      _B         |_E     |_G         ,  /*  / */
+  _A |_B |_C |_D |_E |_F             ,  /*  0 */
+      _B |_C                         ,  /*  1 */
+  _A |_B     |_D |_E     |_G         ,  /*  2 */
+  _A |_B |_C |_D         |_G         ,  /*  3 */
+      _B |_C         |_F |_G         ,  /*  4 */
+  _A     |_C |_D     |_F |_G         ,  /*  5 */
+  _A     |_C |_D |_E |_F |_G         ,  /*  6 */
+  _A |_B |_C                         ,  /*  7 */
+  _A |_B |_C |_D |_E |_F |_G         ,  /*  8 */
+  _A |_B |_C |_D     |_F |_G         ,  /*  9 */
+  _A         |_D                     ,  /*  : */
+  _A     |_C |_D                     ,  /*  ; */
+  _A                 |_F |_G         ,  /*  < */
+              _D         |_G         ,  /*  = */
+  _A |_B                 |_G         ,  /*  > */
+  _A |_B         |_E     |_G |_DP    ,  /*  ? */
+  _A |_B |_C |_D |_E     |_G         ,  /*  @ */
+  _A |_B |_C     |_E |_F |_G         ,  /*  A */
+          _C |_D |_E |_F |_G         ,  /*  B */
+  _A         |_D |_E |_F             ,  /*  C */
+      _B |_C |_D |_E     |_G         ,  /*  D */
+  _A         |_D |_E |_F |_G         ,  /*  E */
+  _A             |_E |_F |_G         ,  /*  F */
+  _A     |_C |_D |_E |_F             ,  /*  G */
+      _B |_C     |_E |_F |_G         ,  /*  H */
+                  _E |_F             ,  /*  I */
+      _B |_C |_D |_E                 ,  /*  J */
+  _A     |_C     |_E |_F |_G         ,  /*  K */
+              _D |_E |_F             ,  /*  L */
+  _A     |_C     |_E                 ,  /*  M */
+  _A |_B |_C     |_E |_F             ,  /*  N */
+  _A |_B |_C |_D |_E |_F             ,  /*  O */
+  _A |_B         |_E |_F |_G         ,  /*  P */
+  _A |_B     |_D     |_F |_G         ,  /*  Q */
+  _A |_B         |_E |_F             ,  /*  R */
+  _A     |_C |_D     |_F |_G         ,  /*  S */
+              _D |_E |_F |_G         ,  /*  T */
+      _B |_C |_D |_E |_F             ,  /*  U */
+      _B |_C |_D |_E |_F             ,  /*  V */
+      _B     |_D     |_F             ,  /*  W */
+      _B |_C     |_E |_F |_G         ,  /*  X */
+      _B |_C |_D     |_F |_G         ,  /*  Y */
+  _A |_B     |_D |_E     |_G         ,  /*  Z */
+  _A         |_D |_E |_F             ,  /*  [ */
+          _C         |_F |_G         ,  /*  \ */
+  _A |_B |_C |_D                     ,  /*  ] */
+  _A |_B             |_F             ,  /*  ^ */
+              _D                     ,  /*  _ */
+      _B                             ,  /*  ` */
+  _A |_B |_C |_D |_E     |_G         ,  /*  a */
+          _C |_D |_E |_F |_G         ,  /*  b */
+              _D |_E     |_G         ,  /*  c */
+      _B |_C |_D |_E     |_G         ,  /*  d */
+  _A |_B     |_D |_E |_F |_G         ,  /*  e */
+  _A             |_E |_F |_G         ,  /*  f */
+  _A |_B |_C |_D     |_F |_G         ,  /*  g */
+          _C     |_E |_F |_G         ,  /*  h */
+                  _E                 ,  /*  i */
+          _C |_D                     ,  /*  j */
+  _A     |_C     |_E |_F |_G         ,  /*  k */
+                  _E |_F             ,  /*  l */
+          _C     |_E                 ,  /*  m */
+          _C     |_E     |_G         ,  /*  n */
+          _C |_D |_E     |_G         ,  /*  o */
+  _A |_B         |_E |_F |_G         ,  /*  p */
+  _A |_B |_C         |_F |_G         ,  /*  q */
+                  _E     |_G         ,  /*  r */
+  _A     |_C |_D     |_F |_G         ,  /*  s */
+              _D |_E |_F |_G         ,  /*  t */
+          _C |_D |_E                 ,  /*  u */
+          _C |_D |_E                 ,  /*  v */
+          _C     |_E                 ,  /*  w */
+      _B |_C     |_E |_F |_G         ,  /*  x */
+      _B |_C |_D     |_F |_G         ,  /*  y */
+  _A |_B     |_D |_E     |_G         ,  /*  z */
+      _B |_C             |_G         ,  /*  { */
+                  _E |_F             ,  /*  | */
+                  _E |_F |_G         ,  /*  } */
+  _A                                 ,  /*  ~ */
+0                                       /* DEL */
 };
-#endif
 
 
 /**
   *
   *  @brief  Configuration for LCD Segments
   *
-  *  @note   There are two segment information. One in the display and the other in the controller
+  *  @note   There are two segment numbering schemas.
+  *          One in the display and the other in the LCD controller
   *
   */
 
@@ -318,47 +364,47 @@ const uint8_t segment7forchar[96] = {
 //
 //
 //
-//        LCD Seg   LCD Pin   LCD Controller        MCU Port      MCU Pin
-//        S0          1         Seg 12      <--->    PA15           B1
-//        S1          2         Seg 13      <--->    PA0            C2
-//        S2          3         Seg 14      <--->    PA1            C1
-//        S3          4         Seg 15      <--->    PA2            D2
-//        S4          5         Seg 16      <--->    PA3            D1
-//        S5          6         Seg 17      <--->    PA4            E3
-//        S6          7         Seg 18      <--->    PA5            E2
-//        S7          8         Seg 19      <--->    PA6            E1
-//        S8          9         Seg 28      <--->    PD9            D6
-//        S9         10         Seg 29      <--->    PD10           A5
-//        S10        11         Seg 30      <--->    PD11           B5
-//        S11        12         Seg 31      <--->    PD12           C5
-//        S12        13         Seg 32      <--->    PB0            E4
-//        S13        14         Seg 33      <--->    PB1            F1
-//        S14        15         Seg 34      <--->    PB2            F2
-//        S15        16         Seg 35      <--->    PA7            H4
-//        S16        17         Seg 36      <--->    PA8            H5
-//        S17        18         Seg 37      <--->    PA9            J5
-//        S18        19         Seg 38      <--->    PA10           J6
-//        S19        20         Seg 39      <--->    PA11           K5
-//        COM7       21         Com 0       <--->    PB6            G2
-//        COM6       22         Com 1       <--->    PB5            G1
-//        COM5       23         Com 2       <--->    PB4            F4
-//        COM4       24         Com 3       <--->    PB3            F3
-//        COM3       25         Com 4       <--->    PE7            D9
-//        COM2       26         Com 5       <--->    PE6            C9
-//        COM1       27         Com 6       <--->    PE5            B9
-//        COM0       28         Com 7       <--->    PD4            J11
+//     Display Seg#  Display Pin Controller Seg#        MCU Port      MCU Pin
+//        S0          1             Seg12      <--->    PA15           B1
+//        S1          2             Seg13      <--->    PA0            C2
+//        S2          3             Seg14      <--->    PA1            C1
+//        S3          4             Seg15      <--->    PA2            D2
+//        S4          5             Seg16      <--->    PA3            D1
+//        S5          6             Seg17      <--->    PA4            E3
+//        S6          7             Seg18      <--->    PA5            E2
+//        S7          8             Seg19      <--->    PA6            E1
+//        S8          9             Seg28      <--->    PD9            D6
+//        S9         10             Seg29      <--->    PD10           A5
+//        S10        11             Seg30      <--->    PD11           B5
+//        S11        12             Seg31      <--->    PD12           C5
+//        S12        13             Seg32      <--->    PB0            E4
+//        S13        14             Seg33      <--->    PB1            F1
+//        S14        15             Seg34      <--->    PB2            F2
+//        S15        16             Seg35      <--->    PA7            H4
+//        S16        17             Seg36      <--->    PA8            H5
+//        S17        18             Seg37      <--->    PA9            J5
+//        S18        19             Seg38      <--->    PA10           J6
+//        S19        20             Seg39      <--->    PA11           K5
+//        COM7       21             Com 0      <--->    PB6            G2
+//        COM6       22             Com 1      <--->    PB5            G1
+//        COM5       23             Com 2      <--->    PB4            F4
+//        COM4       24             Com 3      <--->    PB3            F3
+//        COM3       25             Com 4      <--->    PE7            D9
+//        COM2       26             Com 5      <--->    PE6            C9
+//        COM1       27             Com 6      <--->    PE5            B9
+//        COM0       28             Com 7      <--->    PD4            J11
 //
-//                              CAP+                 PA12           J4
-//                              CAP-                 PA13           K3
-//                              EXT                  PA14           L3
+//                                  CAP+                PA12           J4
+//                                  CAP-                PA13           K3
+//                                  EXT                 PA14           L3
 //
 
 
-/**
+/*
  *  Segment information is encoded in a 16 bit word
- *  Each segment of display is addressed by a segment signal AND a common signal
- *  The high order byte contains the segment
- *  The lower order byte containts the common
+ *  Each segment in the display is addressed by a segment signal AND a common signal
+ *  The high order byte contains the segment number
+ *  The lower order byte containts the common number
  */
 #define SEGS    20
 #define COMMS   8
@@ -367,13 +413,16 @@ const uint8_t segment7forchar[96] = {
 #define GET_SEG(M) ((M)>>8)
 #define GET_COMMON(M) ((M)&0xFF)
 
-#ifdef TWO_STEPS_ENCODING
-/**
- *  TWO STEPS ENCODING
- *  In Two Steps Encoding, the LCD Segment Pin and Common Pin is found
- *  in lookup tables seg_encoding and com_encoding
- */
 
+
+/**
+ *  The display segment number is determined, and then the controller segment number is found.
+ *  LCD Segment Pin and Common Pin are found in lookup tables seg_encoding and com_encoding
+ *
+ * S00-S19 symbols specifies the display segment number
+ * C0-C7 specifies the display common number
+ */
+//{
 #define S00 SEGMASK(0)
 #define S01 SEGMASK(1)
 #define S02 SEGMASK(2)
@@ -403,76 +452,65 @@ const uint8_t segment7forchar[96] = {
 #define C5 5
 #define C6 6
 #define C7 7
-/////////////////////////// END OF TWO STEPS ENCODING //////////////////////////////////////////////
 
-#else
-/////////////////////////// BEGIN OF ONE STEP ENCODING /////////////////////////////////////////////
-//
-// In one step encoding, the Pins used are specified by preprocessor symbols
-//
-
-#define S00 SEGMASK(12)
-#define S01 SEGMASK(13)
-#define S02 SEGMASK(14)
-#define S03 SEGMASK(15)
-#define S04 SEGMASK(16)
-#define S05 SEGMASK(17)
-#define S06 SEGMASK(18)
-#define S07 SEGMASK(19)
-#define S08 SEGMASK(28)
-#define S09 SEGMASK(29)
-#define S10 SEGMASK(30)
-#define S11 SEGMASK(31)
-#define S12 SEGMASK(32)
-#define S13 SEGMASK(33)
-#define S14 SEGMASK(34)
-#define S15 SEGMASK(35)
-#define S16 SEGMASK(36)
-#define S17 SEGMASK(37)
-#define S18 SEGMASK(38)
-#define S19 SEGMASK(39)
-
-#define C0 7
-#define C1 6
-#define C2 5
-#define C3 4
-#define C4 3
-#define C5 2
-#define C6 1
-#define C7 0
-
-
-#endif
 
 /*
- * @brief table for LCD 14 segments adjusted por position
+ * @brief table for LCD segments adjusted por position
  *
- * @note  basically, how to turn on a LCD segment knowing its position
+ * @note  It returns the information needed to turn on a LCD segment knowing its position
+ * @note  tablcd[x][y] returns a 16 bit value, with segment and common number information
+ *        to turn the display segment x (A-Q,DP) in position y
+ * @note  Segment A corresponds to 0, B to 1 and so on
+ * @note  It is used by one step encoding and two step encoding
+ * @note   Position 1 to 7:  alphanumeric (14 segment) displays
+ * @note   Position 8 to 11: numeric (7 segment) displays
+ * @note   Position 12:      pizza display
+ * @note   Position 13:      battery level display
+ * @note   Position 14:      target display
+ * @note   Invalid combinations returns C0|S0 -> DP2
  */
-uint16_t tablcd[15][12] = {
-//          P00     P01     P02     P03     P04     P05     P06     P07     P08     P09     P10     P11
-/* A  */ { C7|S12, C6|S01, C6|S03, C6|S05, C6|S07, C7|S09, C7|S11, C6|S13, C0|S18, C0|S17, C0|S16, C0|S15 },
-/* B  */ { C7|S13, C6|S02, C6|S04, C6|S06, C6|S08, C6|S10, C6|S12, C6|S14, C2|S18, C2|S17, C2|S16, C2|S15 },
-/* C  */ { C7|S14, C2|S02, C2|S04, C2|S06, C2|S08, C2|S10, C2|S12, C2|S14, C5|S18, C5|S17, C5|S16, C5|S15 },
-/* D  */ { C7|S15, C0|S02, C0|S04, C0|S06, C0|S08, C0|S10, C0|S12, C0|S14, C6|S18, C6|S17, C6|S16, C6|S15 },
-/* E  */ { C6|S00, C0|S01, C0|S03, C0|S05, C0|S07, C1|S09, C1|S11, C0|S13, C4|S18, C4|S17, C4|S16, C4|S15 },
-/* F  */ { C7|S17, C4|S01, C4|S03, C4|S05, C4|S07, C5|S09, C5|S11, C4|S13, C1|S18, C1|S17, C1|S16, C1|S15 },
-/* G  */ { C7|S16, C3|S01, C3|S03, C3|S05, C3|S07, C4|S09, C4|S11, C3|S13, C3|S18, C3|S17, C3|S16, C3|S15 },
-/* H  */ { C7|S18, C5|S01, C5|S03, C5|S05, C5|S07, C6|S09, C6|S11, C5|S13, C7|S19, C3|S00, C0|S00, C7|S07 },
-/* J  */ { C0|S00, C4|S02, C4|S04, C4|S06, C4|S08, C4|S10, C4|S12, C4|S14, C6|S19, C0|S00, C0|S00, C7|S06 },
-/* K  */ { C4|S19, C5|S02, C5|S04, C5|S06, C5|S08, C5|S10, C5|S12, C5|S14, C0|S19, C7|S10, C0|S00, C7|S05 },
-/* M  */ { C5|S00, C3|S02, C3|S04, C3|S06, C3|S08, C3|S10, C3|S12, C3|S14, C5|S19, C2|S19, C0|S00, C7|S04 },
-/* N  */ { C0|S00, C1|S02, C1|S04, C1|S06, C1|S08, C1|S10, C1|S12, C1|S14, C1|S19, C0|S00, C0|S00, C7|S03 },
-/* P  */ { C0|S00, C2|S01, C2|S03, C2|S05, C2|S07, C3|S09, C3|S11, C2|S13, C0|S00, C0|S00, C0|S00, C7|S02 },
-/* Q  */ { C0|S00, C1|S01, C1|S03, C1|S05, C1|S07, C2|S09, C2|S11, C1|S13, C4|S00, C0|S00, C0|S00, C7|S01 },
-/* DP */ { C0|S00, C0|S00, C0|S00, C2|S00, C1|S00, C0|S09, C0|S11, C0|S00, C7|S08, C0|S00, C3|S19, C7|S00 }
+static const uint16_t tablcd[15][15] = {
+//          P00/8   P01/9   P02/10  P03/11  P04/12  P05/13  P06/14  P07
+/* A  */ { C7|S12, C6|S01, C6|S03, C6|S05, C6|S07, C7|S09, C7|S11, C6|S13,
+           C0|S18, C0|S17, C0|S16, C0|S15, C7|S07, C7|S18, C7|S19 },
+/* B  */ { C7|S13, C6|S02, C6|S04, C6|S06, C6|S08, C6|S10, C6|S12, C6|S14,
+           C2|S18, C2|S17, C2|S16, C2|S15, C7|S06, C7|S17, C6|S19 },
+/* C  */ { C7|S14, C2|S02, C2|S04, C2|S06, C2|S08, C2|S10, C2|S12, C2|S14,
+           C5|S18, C5|S17, C5|S16, C5|S15, C7|S05, C7|S16, C0|S19 },
+/* D  */ { C7|S15, C0|S02, C0|S04, C0|S06, C0|S08, C0|S10, C0|S12, C0|S14,
+           C6|S18, C6|S17, C6|S16, C6|S15, C7|S04, C0|S00, C5|S19 },
+/* E  */ { C6|S00, C0|S01, C0|S03, C0|S05, C0|S07, C1|S09, C1|S11, C0|S13,
+           C4|S18, C4|S17, C4|S16, C4|S15, C7|S03, C0|S00, C1|S19 },
+/* F  */ { C7|S17, C4|S01, C4|S03, C4|S05, C4|S07, C5|S09, C5|S11, C4|S13,
+           C1|S18, C1|S17, C1|S16, C1|S15, C7|S02, C0|S00, C0|S00 },
+/* G  */ { C7|S16, C3|S01, C3|S03, C3|S05, C3|S07, C4|S09, C4|S11, C3|S13,
+           C3|S18, C3|S17, C3|S16, C3|S15, C7|S01, C0|S00, C0|S00 },
+/* H  */ { C7|S18, C5|S01, C5|S03, C5|S05, C5|S07, C6|S09, C6|S11, C5|S13,
+           C7|S19, C3|S00, C0|S00, C7|S07, C7|S00, C0|S00, C0|S00 },
+/* J  */ { C0|S00, C4|S02, C4|S04, C4|S06, C4|S08, C4|S10, C4|S12, C4|S14,
+           C6|S19, C0|S00, C0|S00, C7|S06, C0|S00, C0|S00, C0|S00 },
+/* K  */ { C4|S19, C5|S02, C5|S04, C5|S06, C5|S08, C5|S10, C5|S12, C5|S14,
+           C0|S19, C7|S10, C0|S00, C7|S05, C0|S00, C0|S00, C0|S00 },
+/* M  */ { C5|S00, C3|S02, C3|S04, C3|S06, C3|S08, C3|S10, C3|S12, C3|S14,
+           C5|S19, C2|S19, C0|S00, C7|S04, C0|S00, C0|S00, C0|S00 },
+/* N  */ { C0|S00, C1|S02, C1|S04, C1|S06, C1|S08, C1|S10, C1|S12, C1|S14,
+           C1|S19, C0|S00, C0|S00, C7|S03, C0|S00, C0|S00, C0|S00 },
+/* P  */ { C0|S00, C2|S01, C2|S03, C2|S05, C2|S07, C3|S09, C3|S11, C2|S13,
+           C0|S00, C0|S00, C0|S00, C7|S02, C0|S00, C0|S00, C0|S00 },
+/* Q  */ { C0|S00, C1|S01, C1|S03, C1|S05, C1|S07, C2|S09, C2|S11, C1|S13,
+           C4|S00, C0|S00, C0|S00, C7|S01, C0|S00, C0|S00, C0|S00 },
+/* DP */ { C0|S00, C0|S00, C0|S00, C2|S00, C1|S00, C0|S09, C0|S11, C0|S00,
+           C7|S08, C0|S00, C3|S19, C7|S00, C0|S00, C0|S00, C0|S00 }
 };
 
 
-#ifdef TWO_STEPS_ENCODING
-//////////////////////////////// BEGIN OF TWO STEPS ENCODING ///////////////////////////////////////
-
-const SegEncoding_t seg_encoding[] = {
+/*
+ * @brief table to find the encoding for a specified segment
+ *
+ * @note
+ * @note
+ */
+static const SegEncoding_t seg_encoding[] = {
     //   SEG19-16     SEG15-0
     {   0x00000000,  BIT(12)    },  //    S0       ->      Seg 12    SEGEN3
     {   0x00000000,  BIT(13)    },  //    S1       ->      Seg 13    SEGEN3
@@ -486,75 +524,80 @@ const SegEncoding_t seg_encoding[] = {
     {   0x00000000,  BIT(29)    },  //    S9       ->      Seg 29    SEGEN7
     {   0x00000000,  BIT(30)    },  //    S10      ->      Seg 30    SEGEN7
     {   0x00000000,  BIT(31)    },  //    S11      ->      Seg 31    SEGEN7
-    {   BIT(32-32),  0x00000000 },  //    S12      ->      Seg 32    SEGEN8
-    {   BIT(33-32),  0x00000000 },  //    S13      ->      Seg 33    SEGEN8
-    {   BIT(34-32),  0x00000000 },  //    S14      ->      Seg 34    SEGEN8
-    {   BIT(35-32),  0x00000000 },  //    S15      ->      Seg 35    SEGEN8
-    {   BIT(36-32),  0x00000000 },  //    S16      ->      Seg 36    SEGEN0
-    {   BIT(37-32),  0x00000000 },  //    S17      ->      Seg 37    SEGEN9
-    {   BIT(38-32),  0x00000000 },  //    S18      ->      Seg 38    SEGEN9
-    {   BIT(39-32),  0x00000000 },  //    S19      ->      Seg 39    SEGEN9
+    {   BIT32(32),   0x00000000 },  //    S12      ->      Seg 32    SEGEN8
+    {   BIT32(33),   0x00000000 },  //    S13      ->      Seg 33    SEGEN8
+    {   BIT32(34),   0x00000000 },  //    S14      ->      Seg 34    SEGEN8
+    {   BIT32(35),   0x00000000 },  //    S15      ->      Seg 35    SEGEN8
+    {   BIT32(36),   0x00000000 },  //    S16      ->      Seg 36    SEGEN9
+    {   BIT32(37),   0x00000000 },  //    S17      ->      Seg 37    SEGEN9
+    {   BIT32(38),   0x00000000 },  //    S18      ->      Seg 38    SEGEN9
+    {   BIT32(39),   0x00000000 },  //    S19      ->      Seg 39    SEGEN9
 };
 
-const uint8_t com_encoding[8] = { 7, 6, 5, 4, 3, 2, 1, 0 };
+/**
+ * @brief common pins encoding
+ * @note  they are reversed
+ */
 
+static const uint8_t com_encoding[8] = { 7, 6, 5, 4, 3, 2, 1, 0 };
 
-//////////////////////////////// END OF TWO STEPS ENCODING /////////////////////////////////////////
-
-#else
-//////////////////////////////// BEGIN OF ONE STEP ENCODING ////////////////////////////////////////
-
-const uint32_t seg_encoding[] = {
-  /* 0  */     BIT(0),
-  /* 1  */     BIT(1),
-  /* 2  */     BIT(2),
-  /* 3  */     BIT(3),
-  /* 4  */     BIT(4),
-  /* 5  */     BIT(5),
-  /* 6  */     BIT(6),
-  /* 7  */     BIT(7),
-  /* 8  */     BIT(8),
-  /* 9  */     BIT(9),
-  /* 10  */    BIT(10),
-  /* 11  */    BIT(11),
-  /* 12  */    BIT(12),
-  /* 13  */    BIT(13),
-  /* 14  */    BIT(14),
-  /* 15  */    BIT(15),
-  /* 16  */    BIT(16),
-  /* 17  */    BIT(17),
-  /* 18  */    BIT(18),
-  /* 19  */    BIT(19),
-  /* 20  */    BIT(20),
-  /* 21  */    BIT(21),
-  /* 22  */    BIT(22),
-  /* 23  */    BIT(23),
-  /* 24  */    BIT(24),
-  /* 25  */    BIT(25),
-  /* 26  */    BIT(26),
-  /* 27  */    BIT(27),
-  /* 28  */    BIT(28),
-  /* 29  */    BIT(29),
-  /* 30  */    BIT(30),
-  /* 31  */    BIT(31),
-  /* 32  */    BIT(0),
-  /* 33  */    BIT(1),
-  /* 34  */    BIT(2),
-  /* 35  */    BIT(3),
-  /* 36  */    BIT(4),
-  /* 37  */    BIT(5),
-  /* 38  */    BIT(6),
-  /* 39  */    BIT(7)
-};
-//////////////////////////////// BEGIN OF ONE STEP ENCODING ////////////////////////////////////////
-#endif
 
 
 /**
- *   Table for clear a position before writing a new character onto it
+ * @brief table for special characters
+ * @note  the corresponding segment and common numbers are compressed into a 16 bit data
+ *
+ */
+static const uint16_t tablcdspecial[] = {
+    C6|S00,       // LCD_GECKO
+    C4|S00,       // LCD_MINUS
+    C4|S19,       // LCD_PAD0
+    C5|S00,       // LCD_PAD1
+    C7|S12,       // LCD_ANTENNA
+    C7|S09,       // LCD_EMF32
+    C7|S13,       // LCD_BATTERY
+    C7|S17,       // LCD_BAT0
+    C7|S16,       // LCD_BAT1
+    C7|S18,       // LCD_BAT2
+    C7|S07,       // LCD_ARC0
+    C7|S06,       // LCD_ARC1
+    C7|S05,       // LCD_ARC2
+    C7|S04,       // LCD_ARC3
+    C7|S03,       // LCD_ARC4
+    C7|S02,       // LCD_ARC5
+    C7|S01,       // LCD_ARC6
+    C7|S00,       // LCD_ARC7
+    C7|S19,       // LCD_TARGET0
+    C6|S19,       // LCD_TARGET1
+    C0|S19,       // LCD_TARGET2
+    C5|S19,       // LCD_TARGET3
+    C1|S19,       // LCD_TARGET4
+    C7|S14,       // LCD_C
+    C7|S15,       // LCD_F
+    C3|S00,       // LCD_COLLON3
+    C7|S10,       // LCD_COLLON5
+    C2|S19,       // LCD_COLLON10
+    C0|S00,       // LCD_DP2
+    C2|S00,       // LCD_DP3
+    C1|S00,       // LCD_DP4
+    C0|S09,       // LCD_DP5
+    C0|S11,       // LCD_DP6
+    C3|S19        // LCD_DP10
+};
+
+
+/**
+ * @brief  Table for clear a position before writing a new character onto it
+ * @note   Indexed by position and common
+ * @note   Returns controller segments info
+ * @note   Position 1 to 7:  alphanumeric (14 segment) displays
+ * @note   Position 8 to 11: numeric (7 segment) displays
+ * @note   Position 12:      pizza display
+ * @note   Position 13:      battery level display
+ * @note   Position 14:      target display
  */
 
-static const SegEncoding_t tablcdclear[12][8] = {
+static const SegEncoding_t tablcdclear[15][8] = {
     /* Position  P00 */
     {
         /* C0  */       {   0, 0 },
@@ -566,133 +609,168 @@ static const SegEncoding_t tablcdclear[12][8] = {
         /* C6  */       {   0, 0 },
         /* C7  */       {   0, 0 }
     },
-    /* Position  P01 */
+    /* Position  P01 - 14 segment display  */
     {
-        /* C0  */       {   0, BIT(13)|BIT(14) },           // Segments E and D
-        /* C1  */       {   0, BIT(13)|BIT(14) },           // Segments Q and N
-        /* C2  */       {   0, BIT(13)|BIT(14) },           // Segments P and C
-        /* C3  */       {   0, BIT(13)|BIT(14) },           // Segments G and M
-        /* C4  */       {   0, BIT(13)|BIT(14) },           // Segments F and J
-        /* C5  */       {   0, BIT(13)|BIT(14) },           // Segments H and K
-        /* C6  */       {   0, BIT(13)|BIT(14) },           // Segments A and B
-        /* C7  */       {   0, 0 }                          //
+        /* C0  */       {   0, BIT32(13)|BIT32(14) },           // Segments E and D
+        /* C1  */       {   0, BIT32(13)|BIT32(14) },           // Segments Q and N
+        /* C2  */       {   0, BIT32(13)|BIT32(14) },           // Segments P and C
+        /* C3  */       {   0, BIT32(13)|BIT32(14) },           // Segments G and M
+        /* C4  */       {   0, BIT32(13)|BIT32(14) },           // Segments F and J
+        /* C5  */       {   0, BIT32(13)|BIT32(14) },           // Segments H and K
+        /* C6  */       {   0, BIT32(13)|BIT32(14) },           // Segments A and B
+        /* C7  */       {   0, 0 }                              //
     },
-    /* Position  P02 */
+    /* Position  P02 - 14 segment display  */
     {
-        /* C0  */       {   0, BIT(15)|BIT(16) },           // Segments E and D
-        /* C1  */       {   0, BIT(15)|BIT(16) },           // Segments Q and N
-        /* C2  */       {   0, BIT(15)|BIT(16) },           // Segments P and C
-        /* C3  */       {   0, BIT(15)|BIT(16) },           // Segments G and M
-        /* C4  */       {   0, BIT(15)|BIT(16) },           // Segments F and J
-        /* C5  */       {   0, BIT(15)|BIT(16) },           // Segments H and K
-        /* C6  */       {   0, BIT(15)|BIT(16) },           // Segments A and B
-        /* C7  */       {   0, 0 }                          //
+        /* C0  */       {   0, BIT32(15)|BIT32(16) },           // Segments E and D
+        /* C1  */       {   0, BIT32(15)|BIT32(16) },           // Segments Q and N
+        /* C2  */       {   0, BIT32(15)|BIT32(16) },           // Segments P and C
+        /* C3  */       {   0, BIT32(15)|BIT32(16) },           // Segments G and M
+        /* C4  */       {   0, BIT32(15)|BIT32(16) },           // Segments F and J
+        /* C5  */       {   0, BIT32(15)|BIT32(16) },           // Segments H and K
+        /* C6  */       {   0, BIT32(15)|BIT32(16) },           // Segments A and B
+        /* C7  */       {   0, 0 }                              //
     },
-    /* Position  P03 */
+    /* Position  P03 - 14 segment display  */
     {
-        /* C0  */       {   0, BIT(17)|BIT(18) },           // Segments E and D
-        /* C1  */       {   0, BIT(17)|BIT(18) },           // Segments Q and N
-        /* C2  */       {   0, BIT(17)|BIT(18) },           // Segments P and C
-        /* C3  */       {   0, BIT(17)|BIT(18) },           // Segments G and M
-        /* C4  */       {   0, BIT(17)|BIT(18) },           // Segments F and J
-        /* C5  */       {   0, BIT(17)|BIT(18) },           // Segments H and K
-        /* C6  */       {   0, BIT(17)|BIT(18) },           // Segments A and B
-        /* C7  */       {   0, 0 }                          //
+        /* C0  */       {   0, BIT32(17)|BIT32(18) },           // Segments E and D
+        /* C1  */       {   0, BIT32(17)|BIT32(18) },           // Segments Q and N
+        /* C2  */       {   0, BIT32(17)|BIT32(18) },           // Segments P and C
+        /* C3  */       {   0, BIT32(17)|BIT32(18) },           // Segments G and M
+        /* C4  */       {   0, BIT32(17)|BIT32(18) },           // Segments F and J
+        /* C5  */       {   0, BIT32(17)|BIT32(18) },           // Segments H and K
+        /* C6  */       {   0, BIT32(17)|BIT32(18) },           // Segments A and B
+        /* C7  */       {   0, 0 }                              //
     },
-    /* Position  P04 */
+    /* Position  P04 - 14 segment display  */
     {
-        /* C0  */       {   0, BIT(19)|BIT(28) },           // Segments E and D
-        /* C1  */       {   0, BIT(19)|BIT(28) },           // Segments Q and N
-        /* C2  */       {   0, BIT(19)|BIT(28) },           // Segments P and C
-        /* C3  */       {   0, BIT(19)|BIT(28) },           // Segments G and M
-        /* C4  */       {   0, BIT(19)|BIT(28) },           // Segments F and J
-        /* C5  */       {   0, BIT(19)|BIT(28) },           // Segments H and K
-        /* C6  */       {   0, BIT(19)|BIT(28) },           // Segments A and B
-        /* C7  */       {   0, 0 }                          //
+        /* C0  */       {   0, BIT32(19)|BIT32(28) },           // Segments E and D
+        /* C1  */       {   0, BIT32(19)|BIT32(28) },           // Segments Q and N
+        /* C2  */       {   0, BIT32(19)|BIT32(28) },           // Segments P and C
+        /* C3  */       {   0, BIT32(19)|BIT32(28) },           // Segments G and M
+        /* C4  */       {   0, BIT32(19)|BIT32(28) },           // Segments F and J
+        /* C5  */       {   0, BIT32(19)|BIT32(28) },           // Segments H and K
+        /* C6  */       {   0, BIT32(19)|BIT32(28) },           // Segments A and B
+        /* C7  */       {   0, 0 }                              //
     },
-    /* Position  P05 */
+    /* Position  P05 - 14 segment display  */
     {
-        /* C0  */       {   0, BIT(30)       },             // Segment D
-        /* C1  */       {   0, BIT(29)|BIT(30)},            // Segments E and N
-        /* C2  */       {   0, BIT(29)|BIT(30)},            // Segments Q and C
-        /* C3  */       {   0, BIT(29)|BIT(30)},            // Segments P and M
-        /* C4  */       {   0, BIT(29)|BIT(30)},            // Segments G and J
-        /* C5  */       {   0, BIT(29)|BIT(30)},            // Segments F and K
-        /* C6  */       {   0, BIT(29)|BIT(30)},            // Segments H and B
-        /* C7  */       {   0, BIT(19)        }             // Segment A
+        /* C0  */       {   0, BIT32(30)           },           // Segment D
+        /* C1  */       {   0, BIT32(29)|BIT32(30) },           // Segments E and N
+        /* C2  */       {   0, BIT32(29)|BIT32(30) },           // Segments Q and C
+        /* C3  */       {   0, BIT32(29)|BIT32(30) },           // Segments P and M
+        /* C4  */       {   0, BIT32(29)|BIT32(30) },           // Segments G and J
+        /* C5  */       {   0, BIT32(29)|BIT32(30) },           // Segments F and K
+        /* C6  */       {   0, BIT32(29)|BIT32(30) },           // Segments H and B
+        /* C7  */       {   0, BIT32(29)           }            // Segment A
     },
-    /* Position  P06 */
+    /* Position  P06 - 14 segment display  */
     {
-        /* C0  */       {   BIT(32-32), 0      },           // Segment D
-        /* C1  */       {   BIT(32-32), BIT(31)},           // Segments E and N
-        /* C2  */       {   BIT(32-32), BIT(31)},           // Segments Q and C
-        /* C3  */       {   BIT(32-32), BIT(31)},           // Segments P and M
-        /* C4  */       {   BIT(32-32), BIT(31)},           // Segments G and J
-        /* C5  */       {   BIT(32-32), BIT(31)},           // Segments F and K
-        /* C6  */       {   BIT(32-32), BIT(31)},           // Segments H and B
-        /* C7  */       {   0,          BIT(31)}            // Segment A
+        /* C0  */       {   BIT32(32), 0           },           // Segment D
+        /* C1  */       {   BIT32(32), BIT32(31)   },           // Segments E and N
+        /* C2  */       {   BIT32(32), BIT32(31)   },           // Segments Q and C
+        /* C3  */       {   BIT32(32), BIT32(31)   },           // Segments P and M
+        /* C4  */       {   BIT32(32), BIT32(31)   },           // Segments G and J
+        /* C5  */       {   BIT32(32), BIT32(31)   },           // Segments F and K
+        /* C6  */       {   BIT32(32), BIT32(31)   },           // Segments H and B
+        /* C7  */       {   0,         BIT32(31)   }            // Segment A
 
     },
-    /* Position  P07 */
+    /* Position  P07 - 14 segment display */
     {
-        /* C0  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments E and D
-        /* C1  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments Q and N
-        /* C2  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments P and C
-        /* C3  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments G and M
-        /* C4  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments F and J
-        /* C5  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments H and K
-        /* C6  */       {   BIT(33-32)|BIT(34-32), 0 },     // Segments A and B
-        /* C7  */       {   0, 0               }            //
+        /* C0  */       {   BIT32(33)|BIT32(34), 0 },           // Segments E and D
+        /* C1  */       {   BIT32(33)|BIT32(34), 0 },           // Segments Q and N
+        /* C2  */       {   BIT32(33)|BIT32(34), 0 },           // Segments P and C
+        /* C3  */       {   BIT32(33)|BIT32(34), 0 },           // Segments G and M
+        /* C4  */       {   BIT32(33)|BIT32(34), 0 },           // Segments F and J
+        /* C5  */       {   BIT32(33)|BIT32(34), 0 },           // Segments H and K
+        /* C6  */       {   BIT32(33)|BIT32(34), 0 },           // Segments A and B
+        /* C7  */       {   0, 0                   }            //
     },
-    /* Position  P08 */
+    /* Position  P08 - 14 segment display  */
     {
-        /* C0  */       {  BIT(38-32),0     },              // Segment A
-        /* C1  */       {  BIT(38-32),0     },              // Segment  F
-        /* C2  */       {  BIT(38-32),0     },              // Segment  B
-        /* C3  */       {  BIT(38-32),0     },              // Segment  G
-        /* C4  */       {  BIT(38-32),0     },              // Segment  E
-        /* C5  */       {  BIT(38-32),0     },              // Segment  C
-        /* C6  */       {  BIT(38-32),0     },              // Segment  D
-        /* C7  */       {   0, 0               }
+        /* C0  */       {  BIT32(38),0             },           // Segment A
+        /* C1  */       {  BIT32(38),0             },           // Segment F
+        /* C2  */       {  BIT32(38),0             },           // Segment B
+        /* C3  */       {  BIT32(38),0             },           // Segment G
+        /* C4  */       {  BIT32(38),0             },           // Segment E
+        /* C5  */       {  BIT32(38),0             },           // Segment C
+        /* C6  */       {  BIT32(38),0             },           // Segment D
+        /* C7  */       {  0, 0                    }
     },
-    /* Position  P09 */
+    /* Position  P09 - 7 segment display  */
     {
-        /* C0  */       {  BIT(37-32),0     },              // Segment  A
-        /* C1  */       {  BIT(37-32),0     },              // Segment  F
-        /* C2  */       {  BIT(37-32),0     },              // Segment  B
-        /* C3  */       {  BIT(37-32),0     },              // Segment  G
-        /* C4  */       {  BIT(37-32),0     },              // Segment  E
-        /* C5  */       {  BIT(37-32),0     },              // Segment  C
-        /* C6  */       {  BIT(37-32),0     },              // Segment  D
-        /* C7  */       {   0, 0               }
+        /* C0  */       {  BIT32(37),0             },           // Segment A
+        /* C1  */       {  BIT32(37),0             },           // Segment F
+        /* C2  */       {  BIT32(37),0             },           // Segment B
+        /* C3  */       {  BIT32(37),0             },           // Segment G
+        /* C4  */       {  BIT32(37),0             },           // Segment E
+        /* C5  */       {  BIT32(37),0             },           // Segment C
+        /* C6  */       {  BIT32(37),0             },           // Segment D
+        /* C7  */       {   0, 0                   }
     },
-    /* Position  P10 */
+    /* Position  P10 - 7 segment display   */
     {
-        /* C0  */       {  BIT(36-32),0     },              // Segment  A
-        /* C1  */       {  BIT(36-32),0     },              // Segment  F
-        /* C2  */       {  BIT(36-32),0     },              // Segment  B
-        /* C3  */       {  BIT(36-32),0     },              // Segment  G
-        /* C4  */       {  BIT(36-32),0     },              // Segment  E
-        /* C5  */       {  BIT(36-32),0     },              // Segment  C
-        /* C6  */       {  BIT(36-32),0     },              // Segment  D
-        /* C7  */       {   0, 0               }
-   },
-    /* Position  P11 */
+        /* C0  */       {  BIT32(36),0             },           // Segment A
+        /* C1  */       {  BIT32(36),0             },           // Segment F
+        /* C2  */       {  BIT32(36),0             },           // Segment B
+        /* C3  */       {  BIT32(36),0             },           // Segment G
+        /* C4  */       {  BIT32(36),0             },           // Segment E
+        /* C5  */       {  BIT32(36),0             },           // Segment C
+        /* C6  */       {  BIT32(36),0             },           // Segment D
+        /* C7  */       {   0, 0                   }
+    },
+    /* Position  P11 - 7 segment display   */
     {
-        /* C0  */       {  BIT(35-32),0     },              // Segment  A
-        /* C1  */       {  BIT(35-32),0     },              // Segment  F
-        /* C2  */       {  BIT(35-32),0     },              // Segment  B
-        /* C3  */       {  BIT(35-32),0     },              // Segment  G
-        /* C4  */       {  BIT(35-32),0     },              // Segment  E
-        /* C5  */       {  BIT(35-32),0     },              // Segment  C
-        /* C6  */       {  BIT(35-32),0     },              // Segment  D
-        /* C7  */       {   0, 0               }
-
+        /* C0  */       {  BIT32(35),0             },           // Segment A
+        /* C1  */       {  BIT32(35),0             },           // Segment F
+        /* C2  */       {  BIT32(35),0             },           // Segment B
+        /* C3  */       {  BIT32(35),0             },           // Segment G
+        /* C4  */       {  BIT32(35),0             },           // Segment E
+        /* C5  */       {  BIT32(35),0             },           // Segment C
+        /* C6  */       {  BIT32(35),0             },           // Segment D
+        /* C7  */       {   0, 0                   }
+    },
+    /* Position  P12 - 8 segments pizza display   */
+    {
+        /* C0  */       {  0,0                     },           //
+        /* C1  */       {  0,0                     },           //
+        /* C2  */       {  0,0                     },           //
+        /* C3  */       {  0,0                     },           //
+        /* C4  */       {  0,0                     },           //
+        /* C5  */       {  0,0                     },           //
+        /* C6  */       {  0,0                     },           //
+        /* C7  */       {  0,BIT(19)|BIT(18)|BIT(17)            // Segments A0, A1, A2
+                            |BIT(16)|BIT(15)|BIT(14)            // Segments A3, A4, A5
+                            |BIT(13)|BIT(12)       }            // Segments A6, A7
+    },
+    /* Position  P13 - 3 levels battery display   */
+    {
+        /* C0  */       {  0,0                     },           //
+        /* C1  */       {  0,0                     },           //
+        /* C2  */       {  0,0                     },           //
+        /* C3  */       {  0,0                     },           //
+        /* C4  */       {  0,0                     },           //
+        /* C5  */       {  0,0                     },           //
+        /* C6  */       {  0,0                     },           //
+        /* C7  */       {  BIT32(38)|BIT32(37)                  // Segment B2, B0
+                          |BIT32(36),0             }            // Segment B1
+    },
+    /* Position  P14 - 8 segments target display   */
+    {
+        /* C0  */       {  BIT32(39),0             },           // Segment EM2
+        /* C1  */       {  BIT32(39),0             },           // Segment EM4
+        /* C2  */       {  0,0                     },           //
+        /* C3  */       {  0,0                     },           //
+        /* C4  */       {  0,0                     },           //
+        /* C5  */       {  BIT32(39),0             },           // Segment EM3
+        /* C6  */       {  BIT32(39),0             },           // Segment EM1
+        /* C7  */       {  BIT32(39),0             }            // Segment EM0
     },
 };
 
-/*
- * This array emulates the LCD data registers
+/**
+ *  @brief This array emulates the LCD data registers for debugging
  */
 #ifdef LCD_EMULATION
 typedef struct {
@@ -703,6 +781,23 @@ typedef struct {
 lcddata_t lcd[8];
 #endif
 
+
+/**
+ * @brief pointer to segment data registers
+ */
+//{
+volatile uint32_t  * const segdatalow[8] = {
+    &(LCD->SEGD0L),&(LCD->SEGD1L),&(LCD->SEGD2L),&(LCD->SEGD3L),
+    &(LCD->SEGD4L),&(LCD->SEGD5L),&(LCD->SEGD6L),&(LCD->SEGD7L)
+    };
+volatile uint32_t  * const segdatahigh[8] = {
+    &(LCD->SEGD0H),&(LCD->SEGD1H),&(LCD->SEGD2H),&(LCD->SEGD3H),
+    &(LCD->SEGD4H),&(LCD->SEGD5H),&(LCD->SEGD6H),&(LCD->SEGD7H)
+    };
+// To simplify assignements
+#define SEGDATALOW  *segdatalow
+#define SEGDATAHIGH *segdatahigh
+//}
 
 /**
  * @brief   Set Clock for LCD module
@@ -908,7 +1003,7 @@ uint32_t oldlfaclken0,lfclksel;
     }
 
     /* Restore clocks for devices */
-    CMU->LFACLKEN0 = oldlfaclken0;
+    CMU->LFACLKEN0 = oldlfaclken0|CMU_LFACLKEN0_LCD;
 
     /* Set flag to signalize clock is set */
     lcdclock_set = 1;
@@ -956,7 +1051,7 @@ uint32_t rc;
     return rc;
 }
 
-/*
+/**
  *  @brief  Configure LCD
  *
  *  @param  div:  set the frame rate according the formulas below
@@ -980,16 +1075,16 @@ uint32_t rc;
  *
  *  @note The table below show values of PRESC and FDIC that gives frame rate between 24 and 150
  *
-  LFACLK freq |PRESC| LFACLK_presc|   DIV | FDIV | LFACLK_lcd  | Multiplexing | MUX |  Frame rate
- -------------|-----|-------------|-------|------|-------------|--------------|-----|------------
-      32678   | 16  |      2048   |     1 |   0  |      2.048  |    Octaplex  |   8 |      128
-      32678   | 16  |      2048   |     2 |   1  |      1.024  |    Octaplex  |   8 |       64
-      32678   | 16  |      2048   |     3 |   2  |        683  |    Octaplex  |   8 |       43
-      32678   | 16  |      2048   |     4 |   3  |        512  |    Octaplex  |   8 |       32
-      32678   | 16  |      2048   |     5 |   4  |        410  |    Octaplex  |   8 |       26
-      32678   | 32  |      1024   |     1 |   0  |      1.024  |    Octaplex  |   8 |       64
-      32678   | 32  |      1024   |     2 |   1  |        512  |    Octaplex  |   8 |       32
-      32678   | 64  |       512   |     1 |   0  |        512  |    Octaplex  |   8 |       32
+ * LFACLK freq |PRESC| LFACLK_presc|   DIV | FDIV | LFACLK_lcd  | Multiplexing | MUX |  Frame
+ * ------------|-----|-------------|-------|------|-------------|--------------|-----|----------
+ *     32678   | 16  |      2048   |     1 |   0  |      2.048  |    Octaplex  |   8 |      128
+ *     32678   | 16  |      2048   |     2 |   1  |      1.024  |    Octaplex  |   8 |       64
+ *     32678   | 16  |      2048   |     3 |   2  |        683  |    Octaplex  |   8 |       43
+ *     32678   | 16  |      2048   |     4 |   3  |        512  |    Octaplex  |   8 |       32
+ *     32678   | 16  |      2048   |     5 |   4  |        410  |    Octaplex  |   8 |       26
+ *     32678   | 32  |      1024   |     1 |   0  |      1.024  |    Octaplex  |   8 |       64
+ *     32678   | 32  |      1024   |     2 |   1  |        512  |    Octaplex  |   8 |       32
+ *     32678   | 64  |       512   |     1 |   0  |        512  |    Octaplex  |   8 |       32
  *
  *  @note  The default is PRESC=16 and FDIV=0 resulting in a 128 Hz frame rate
  *
@@ -1007,15 +1102,11 @@ int i;
 uint32_t segen;
 int i;
 uint32_t dispctrl;
-#ifdef TWO_STEPS_ENCODING
 uint32_t m,m4;
 SegEncoding_t used = { 0,0 };
-#else
-int j;
-#endif
 
     /*
-     * Disable LCD module before fussing around with it
+     * Disable LCD module before fussing around
      */
     LCD->CTRL &= ~(LCD_CTRL_EN);
 
@@ -1023,20 +1114,26 @@ int j;
     if( !lcdclock_set ) {
         SetLFAClock(LCD_CLOCK_DEFAULT);
         LCD_SetClock(LCD_PRESC_DEFAULT,LCD_DIV_DEFAULT);
+        lcdclock_set = 1;
     }
-#ifdef TWO_STEPS_ENCODING
 
     /*
-     * Scan all character encoding and accumulates all bits used */
+     * Configure Voltage and contrast
+     */
+    LCD_SetVoltage(LCD_USE_VBOOST,1,7);
+    LCD_SetContrast(25,LCD_REF_VLCD);
+
+    /*
+     * Configure Pins
+     */
+
+    // Scan all character encoding and accumulates all bits used
     for(i=0;i<sizeof(seg_encoding)/sizeof(SegEncoding_t);i++) {
         used.hi |= seg_encoding[i].hi;
         used.lo |= seg_encoding[i].lo;
     }
 
-    /*
-     * Configure pins
-     * A bit in the segen register corresponds to 4 segment pins
-     */
+    // Pins are configured in groups of four
     m = 1;
     m4 = 0xF;
     segen = 0;
@@ -1047,6 +1144,7 @@ int j;
         m <<= 1;
         m4 <<= 4;
     }
+    m4 = 0xFF;
     while ( (m&BIT(10)) == 0 ) {
         if( (used.hi & m4) != 0 ) {
             segen |= m;
@@ -1054,31 +1152,23 @@ int j;
         m <<= 1;
         m4 <<= 4;
     }
-#else
-    /* Accumulate all segments used in the tablcd table and configure the corresponding pins */
-    segen = 0;
-    for(i=0;i<15;i++) {
-        for(j=0;j<12;j++) {
-            segen |= (1<<(GET_SEG(tablcd[i][j]))/4);
-        }
-    }
-#endif
 
-    LCD->SEGEN = segen;
+    LCD->SEGEN   = segen;
 
-    dispctrl = LCD->DISPCTRL;
-    dispctrl &= ~(   _LCD_DISPCTRL_MUXE_MASK
-                   | _LCD_DISPCTRL_MUX_MASK
-                   | _LCD_DISPCTRL_BIAS_MASK
-                   | _LCD_DISPCTRL_WAVE_MASK
-                   | _LCD_DISPCTRL_VLCDSEL_MASK
-                   | _LCD_DISPCTRL_CONCONF_MASK   );
+    dispctrl     = LCD->DISPCTRL;
+    dispctrl     &= ~(
+                     _LCD_DISPCTRL_MUXE_MASK
+                     | _LCD_DISPCTRL_MUX_MASK
+                     | _LCD_DISPCTRL_BIAS_MASK
+                     | _LCD_DISPCTRL_WAVE_MASK
+                     | _LCD_DISPCTRL_VLCDSEL_MASK
+                     | _LCD_DISPCTRL_CONCONF_MASK   );
 
     // 8 common pins: LCD_COM7-LCD_COM4 (SEG23-SEG20) . LCD_COM3-LCD_COM0
-    dispctrl  |=   LCD_DISPCTRL_MUX_QUADRUPLEX      // QUADRUPLEX+MUXE -> OCTAPLEX
-                 | LCD_DISPCTRL_MUXE                //
-                 | LCD_DISPCTRL_BIAS_ONEFOURTH      // 1/4 bias
-                 | LCD_DISPCTRL_WAVE_NORMAL;        // Normal wave
+    dispctrl     |= ( LCD_DISPCTRL_MUX_QUADRUPLEX         // QUADRUPLEX+MUXE -> OCTAPLEX
+                     |   LCD_DISPCTRL_MUXE                //
+                     |   LCD_DISPCTRL_BIAS_ONEFOURTH      // 1/4 bias
+                     |   LCD_DISPCTRL_WAVE_NORMAL );      // Normal wave
     LCD->DISPCTRL = dispctrl;
 
     /*
@@ -1090,6 +1180,11 @@ int j;
 }
 
 /**
+ * @brief  Generates a bit mask with n bit 1 in the least significant position
+ */
+#define GENBITMASK1(N)  ((1UL<<((N)+1))-1)
+
+/**
  *  @brief  Write an ASCII character at the specified position
  *
  *  @param  c:   character to be written
@@ -1098,113 +1193,60 @@ int j;
  *  @note   When LCD_EMULATION is set, all writes happen to a 8 position array
  *
  */
+
 void LCD_WriteChar(uint8_t c, uint8_t pos) {
 uint32_t segments,m;
-uint8_t sn,com,seg;
+uint8_t sn,comn,segn,comnrev;
 SegEncoding_t s[8] = { {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0} };
 
+    if( pos < 1 || pos > 14 )
+        return;
     /*
      * looks for segments to be lit
      * table contains only character with
      */
-    segments = segments14forchar[c-' '];
+    if( pos >=1 && pos <= 7 )           segments = segments14forchar[c-' '];
+    else if( pos >= 8 && pos <= 11 )    segments = segments7forchar[c-' '];
+    else if( pos == 12 ) segments = GENBITMASK1(c-'0');
+    else if( pos == 13 ) segments = GENBITMASK1(c-'0');
+    else if( pos == 14 ) segments = GENBITMASK1(c-'0');
+    else segments = 0;
 
+
+    /*
+     * scan segments bit mask and set corresponding bits in the segment encoding variable 's'
+     */
     sn = 0;
     while( segments ) {
         if( segments&1 ) {
             m = tablcd[sn][pos];
-            com = GET_COMMON(m);
-            seg = GET_SEG(m);
-#ifdef TWO_STEPS_ENCODING
-            com = com_encoding[com]; // it is reversed on STK3700
-            s[com].hi |= seg_encoding[seg].hi;
-            s[com].lo |= seg_encoding[seg].lo;
-#else
-            if( seg < 32 ) {
-                s[com].lo |= seg_encoding[seg];
-            } else {
-                s[com].hi |= seg_encoding[seg-32];
-            }
-#endif
+            comn = GET_COMMON(m);
+            segn = GET_SEG(m);
+            comn = com_encoding[comn]; // it is reversed on STK3700
+            s[comn].hi |= seg_encoding[segn].hi;
+            s[comn].lo |= seg_encoding[segn].lo;
         }
         segments>>=1;
         sn++;
     }
+    /*
+     * Set LCD registers with data from s and erase field simultaneously
+     */
 #ifndef LCD_EMULATION
-    LCD->FREEZE |= LCD_FREEZE_REGFREEZE;
-    for(com=0;com<8;com++) {
-        switch(com) {
-        case 0:
-            LCD->SEGD0L = (LCD->SEGD0L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD0H = (LCD->SEGD0H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 1:
-            LCD->SEGD1L = (LCD->SEGD1L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD1H = (LCD->SEGD1H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 2:
-            LCD->SEGD2L = (LCD->SEGD2L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD2H = (LCD->SEGD2H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 3:
-            LCD->SEGD3L = (LCD->SEGD3L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD3H = (LCD->SEGD3H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 4:
-            LCD->SEGD4L = (LCD->SEGD4L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD4H = (LCD->SEGD4H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 5:
-            LCD->SEGD5L = (LCD->SEGD5L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD5H = (LCD->SEGD5H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 6:
-            LCD->SEGD6L = (LCD->SEGD6L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD6H = (LCD->SEGD6H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 7:
-            LCD->SEGD7L = (LCD->SEGD7L&~tablcdclear[com][pos].lo)|s[com].lo;
-            LCD->SEGD7H = (LCD->SEGD7H&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        }
-    }
-    LCD->FREEZE &= ~LCD_FREEZE_REGFREEZE;
+    LCD_FREEZE;
+    for(comn=0;comn<8;comn++) {
+        comnrev=com_encoding[comn];
+        SEGDATALOW[comn]  = (SEGDATALOW[comn] &~tablcdclear[pos][comnrev].lo) | s[comn].lo;
+        SEGDATAHIGH[comn] = (SEGDATAHIGH[comn]&~tablcdclear[pos][comnrev].hi) | s[comn].hi;
+//        SEGDATALOW[comn]  = SEGDATALOW[comn] | s[comn].lo;
+//        SEGDATAHIGH[comn] = SEGDATAHIGH[comn]| s[comn].hi;
+     }
+    LCD_UNFREEZE;
 #else
-    for(com=0;com<8;com++) {
-        switch(com) {
-        case 0:
-            lcd[0].lo = (lcd[0].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[0].hi = (lcd[0].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 1:
-            lcd[1].lo = (lcd[1].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[1].hi = (lcd[1].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 2:
-            lcd[2].lo = (lcd[2].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[2].hi = (lcd[2].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 3:
-            lcd[3].lo = (lcd[3].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[3].hi = (lcd[3].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 4:
-            lcd[4].lo = (lcd[4].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[4].hi = (lcd[4].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 5:
-            lcd[5].lo = (lcd[5].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[5].hi = (lcd[5].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 6:
-            lcd[6].lo = (lcd[6].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[6].hi = (lcd[6].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        case 7:
-            lcd[7].lo = (lcd[7].lo&~tablcdclear[com][pos].lo)|s[com].lo;
-            lcd[7].hi = (lcd[7].hi&~tablcdclear[com][pos].hi)|s[com].hi;
-            break;
-        }
+    for(comn=0;comn<8;comn++) {
+        comnrev=com_encoding[comn];
+        lcd[comn].lo = (lcd[comn].lo&~tablcdclear[pos][comnrev].lo)|s[comn].lo;
+        lcd[comn].hi = (lcd[comn].hi&~tablcdclear[pos][comnrev].hi)|s[comn].hi;
     }
 #endif
 
@@ -1219,7 +1261,7 @@ SegEncoding_t s[8] = { {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0} };
  *  @note   if the string is shorten than 7, it is padded with spaces
  */
 
-void LCD_WriteAlphanumericField(char *s) {
+void LCD_WriteAlphanumericDisplay(char *s) {
 int pos;
 
     for(pos=1;pos<=7;pos++) {
@@ -1240,10 +1282,10 @@ int pos;
  *  @note   if the string is shorten than 12, it is padded with spaces
  *
  */
-void LCD_WriteNumericField(char *s) {
+void LCD_WriteNumericDisplay(char *s) {
 int pos;
 
-    for(pos=8;pos<=12;pos++) {
+    for(pos=8;pos<=11;pos++) {
         if( *s ) {
             LCD_WriteChar(*s++,pos);
         } else {
@@ -1275,46 +1317,23 @@ int pos;
 
 }
 
-
-
-/**
- *  @brief  Turns on/off a special segment
- *
- */
-void LCD_SetSpecial(uint8_t c, uint8_t v) {
-    // TBD
-}
-
 /**
  *  @brief  Turns off all segments
  *
  */
 void LCD_Clear(void) {
+int comn;
+    LCD_FREEZE;
+    for(comn=0;comn<8;comn++) {
 #ifdef LCD_EMULATION
-int i;
-
-    for(i=0;i<8;i++) {
-        lcd[i].hi = 0;
-        lcd[i].lo = 0;
-    }
+        lcd[comn].hi = 0;
+        lcd[comn].lo = 0;
 #else
-    LCD->SEGD0L = 0;
-    LCD->SEGD0H = 0;
-    LCD->SEGD1L = 0;
-    LCD->SEGD1H = 0;
-    LCD->SEGD2L = 0;
-    LCD->SEGD2H = 0;
-    LCD->SEGD3L = 0;
-    LCD->SEGD3H = 0;
-    LCD->SEGD4L = 0;
-    LCD->SEGD4H = 0;
-    LCD->SEGD5L = 0;
-    LCD->SEGD5H = 0;
-    LCD->SEGD6L = 0;
-    LCD->SEGD6H = 0;
-    LCD->SEGD7L = 0;
-    LCD->SEGD7H = 0;
+        SEGDATALOW[comn]  = 0;
+        SEGDATAHIGH[comn] = 0;
 #endif
+    LCD_UNFREEZE;
+    }
 }
 
 /**
@@ -1322,31 +1341,18 @@ int i;
  *
  */
 void LCD_SetAll(void) {
+int comn;
+    LCD_FREEZE;
+    for(comn=0;comn<8;comn++) {
 #ifdef LCD_EMULATION
-int i;
-
-    for(i=0;i<8;i++) {
-        lcd[i].hi = 0xFF;
-        lcd[i].lo = 0xFFFFFFFF;
-    }
+        lcd[comn].hi = 0xFF;
+        lcd[comn].lo = 0xFFFFFFFF;
 #else
-    LCD->SEGD0L = 0xFFFFFFFF;
-    LCD->SEGD0H = 0xFF;
-    LCD->SEGD1L = 0xFFFFFFFF;
-    LCD->SEGD1H = 0xFF;
-    LCD->SEGD2L = 0xFFFFFFFF;
-    LCD->SEGD2H = 0xFF;
-    LCD->SEGD3L = 0xFFFFFFFF;
-    LCD->SEGD3H = 0xFF;
-    LCD->SEGD4L = 0xFFFFFFFF;
-    LCD->SEGD4H = 0xFF;
-    LCD->SEGD5L = 0xFFFFFFFF;
-    LCD->SEGD5H = 0xFF;
-    LCD->SEGD6L = 0xFFFFFFFF;
-    LCD->SEGD6H = 0xFF;
-    LCD->SEGD7L = 0xFFFFFFFF;
-    LCD->SEGD7H = 0xFF;
+        SEGDATALOW[comn]  = 0xFFFFFFFF;
+        SEGDATAHIGH[comn] = 0xFF;
 #endif
+    LCD_UNFREEZE;
+    }
 }
 
 /**
@@ -1368,29 +1374,45 @@ uint32_t v;
     return n;
 }
 
-#define LCD_USEVDD          0
-#define LCD_USEVBOOST       1
 /**
+ *  @brief Set LCD Voltage
  *
+ *  @param source: LCD_USEVDD our LCD_USEVBOOST.
+ *  @param div:    a power of 2 between 1 and 128.
+ *  @param level:  a number between 0 and 7 to indicate the voltage output of booster
+ *
+ *  @note  There are two alternatives. Use MCU VDD, i.e., the main power. Other alternative is
+ *         to use a VBOOST power. This is done by using an external 1 uF capacitor between
+ *         LCD_BEXT pin and VSS, a 22 nF between LCD_BCAP_P and LCD_BCAP_N. Both capacitors
+ *         are mounted in the STK3700 board.
+ *  @note  There is a possibility to configure the VBOOST frequency. A low frequency leads to
+ *         small current consumption. The boost frequency is LFACLK/div.
+ *  @note
+ *   level    |     0 |     1 |     2 |     3 |     4 |     5 |     6 |     7
+ *   ---------|-------|-------|-------|-------|-------|-------|-------|--------
+ *   voltage  |   3.00|   3.08|   3.17|   3.26|   3.34|   3.43|   3.52|   3.60
+ *  @endverbatim
  */
 void LCD_SetVoltage(uint32_t source, uint32_t div, uint32_t level ) {
 uint32_t d;
 uint32_t lcdctrl, dispctrl;
 
-    d = ln2(div);
-
-    // Set LCD to use VDD
-    LCD->DISPCTRL = (LCD->DISPCTRL&~_LCD_DISPCTRL_VLCDSEL_MASK)|_LCD_DISPCTRL_VLCDSEL_VDD;
-    // Disable VBoost
-    CMU->LCDCTRL &= ~CMU_LCDCTRL_VBOOSTEN;
-
-    // If source VDD nothing more to do
-    if( source == LCD_USEVDD )
+    if( source == LCD_USE_VDD ) {
+        // Set LCD to use VDD
+        LCD->DISPCTRL = (LCD->DISPCTRL&~_LCD_DISPCTRL_VLCDSEL_MASK)|_LCD_DISPCTRL_VLCDSEL_VDD;
+        // Disable VBoost
+        CMU->LCDCTRL &= ~CMU_LCDCTRL_VBOOSTEN;
         return;
+    }
 
     /*
      * Configure VBoost: frequency in CMU->LCDCTRL and level in LCD->DISPCTRL
      */
+    d = ln2(div);
+    // Set LCD momentarily to use VDD
+    LCD->DISPCTRL = (LCD->DISPCTRL&~_LCD_DISPCTRL_VLCDSEL_MASK)|_LCD_DISPCTRL_VLCDSEL_VDD;
+    // Disable VBoost
+    CMU->LCDCTRL &= ~CMU_LCDCTRL_VBOOSTEN;
     // Read registers
     lcdctrl  = CMU->LCDCTRL;
     dispctrl = LCD->DISPCTRL;
@@ -1414,6 +1436,12 @@ uint32_t lcdctrl, dispctrl;
 
 
 /**
+ *  @brief Set Contrast of LCD display
+ *
+ *  @param level:  In the range 0 to 31
+ *  @param ref:    LCD_REF_GND or LCD_REF_VLCD: Reference is GND or VLCD
+ *
+ *  @note  VLCDout = 0.61*VLCD to VLCD in 0.61 steps
  *
  */
 void LCD_SetContrast(uint32_t level, uint32_t ref) {
@@ -1435,93 +1463,127 @@ uint32_t dispctrl;
 /**
  * @brief Write a segment using segment mask
  */
-void LCD_WriteSegment(uint32_t com, SegEncoding_t s, uint32_t v) {
+void LCD_WriteSegmentMask(uint32_t com, SegEncoding_t s, uint32_t v) {
 
+    com = com_encoding[com]; // it is reversed on STK3700
     if( v ) { /* Set */
-        switch(com) {
-        case 0:
-            LCD->SEGD0L |= s.lo;
-            LCD->SEGD0H |= s.hi;
-            break;
-        case 1:
-            LCD->SEGD1L |= s.lo;
-            LCD->SEGD1H |= s.hi;
-            break;
-        case 2:
-            LCD->SEGD2L |= s.lo;
-            LCD->SEGD2H |= s.hi;
-            break;
-        case 3:
-            LCD->SEGD3L |= s.lo;
-            LCD->SEGD3H |= s.hi;
-            break;
-        case 4:
-            LCD->SEGD4L |= s.lo;
-            LCD->SEGD4H |= s.hi;
-            break;
-        case 5:
-            LCD->SEGD5L |= s.lo;
-            LCD->SEGD5H |= s.hi;
-            break;
-        case 6:
-            LCD->SEGD6L |= s.lo;
-            LCD->SEGD6H |= s.hi;
-            break;
-        case 7:
-            LCD->SEGD7L |= s.lo;
-            LCD->SEGD7H |= s.hi;
-            break;
-        }
+        SEGDATALOW[com]  |= s.lo;
+        SEGDATAHIGH[com] |= s.hi;
     } else { /* Clear */
-        switch(com) {
-        case 0:
-            LCD->SEGD0L &= ~s.lo;
-            LCD->SEGD0H &= ~s.hi;
-            break;
-        case 1:
-            LCD->SEGD1L &= ~s.lo;
-            LCD->SEGD1H &= ~s.hi;
-            break;
-        case 2:
-            LCD->SEGD2L &= ~s.lo;
-            LCD->SEGD2H &= ~s.hi;
-            break;
-        case 3:
-            LCD->SEGD3L &= ~s.lo;
-            LCD->SEGD3H &= ~s.hi;
-            break;
-        case 4:
-            LCD->SEGD4L &= ~s.lo;
-            LCD->SEGD4H &= ~s.hi;
-            break;
-        case 5:
-            LCD->SEGD5L &= ~s.lo;
-            LCD->SEGD5H &= ~s.hi;
-            break;
-        case 6:
-            LCD->SEGD6L &= ~s.lo;
-            LCD->SEGD6H &= ~s.hi;
-            break;
-        case 7:
-            LCD->SEGD7L &= ~s.lo;
-            LCD->SEGD7H &= ~s.hi;
-            break;
-        }
+        SEGDATALOW[com]  &= ~s.lo;
+        SEGDATAHIGH[com] &= ~s.hi;
     }
 }
 
 /**
  * @brief Write a segment using segment number
+ * @note  Uses controller segment number
  */
-void LCD_WriteSegment2(uint32_t com, uint32_t segn, uint32_t v) {
+void LCD_WriteSegment2(uint32_t comn, uint32_t segn, uint32_t v) {
 SegEncoding_t s;
 
-    if( segn > 31 ) {
+    if( segn >= 32 ) {
         s.hi = BIT(segn-32);
         s.lo = 0;
     } else {
         s.hi = 0;
         s.lo = BIT(segn);
     }
-    LCD_WriteSegment(com,s,v);
+    LCD_WriteSegmentMask(comn,s,v);
+}
+
+/**
+ * @brief Write a segment using segment number
+ * @note  Uses display segment number
+ */
+void LCD_WriteSegment(uint32_t comn, uint32_t segn, uint32_t v) {
+SegEncoding_t s;
+
+    s = seg_encoding[segn];
+    LCD_WriteSegmentMask(comn,s,v);
+}
+
+/**
+ *  @brief  Turns on/off a special segment
+ *
+ */
+void LCD_WriteSpecial(LCD_Code_t code, uint8_t v) {
+uint16_t m;
+uint8_t segn,comn,sn;
+SegEncoding_t seg;
+SegEncoding_t s[8] = { 0 };
+uint8_t pos;
+uint32_t segments;
+
+    if( code < LCD_GROUP ) {
+        m = tablcdspecial[code];
+        comn = GET_COMMON(m);
+        segn = GET_SEG(m);
+        seg = seg_encoding[segn];
+        LCD_WriteSegmentMask(comn,seg,v);
+    } else {
+        switch(code) {
+        case LCD_ARC:
+            pos = 12;
+            segments = GENBITMASK1(v);
+            break;
+        case LCD_BAT:
+            pos = 13;
+            segments = GENBITMASK1(v);
+            break;
+        case LCD_TARGET:
+            pos = 14;
+            segments = GENBITMASK1(v);
+            break;
+        default:
+            segments = 0;
+        }
+        /*
+         * scan segments bit mask and set corresponding bits in the segment encoding variable 's'
+         */
+        sn = 0;
+        while( segments ) {
+            if( segments&1 ) {
+                m = tablcd[sn][pos];
+                comn = GET_COMMON(m);
+                segn = GET_SEG(m);
+                comn = com_encoding[comn]; // it is reversed on STK3700
+                s[comn].hi |= seg_encoding[segn].hi;
+                s[comn].lo |= seg_encoding[segn].lo;
+            }
+            segments>>=1;
+            sn++;
+        }
+        /*
+         * Set LCD registers with data from s and erase field simultaneously
+         */
+#ifndef LCD_EMULATION
+        LCD_FREEZE;
+        for(comn=0;comn<8;comn++) {
+            SEGDATALOW[comn]  = (SEGDATALOW[comn] &~tablcdclear[comn][pos].lo) | s[comn].lo;
+            SEGDATAHIGH[comn] = (SEGDATAHIGH[comn]&~tablcdclear[comn][pos].hi) | s[comn].hi;
+        }
+        LCD_UNFREEZE;
+#else
+        for(comn=0;comn<8;comn++) {
+            lcd[comn].lo = (lcd[comn].lo&~tablcdclear[comn][pos].lo)|s[comn].lo;
+            lcd[comn].hi = (lcd[comn].hi&~tablcdclear[comn][pos].hi)|s[comn].hi;
+        }
+#endif
+    }
+}
+
+/**
+ * @brief Freeze LCD controller. All update are postponed
+ */
+void LCD_Freeze(void) {
+    LCD_FREEZE;
+}
+
+
+/**
+ * @brief Unfreeze LCD controller. All updates can be made
+ */
+void LCD_Unfreeze(void) {
+    LCD_UNFREEZE;
 }

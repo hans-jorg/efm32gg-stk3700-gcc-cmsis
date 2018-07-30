@@ -15,7 +15,7 @@
 #include "led.h"
 #include "lcd.h"
 
-#define DELAYVAL 1000000
+#define DELAYVAL 100
 
 /*****************************************************************************
  * @brief  Quick and dirty delay function
@@ -31,6 +31,13 @@ int i;
     }
 }
 
+void WriteMultiple(uint8_t ch) {
+int pos;
+
+    for(pos=1;pos<=11;pos++)
+        LCD_WriteChar(ch,pos);
+}
+
 /*****************************************************************************
  * @brief  Main function
  *
@@ -42,7 +49,10 @@ int i;
 int main(void) {
 static char *string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>:,.;"
                       "abcdefghijklmnopqrstuvwzyz!@#$%*()[]";
+static char *numstring = "0123456789";
+
 char *s = string;
+char *n = numstring;
 
     /* Configure Pins in GPIOE */
     LED_Init(LED0|LED1);
@@ -50,23 +60,28 @@ char *s = string;
     /* Configure LCD */
     LCD_Init();
 
+    LCD_SetAll();
+    Delay(DELAYVAL);
+
+    LCD_Clear();
+    Delay(DELAYVAL);
+
     /* Blink loop */
     while (1) {
 
         Delay(DELAYVAL);
         LED_Toggle(LED0);                                // Toggle LED0
-        LCD_WriteString(s++);
+        LCD_WriteAlphanumericDisplay(s++);
         if (*s == '\0') s = string;
+        LCD_WriteNumericDisplay(n++);
+        if (*n == '\0') n = numstring;
 
         Delay(DELAYVAL);
         LED_Toggle(LED1);                                // Toggle LED1
-        LCD_WriteString(s++);
-        if (*s == '\0') s = string;
 
         Delay(DELAYVAL);
         LED_Write(0,LED0|LED1);                          // Turn On All LEDs
-        LCD_WriteString(s++);
-        if (*s == '\0') s = string;
+
 
     }
 }
