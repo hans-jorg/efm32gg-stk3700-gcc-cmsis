@@ -35,6 +35,7 @@
 #define DELAYVAL 5
 /**
  * @brief  Quick and dirty delay function
+ * @note   Do not use it in production code
  */
 
 void Delay(uint32_t delay) {
@@ -54,7 +55,7 @@ int i;
  * @note   HFCLK     = HFRCO 14 MHz
  * @note   HFCORECLK = HFCLK
  * @note   HFPERCLK  = HFCLK
- 
+
  */
 
 int main(void) {

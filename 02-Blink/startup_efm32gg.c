@@ -44,10 +44,10 @@
 
 #include <stdint.h>
 
-/*****************************************************************************
+/**************************************************************************//**
  * CONFIGURATION
- *****************************************************************************/
-/*
+ *****************************************************************************
+ *
  * __SYSTEM_INIT_BEFORE_INIT    call SystemInit before initialization of
  *                              DATA and BSS Section
  * __SYSTEM_INIT_AFTER_INIT     call SystemInit after initialization of

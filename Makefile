@@ -32,4 +32,5 @@ docs-clean:
 	   ( cd $$f ; \
 	    make $(MAKEFLAGS) docs-clean ) ; \
 	done
-
+docs-all:
+	cat [0-3][0-9]-*/README.md > README-ALL.md

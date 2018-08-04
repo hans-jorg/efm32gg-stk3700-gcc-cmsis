@@ -22,6 +22,7 @@
 /**
  * @brief  Quick and dirty delay function
  * @param  delay: specified delay (not calibrated)
+ * @note   Do not use this in a production code
  */
 
 void Delay(uint32_t delay) {

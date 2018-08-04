@@ -1,4 +1,4 @@
-/**
+/**************************************************************************//**
  * @file startup_efm32gg.c
  * @brief CMSIS Compatible EFM32GG startup file in C.
  *        Should be used with GCC 'GNU Tools ARM Embedded'

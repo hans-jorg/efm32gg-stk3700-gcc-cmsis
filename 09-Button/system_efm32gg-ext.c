@@ -1,4 +1,4 @@
-/** *************************************************************************//**
+/***************************************************************************//**
  * @file system_efm32gg-ext.c
  * @brief Additional CMSIS-like routines for Cortex-M3 System Layer for EFM32GG devices.
  * @version 1.0

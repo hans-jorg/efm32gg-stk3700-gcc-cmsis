@@ -13,9 +13,25 @@
  */
 #include "em_device.h"
 #include "led.h"
-#include "button.h"
 
-/*****************************************************************************
+#define DELAYVAL 1
+
+/**
+ * @brief  Quick and dirty delay function
+ * @note   Do not use in production code
+ */
+
+void Delay(uint32_t delay) {
+volatile uint32_t counter;
+int i;
+
+    for(i=0;i<delay;i++) {
+        counter = 1000000;
+        while( counter ) counter--;
+    }
+}
+
+/**
  * @brief  Main function
  *
  * @note   Using default clock configuration
@@ -25,27 +41,21 @@
  */
 
 int main(void) {
-uint32_t b;
 
-    /* Configure LEDs */
+    /* Configure Pins in GPIOE */
     LED_Init(LED0|LED1);
 
-    /* Configure buttons */
-    Button_Init(BUTTON0|BUTTON1);
-
-    /*
-     * Read button loop
-     *
-     * ATTENTION: No debounce
-     */
+    /* Blink loop */
     while (1) {
-        b = Button_ReadReleased();
-        if( b&BUTTON0 ) {
-            LED_Toggle(LED0);
-        }
-        if( b&BUTTON1 ) {
-            LED_Toggle(LED1);
-        }
-    }
 
+        Delay(DELAYVAL);
+        LED_Toggle(LED0);                                // Toggle LED0
+
+        Delay(DELAYVAL);
+        LED_Toggle(LED1);                                // Toggle LED1
+
+        Delay(DELAYVAL);
+        LED_Write(0,LED0|LED1);                          // Turn On All LEDs
+
+    }
 }
