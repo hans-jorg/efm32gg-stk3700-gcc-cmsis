@@ -1,21 +1,10 @@
 Developing for the EFM32GG-STK3700 Development Board
 ====================================================
 
-
-
-MIT License
--------
-
-Copyright (c) 2018 Hans Jorg Andreas Schneebeli
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+See LICENSE.md
 
 Foreword
--------
+--------
 
 This material is intended as a companion for the lectures in a course in Embedded Systems. The main objective is to present the inner works of the compilation process and introduce advanced patterns of software for embedded systems.
 
@@ -24,7 +13,7 @@ It assumes a basic knowledge of C. It consists of many small projects, each intr
 Appendices show how to install the needed tools, how to use them and the structure of a project.
 
 The EFM32GG-STK3700 Development Board
-------------------------------
+-------------------------------------
 
 
 The EFM32 Giant Gecko is a family of Cortex M3 microcontrollers manufactured by Silicon Labs (who bought Energy Micro, the initial manufacturer). The EFM32 microcontroller family has many subfamilies with different Cortex-M architectures and features as shown below.
@@ -44,7 +33,8 @@ Pearl Gecko    |  ARM Cortex-M4    |          | 128-1024   | 32-256
 Wonder Gecko   |  ARM Cortex-M4    | USB, LCD |  64- 256   | 32
 
 
-##The EMF32GG-STK3700 Development Board
+The EMF32GG-STK3700 Development Board
+-------------------------------------
 
 
 The EMF32GG-STK3700 is a development board featuring a EFM32GG990F1024 MCU (a Giant Gecko microcontroller) with 1 MB Flash memory and 128 kB RAM. It has also the following peripherals:
@@ -65,10 +55,12 @@ The development board EMF32GG-STK3700 features a EFM32GG990F1024 microcontroller
 
 Flash (KB)  | RAM (KB)  |  GPIO  |  USB |  LCD   | USART/UART  | LEUART  | Timer/PWMRTC  |  ADC |  DAC | OpAmp
 ------------|-----------|--------|------|--------|-------------|---------|---------------|------|------|--------
-    1024    |  128      |    87  |  Y   |  8x34  |     3/2     |    2 2  |      4/12     |  1(8)| 2(8) |  3 
+    1024    |  128      |    87  |  Y   |  8x34  |     3/2     |    2 2  |      4/12     |  1(8)| 2(8) |  3
 
 
-##Basic References
+Basic References
+----------------
+
 
 The most important references are:
 
@@ -77,7 +69,8 @@ The most important references are:
 -   [EFM32GG990 Datasheet](https://www.silabs.com/documents/public/data-sheets/EFM32GG990.pdf)[3]: Technical information about the EMF32GG990F1024 including electrical specifications and pinout.
 -   [EFM32 Microcontroller Family Cortex M3 Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32-Cortex-M3-RM.pdf)[4]
 
-##Peripherals
+Peripherals
+-----------
 
 There are a lot of peripherals in the board.
 
@@ -92,7 +85,9 @@ There are a lot of peripherals in the board.
 
 It is also possible to use the header connectors to add more peripherals.
 
-##Connections
+Connections
+-----------
+
 
 The EMF32GG-STK3700 board has two USB connectors: One, a Mini USB B Connector, for development and other, a Micro B-Type USB Connector, for the application.
 
@@ -111,7 +106,8 @@ In the STK3700 only the SWD interface is used, and there is a connector on the S
 
 Generally, in this kind of boards there is a serial interface between the Target and the Board Controller. It can be implemented using a physical channel with 2 lines or a virtual, using the SWD/JTAG channel. Both appears to the Host PC as a serial virtual port (*COMx* or */dev/ttyACMx*). In the STK3700 board the serial channel uses the UART0 unit (pins PE0 and PE1).
 
-##Examples for the EFM32GG-STK3700 Development Board
+Examples for the EFM32GG-STK3700 Development Board
+--------------------------------------------------
 
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
@@ -137,6 +133,3 @@ In all examples, a direct access to registers approach was used. It means that n
 -   20-LCD: Controls the LCD display
 
 Those marked with an asterisk are unfinished!!!
-
-*******************************************************
-
