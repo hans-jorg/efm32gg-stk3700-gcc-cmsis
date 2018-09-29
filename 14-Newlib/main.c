@@ -34,7 +34,7 @@ static int counter = 0;
     if( counter == 0 ) {
         counter = TickDivisor;
         // Process every second
-        LED_Toggle(LED0);
+        LED_Toggle(LED1);
     }
     counter--;
 }
@@ -61,13 +61,13 @@ int main(void) {
 char line[100];
 
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
     /* Turn on LEDs */
-    LED_Write(0,LED0|LED1);
+    LED_Write(0,LED1|LED2);
 
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/TickDivisor);

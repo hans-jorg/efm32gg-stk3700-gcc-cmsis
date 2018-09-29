@@ -47,17 +47,17 @@ PT_THREAD(Blinker(struct pt *pt)) {
 
     PT_BEGIN(pt);
 
-    LED_Write(LED1,LED0);
+    LED_Write(LED2,LED2);
 
     while(1) {
         // Processing
-        LED_Toggle(LED1|LED0);
+        LED_Toggle(LED1|LED2);
         PT_DELAY(1000);
 
-        LED_Toggle(LED1|LED0);
+        LED_Toggle(LED1|LED2);
         PT_DELAY(1000);
 
-//        LED_Write(0,LED0|LED1);
+//        LED_Write(0,LED1|LED2);
 //        PT_DELAY(1000);
 
     }
@@ -80,7 +80,7 @@ PT_THREAD(Blinker(struct pt *pt)) {
 int main(void) {
 
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
 
     /* Configure SysTick */

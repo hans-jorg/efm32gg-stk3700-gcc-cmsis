@@ -43,19 +43,19 @@ int i;
 int main(void) {
 
     /* Configure Pins in GPIOE */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     /* Blink loop */
     while (1) {
 
         Delay(DELAYVAL);
-        LED_Toggle(LED0);                                // Toggle LED0
-
-        Delay(DELAYVAL);
         LED_Toggle(LED1);                                // Toggle LED1
 
         Delay(DELAYVAL);
-        LED_Write(0,LED0|LED1);                          // Turn On All LEDs
+        LED_Toggle(LED2);                                // Toggle LED2
+
+        Delay(DELAYVAL);
+        LED_Write(0,LED1|LED2);                          // Turn On All LEDs
 
     }
 }

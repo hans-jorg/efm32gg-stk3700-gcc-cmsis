@@ -16,10 +16,10 @@
 void LED_Init(uint32_t leds) {
 
     // Configure Pins in GPIOE
-    GPIO_Init(GPIOE,0,LED0|LED1);
+    GPIO_Init(GPIOE,0,leds);
 
     // Turn Off LEDs
-    GPIO_WritePins(GPIOE,0,LED0|LED1);
+    GPIO_WritePins(GPIOE,0,leds);
 
 }
 
@@ -57,4 +57,3 @@ void LED_Write(uint32_t off, uint32_t on) {
 
     GPIO_WritePins(GPIOE,off,on);
 }
-

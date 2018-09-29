@@ -26,7 +26,7 @@
 #
 # Program name
 #
-PROGNAME=uart-cdc
+PROGNAME=led-ucos3
 
 #
 # Defines the part (device) that this project uses
@@ -63,23 +63,72 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # UCOS Dir
-UCOSDIR=../../Micrium/Software/uCOS-II/
-UCOSSRCDIR=$(UCOSDIR)/Source
-UCOSPORTDIR=$(UCOSDIR)/Ports/ARM-Cortex-M3/Generic/GCC
+#UCOS_DIR=../../Micrium/Software/uCOS-II/
+UCOS_DIR=uCOS-III
+UCOS_SRCDIR=$(UCOS_DIR)/uCOS-III/Source
+#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GNU
+UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M3/Generic/GNU
+
+# uC/CPU is needed by uC/OS
+UCCPU_DIR=$(UCOS_DIR)/uC-CPU
+UCCPU_SRCDIR=$(UCCPU_DIR)
+UCCPU_PORTDIR=$(UCCPU_DIR)/ARM-Cortex-M3/GNU
+
+# uC/Lib is needed by uC/CPU
+UCLIB_DIR=$(UCOS_DIR)/uC-LIB
+UCLIB_SRCDIR=$(UCLIB_DIR)
+UCLIB_PORTDIR=$(UCLIB_DIR)/ARM-Cortex-M3/GNU
+
 
 # Virtual path
-VPATH=$(UCOSSRCDIR) $(UCOSPORTDIR)
+VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR) $(UCCPU_SRCDIR) $(UCCPU_PORTDIR) $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
 
 # UCOS Include Path
-UCOSINCPATH=$(UCOSDIR)/Source  $(UCOSPORTDIR)
+UCOS_INCLUDEPATH=   $(UCOS_SRCDIR)  $(UCOS_PORTDIR) \
+                    $(UCCPU_SRCDIR) $(UCCPU_PORTDIR)   \
+                    $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
 
 # UCOS Source Files
-UCOSFILES=       ucos_ii.c     os_mbox.c     os_mutex.c  os_sem.c    os_time.c os_core.c \
-                 os_flag.c     os_mem.c      os_q.c      os_task.c   os_tmr.c
-UCOSPORTFILES=   os_cpu_c.c    os_dbg.c
-UCOSPORTASMFILES=os_cpu_a.S
+UCOS_FILES=         os_cfg_app.c    os_mutex.c      os_stat.c       os_tmr.c     \
+                    os_core.c       os_mem.c        os_prio.c       os_task.c    \
+                    os_dbg.c        os_mon.c        os_q.c          os_tick.c    \
+                    os_flag.c       os_msg.c        os_sem.c        os_time.c    \
+                    os_var.c
+UCOS_PORTCFILES=    os_cpu_c.c
+UCOS_PORTASMFILES=  os_cpu_a.s
 
-UCOSSRCFILES= $(addprefix $(UCOSDIR)/,$(UCOSFILES) )  $(addprefix $(UCOSPORTDIR)/,$(UCOSPORTFILES) )
+# uCCPU Source Files
+UCCPU_FILES=        cpu_core.c
+UCCPU_PORTFILES=    cpu_c.c
+UCCPU_PORTASMFILES= cpu_a.s
+
+# uCLIB Source Files
+UCLIB_FILES=        lib_math.c      lib_mem.c       lib_str.c       lib_ascii.c
+UCLIB_PORTFILES=
+uCLIB_PORTASMFILES= libmem_a.s
+
+
+# All ucOS Source Files
+UCOS_SRCFILES=  $(addprefix $(UCOS_SRCDIR)/, $(UCOS_FILES))                  \
+                $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTCFILES))            \
+                $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTASMFILES))          \
+                $(addprefix $(UCCPU_SRCDIR)/, $(UCCPU_FILES))                \
+                $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTFILES))           \
+                $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTASMFILES))        \
+                $(addprefix $(UCLIB_SRCDIR)/, $(UCLIB_FILES))                \
+                $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTFILES))           \
+                $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTASMFILES))        \
+
+# All ucOS Object Files
+UCOS_OBJFILES=  $(addprefix $(OBJDIR)/, $(UCOS_FILES:.c=.o))                 \
+                $(addprefix $(OBJDIR)/, $(UCOS_PORTCFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCOS_PORTASMFILES:.s=.o))          \
+                $(addprefix $(OBJDIR)/, $(UCCPU_FILES:.c=.o))                \
+                $(addprefix $(OBJDIR)/, $(UCCPU_PORTFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCCPU_PORTASMFILES:.s=.o))         \
+                $(addprefix $(OBJDIR)/, $(UCLIB_FILES:.c=.o))                \
+                $(addprefix $(OBJDIR)/, $(UCLIB_PORTFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCLIB_PORTASMFILES:.s=.o))
 
 
 #
@@ -217,7 +266,7 @@ OBJDIR=gcc
 #
 # Object files
 #
-OBJFILES=$(addprefix ${OBJDIR}/,$(notdir $(SRCFILES:.c=.o) $(UCOSSRCFILES:.c=.o) $(UCOSPORTFILES:.c=.o) $(UCOSPORTASMFILES:.S=.o) ))
+OBJFILES=$(addprefix ${OBJDIR}/,$(notdir $(SRCFILES:.c=.o))) $(UCOS_OBJFILES)
 
 #
 # Set the compiler CPU/FPU options.
@@ -305,7 +354,7 @@ LDFLAGS=--gc-sections
 # Include path
 #
 CMSISINCDIR=${CMSISDIR}/Include
-INCLUDEPATH= . $(UCOSINCPATH) ${CMSISDEVINCDIR} ${CMSISINCDIR}
+INCLUDEPATH= . $(UCOS_INCLUDEPATH) ${CMSISDEVINCDIR} ${CMSISINCDIR}
 
 
 ###############################################################################
@@ -522,39 +571,44 @@ ENTRY=Reset_Handler
 # The rule for building the object file from each C source file.
 #
 ${OBJDIR}/%.o: %.c
-	@echo "  Compiling           ${<}";
-	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	@echo "  Compiling           `basename ${<}`";
+	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
 #
-${OBJDIR}/%.o: %.S
-	@echo "  Assembling          ${<}";
-	${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
+${OBJDIR}/%.o: %.s
+	@echo "  Assembling          `basename ${<}`";
+	@${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
 
 #
 # The rule for creating an object library.
 #
 ${OBJDIR}/%.a:
-	@echo "  Archiving           ${@}";
-	${AR} -cr ${@} ${^}
+	@echo "  Archiving           `basename ${<}`";
+	@${AR} -cr ${@} ${^}
 
 #
 # The rule for linking the application.
 #
 ${OBJDIR}/%.axf:
-	@echo "  Linking             ${@} ";
-	${LD}   -T '${LINKERSCRIPT}' \
+	@echo "  Linking             `basename ${@}` ";
+	@${LD}   -T '${LINKERSCRIPT}' \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \
 	         -lm -lc -lgcc
-	         # \
-	         # ${LIBM} ${LIBC} ${LIBGCC}
+
+
+
+
+
+#
+# ${LIBM} ${LIBC} ${LIBGCC}
 
 ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
 	@echo "  Generating binary   ${@} ";
-	${OBJCOPY} -O binary ${^} ${@}
+	@${OBJCOPY} -O binary ${^} ${@}
 
 
 ###############################################################################
@@ -577,30 +631,34 @@ usage:
 	@echo "make openocd      start an openocd proxy"
 	@echo "make docs         generates docs using doxygen"
 
+
 #
 # The default rule, which causes the $(PROGNAME) example to be built.
 #
-
-all:
-	@echo "Common files"
-	@echo $(UCOSFILES)
-	@echo "Port files"
-	@echo $(UCOSPORTFILES)
-	@echo $(UCOSPORTASMFILES)
-	@echo "All source files"
-	@echo $(UCOSSRCFILES)
-	@echo "Object files"
-	@echo $(OBJFILES)
-
-
-allx: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
+all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 	@echo "Done"
+
+
+
+listvars:
+	@echo "====== Hardware Independet files ======"
+	@echo $(UCOS_FILES)
+	@echo "====== Port files ======"
+	@echo $(UCOS_PORTCFILES)
+	@echo $(UCOS_PORTASMFILES)
+	@echo "======= All uCOS source files ======="
+	@echo $(UCOS_SRCFILES)
+	@echo "======== All uCOS Object files ========"
+	@echo $(UCOS_OBJFILES)
+	@echo "======== VPATH ========"
+	@echo $(VPATH)
+
 
 #
 # Clean out all the generated files
 #
 clean:
-	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
+	@rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
 
 #
 # Transfer binary to board
@@ -662,13 +720,13 @@ size: $(OBJDIR)/$(PROGNAME).axf
 # List size
 #
 nm: $(OBJDIR)/$(PROGNAME).axf
-	$(OBJNM) $^
+	@$(OBJNM) $^
 
 #
 # The rule to create the target directory.
 #
 ${OBJDIR}:
-	mkdir -p ${OBJDIR}
+	@mkdir -p ${OBJDIR}
 
 #
 # Rules for building the $(PROGNAME) example.
@@ -718,10 +776,10 @@ gdbproxy:
 # Create gdbinit
 #
 $(GDBINIT):
-	echo "# Run this script using gdb source command" > $(GDBINIT)
-	echo "target remote localhost:3333" >> $(GDBINIT)
-	echo "break main" >> $(GDBINIT)
-	echo "continue" >> $(GDBINIT)
+	@echo "# Run this script using gdb source command" > $(GDBINIT)
+	@echo "target remote localhost:3333" >> $(GDBINIT)
+	@echo "break main" >> $(GDBINIT)
+	@echo "continue" >> $(GDBINIT)
 endif
 
 #
@@ -739,24 +797,24 @@ term:
 #
 docs: doxygen
 doxygen: $(DOXYGENCFG)
-	$(DOXYGEN) $(DOXYGENCFG)
+	@$(DOXYGEN) $(DOXYGENCFG)
 	echo Done.
 
 SEDSCRIPT=dox.sed
 $(DOXYGENCFG):
-	$(DOXYGEN) -g $(DOXYGENCFG)
-	echo "/^PROJECT_NAME/cPROJECT_NAME           = \"$(PROJNAME)\"" > $(SEDSCRIPT)
-	echo "/^FULL_PATH_NAMES/cFULL_PATH_NAMES     = NO" >> $(SEDSCRIPT)
-	echo "/^OPTIMIZE_OUTPUT_FOR_C/cOPTIMIZE_OUTPUT_FOR_C    = YES" >> $(SEDSCRIPT)
-	echo "/^DISTRIBUTE_GROUP_DOC/cDISTRIBUTE_GROUP_DOC    = YES" >> $(SEDSCRIPT)
-	echo "/^EXTRACT_STATIC/cEXTRACT_STATIC    = YES" >> $(SEDSCRIPT)
-	sed -i -f $(SEDSCRIPT) $(DOXYGENCFG)
-	rm  -f  $(SEDSCRIPT)
+	@$(DOXYGEN) -g $(DOXYGENCFG)
+	@echo "/^PROJECT_NAME/cPROJECT_NAME           = \"$(PROJNAME)\"" > $(SEDSCRIPT)
+	@echo "/^FULL_PATH_NAMES/cFULL_PATH_NAMES     = NO" >> $(SEDSCRIPT)
+	@echo "/^OPTIMIZE_OUTPUT_FOR_C/cOPTIMIZE_OUTPUT_FOR_C    = YES" >> $(SEDSCRIPT)
+	@echo "/^DISTRIBUTE_GROUP_DOC/cDISTRIBUTE_GROUP_DOC    = YES" >> $(SEDSCRIPT)
+	@echo "/^EXTRACT_STATIC/cEXTRACT_STATIC    = YES" >> $(SEDSCRIPT)
+	@sed -i -f $(SEDSCRIPT) $(DOXYGENCFG)
+	@rm  -f  $(SEDSCRIPT)
 
 
 
 docs-clean:
-	rm -rf html latex
+	@rm -rf html latex
 	echo Done.
 
 # These symbols are not files (or directories)

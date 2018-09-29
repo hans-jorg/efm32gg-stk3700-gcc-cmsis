@@ -31,15 +31,15 @@ static int8_t state = 0;            // must be static
     } else {
         switch(state) {
         case 0:
-            LED_Toggle(LED0);
+            LED_Toggle(LED1);
             state = 1;
             break;
         case 1:
-            LED_Toggle(LED1);
+            LED_Toggle(LED2);
             state = 2;
             break;
         case 2:
-            LED_Write(0,LED0|LED1);
+            LED_Write(0,LED1|LED2);
             state = 0;
             break;
         }
@@ -59,7 +59,7 @@ static int8_t state = 0;            // must be static
 int main(void) {
 
     /* Configure Pins in GPIOE */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/DIVIDER);

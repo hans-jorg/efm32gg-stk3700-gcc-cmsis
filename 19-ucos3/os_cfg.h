@@ -1,144 +1,124 @@
 /*
-*********************************************************************************************************
-*                                                uC/OS-II
-*                                          The Real-Time Kernel
-*                                  uC/OS-II Configuration File for V2.8x
+************************************************************************************************************************
+*                                                      uC/OS-III
+*                                                 The Real-Time Kernel
 *
-*                               (c) Copyright 2005-2009, Micrium, Weston, FL
-*                                          All Rights Reserved
+*                                  (c) Copyright 2009-2016; Micrium, Inc.; Weston, FL
+*                           All rights reserved.  Protected by international copyright laws.
 *
+*                                                  CONFIGURATION FILE
 *
 * File    : OS_CFG.H
-* By      : Jean J. Labrosse
-* Version : V2.91
+* By      : JJL
+* Version : V3.06.00
 *
 * LICENSING TERMS:
 * ---------------
-*   uC/OS-II is provided in source form for FREE evaluation, for educational use or for peaceful research.
-* If you plan on using  uC/OS-II  in a commercial product you need to contact Micriµm to properly license
-* its use in your product. We provide ALL the source code for your convenience and to help you experience
-* uC/OS-II.   The fact that the  source is provided does  NOT  mean that you can use it without  paying a
-* licensing fee.
-*********************************************************************************************************
+*           uC/OS-III is provided in source form for FREE short-term evaluation, for educational use or
+*           for peaceful research.  If you plan or intend to use uC/OS-III in a commercial application/
+*           product then, you need to contact Micrium to properly license uC/OS-III for its use in your
+*           application/product.   We provide ALL the source code for your convenience and to help you
+*           experience uC/OS-III.  The fact that the source is provided does NOT mean that you can use
+*           it commercially without paying a licensing fee.
+*
+*           Knowledge of the source code may NOT be used to develop a similar product.
+*
+*           Please help us continue to provide the embedded community with the finest software available.
+*           Your honesty is greatly appreciated.
+*
+*           You can find our product's user manual, API reference, release notes and
+*           more information at https://doc.micrium.com.
+*           You can contact us at www.micrium.com.
+************************************************************************************************************************
 */
 
 #ifndef OS_CFG_H
 #define OS_CFG_H
 
+                                                           /* --------------------------- MISCELLANEOUS --------------------------- */
+#define OS_CFG_APP_HOOKS_EN             DEF_ENABLED        /* Enable (DEF_ENABLED) application specific hooks                       */
+#define OS_CFG_ARG_CHK_EN               DEF_ENABLED        /* Enable (DEF_ENABLED) argument checking                                */
+#define OS_CFG_CALLED_FROM_ISR_CHK_EN   DEF_ENABLED        /* Enable (DEF_ENABLED) check for called from ISR                        */
+#define OS_CFG_DBG_EN                   DEF_DISABLED       /* Enable (DEF_ENABLED) debug code/variables                             */
+#define OS_CFG_DYN_TICK_EN              DEF_DISABLED       /* Enable (DEF_ENABLED) the Dynamic Tick                                 */
+#define OS_CFG_INVALID_OS_CALLS_CHK_EN  DEF_DISABLED       /* Enable (DEF_ENABLED) checks for invalid kernel calls                  */
+#define OS_CFG_OBJ_TYPE_CHK_EN          DEF_ENABLED        /* Enable (DEF_ENABLED) object type checking                             */
+#define OS_CFG_TS_EN                    DEF_DISABLED       /* Enable (DEF_ENABLED) time stamping                                    */
 
-                                       /* ---------------------- MISCELLANEOUS ----------------------- */
-#define OS_APP_HOOKS_EN           1u   /* Application-defined hooks are called from the uC/OS-II hooks */
-#define OS_ARG_CHK_EN             0u   /* Enable (1) or Disable (0) argument checking                  */
-#define OS_CPU_HOOKS_EN           1u   /* uC/OS-II hooks are found in the processor port files         */
+#define OS_CFG_PRIO_MAX                 64u                /* Defines the maximum number of task priorities (see OS_PRIO data type) */
 
-#define OS_DEBUG_EN               1u   /* Enable(1) debug variables                                    */
+#define OS_CFG_SCHED_LOCK_TIME_MEAS_EN  DEF_DISABLED       /* Include (DEF_ENABLED) code to measure scheduler lock time             */
+#define OS_CFG_SCHED_ROUND_ROBIN_EN     DEF_ENABLED        /* Include (DEF_ENABLED) code for Round-Robin scheduling                 */
 
-#define OS_EVENT_MULTI_EN         1u   /* Include code for OSEventPendMulti()                          */
-#define OS_EVENT_NAME_EN          1u   /* Enable names for Sem, Mutex, Mbox and Q                      */
-
-#define OS_LOWEST_PRIO           63u   /* Defines the lowest priority that can be assigned ...         */
-                                       /* ... MUST NEVER be higher than 254!                           */
-
-#define OS_MAX_EVENTS            10u   /* Max. number of event control blocks in your application      */
-#define OS_MAX_FLAGS              5u   /* Max. number of Event Flag Groups    in your application      */
-#define OS_MAX_MEM_PART           5u   /* Max. number of memory partitions                             */
-#define OS_MAX_QS                 4u   /* Max. number of queue control blocks in your application      */
-#define OS_MAX_TASKS             20u   /* Max. number of tasks in your application, MUST be >= 2       */
-
-#define OS_SCHED_LOCK_EN          1u   /* Include code for OSSchedLock() and OSSchedUnlock()           */
-
-#define OS_TICK_STEP_EN           1u   /* Enable tick stepping feature for uC/OS-View                  */
-#define OS_TICKS_PER_SEC        100u   /* Set the number of ticks in one second                        */
+#define OS_CFG_STK_SIZE_MIN             64u                /* Minimum allowable task stack size                                     */
 
 
-                                       /* --------------------- TASK STACK SIZE ---------------------- */
-#define OS_TASK_TMR_STK_SIZE    128u   /* Timer      task stack size (# of OS_STK wide entries)        */
-#define OS_TASK_STAT_STK_SIZE   128u   /* Statistics task stack size (# of OS_STK wide entries)        */
-#define OS_TASK_IDLE_STK_SIZE   128u   /* Idle       task stack size (# of OS_STK wide entries)        */
+                                                           /* --------------------------- EVENT FLAGS ----------------------------- */
+#define OS_CFG_FLAG_EN                  DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for EVENT FLAGS                  */
+#define OS_CFG_FLAG_DEL_EN              DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSFlagDel()                        */
+#define OS_CFG_FLAG_MODE_CLR_EN         DEF_ENABLED        /*     Include (DEF_ENABLED) code for Wait on Clear EVENT FLAGS          */
+#define OS_CFG_FLAG_PEND_ABORT_EN       DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSFlagPendAbort()                  */
 
 
-                                       /* --------------------- TASK MANAGEMENT ---------------------- */
-#define OS_TASK_CHANGE_PRIO_EN    1u   /*     Include code for OSTaskChangePrio()                      */
-#define OS_TASK_CREATE_EN         1u   /*     Include code for OSTaskCreate()                          */
-#define OS_TASK_CREATE_EXT_EN     1u   /*     Include code for OSTaskCreateExt()                       */
-#define OS_TASK_DEL_EN            1u   /*     Include code for OSTaskDel()                             */
-#define OS_TASK_NAME_EN           1u   /*     Enable task names                                        */
-#define OS_TASK_PROFILE_EN        1u   /*     Include variables in OS_TCB for profiling                */
-#define OS_TASK_QUERY_EN          1u   /*     Include code for OSTaskQuery()                           */
-#define OS_TASK_REG_TBL_SIZE      1u   /*     Size of task variables array (#of INT32U entries)        */
-#define OS_TASK_STAT_EN           1u   /*     Enable (1) or Disable(0) the statistics task             */
-#define OS_TASK_STAT_STK_CHK_EN   1u   /*     Check task stacks from statistic task                    */
-#define OS_TASK_SUSPEND_EN        1u   /*     Include code for OSTaskSuspend() and OSTaskResume()      */
-#define OS_TASK_SW_HOOK_EN        1u   /*     Include code for OSTaskSwHook()                          */
+                                                           /* ------------------------ MEMORY MANAGEMENT -------------------------  */
+#define OS_CFG_MEM_EN                   DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for the MEMORY MANAGER           */
 
 
-                                       /* ----------------------- EVENT FLAGS ------------------------ */
-#define OS_FLAG_EN                1u   /* Enable (1) or Disable (0) code generation for EVENT FLAGS    */
-#define OS_FLAG_ACCEPT_EN         1u   /*     Include code for OSFlagAccept()                          */
-#define OS_FLAG_DEL_EN            1u   /*     Include code for OSFlagDel()                             */
-#define OS_FLAG_NAME_EN           1u   /*     Enable names for event flag group                        */
-#define OS_FLAG_QUERY_EN          1u   /*     Include code for OSFlagQuery()                           */
-#define OS_FLAG_WAIT_CLR_EN       1u   /* Include code for Wait on Clear EVENT FLAGS                   */
-#define OS_FLAGS_NBITS           16u   /* Size in #bits of OS_FLAGS data type (8, 16 or 32)            */
+                                                           /* ------------------- MUTUAL EXCLUSION SEMAPHORES --------------------  */
+#define OS_CFG_MUTEX_EN                 DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for MUTEX                        */
+#define OS_CFG_MUTEX_DEL_EN             DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSMutexDel()                       */
+#define OS_CFG_MUTEX_PEND_ABORT_EN      DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSMutexPendAbort()                 */
 
 
-                                       /* -------------------- MESSAGE MAILBOXES --------------------- */
-#define OS_MBOX_EN                1u   /* Enable (1) or Disable (0) code generation for MAILBOXES      */
-#define OS_MBOX_ACCEPT_EN         1u   /*     Include code for OSMboxAccept()                          */
-#define OS_MBOX_DEL_EN            1u   /*     Include code for OSMboxDel()                             */
-#define OS_MBOX_PEND_ABORT_EN     1u   /*     Include code for OSMboxPendAbort()                       */
-#define OS_MBOX_POST_EN           1u   /*     Include code for OSMboxPost()                            */
-#define OS_MBOX_POST_OPT_EN       1u   /*     Include code for OSMboxPostOpt()                         */
-#define OS_MBOX_QUERY_EN          1u   /*     Include code for OSMboxQuery()                           */
+                                                           /* -------------------------- MESSAGE QUEUES --------------------------  */
+#define OS_CFG_Q_EN                     DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for QUEUES                       */
+#define OS_CFG_Q_DEL_EN                 DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQDel()                           */
+#define OS_CFG_Q_FLUSH_EN               DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQFlush()                         */
+#define OS_CFG_Q_PEND_ABORT_EN          DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSQPendAbort()                     */
 
 
-                                       /* --------------------- MEMORY MANAGEMENT -------------------- */
-#define OS_MEM_EN                 1u   /* Enable (1) or Disable (0) code generation for MEMORY MANAGER */
-#define OS_MEM_NAME_EN            1u   /*     Enable memory partition names                            */
-#define OS_MEM_QUERY_EN           1u   /*     Include code for OSMemQuery()                            */
+                                                           /* ---------------------------- SEMAPHORES ----------------------------- */
+#define OS_CFG_SEM_EN                   DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for SEMAPHORES                   */
+#define OS_CFG_SEM_DEL_EN               DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSSemDel()                         */
+#define OS_CFG_SEM_PEND_ABORT_EN        DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSSemPendAbort()                   */
+#define OS_CFG_SEM_SET_EN               DEF_ENABLED        /*     Include (DEF_ENABLED) code for OSSemSet()                         */
 
 
-                                       /* ---------------- MUTUAL EXCLUSION SEMAPHORES --------------- */
-#define OS_MUTEX_EN               1u   /* Enable (1) or Disable (0) code generation for MUTEX          */
-#define OS_MUTEX_ACCEPT_EN        1u   /*     Include code for OSMutexAccept()                         */
-#define OS_MUTEX_DEL_EN           1u   /*     Include code for OSMutexDel()                            */
-#define OS_MUTEX_QUERY_EN         1u   /*     Include code for OSMutexQuery()                          */
+                                                           /* ----------------------------- MONITORS ------------------------------ */
+#define OS_CFG_MON_EN                   DEF_DISABLED       /* Enable (DEF_ENABLED) code generation for MONITORS                     */
+#define OS_CFG_MON_DEL_EN               DEF_DISABLED       /*     Include (DEF_ENABLED) code for OSMonDel()                         */
 
+                                                           /* -------------------------- TASK MANAGEMENT -------------------------- */
+#define OS_CFG_STAT_TASK_EN             DEF_ENABLED        /* Enable (DEF_ENABLED) the statistics task                              */
+#define OS_CFG_STAT_TASK_STK_CHK_EN     DEF_ENABLED        /*     Check task stacks (DEF_ENABLED) from the statistic task           */
 
-                                       /* ---------------------- MESSAGE QUEUES ---------------------- */
-#define OS_Q_EN                   1u   /* Enable (1) or Disable (0) code generation for QUEUES         */
-#define OS_Q_ACCEPT_EN            1u   /*     Include code for OSQAccept()                             */
-#define OS_Q_DEL_EN               1u   /*     Include code for OSQDel()                                */
-#define OS_Q_FLUSH_EN             1u   /*     Include code for OSQFlush()                              */
-#define OS_Q_PEND_ABORT_EN        1u   /*     Include code for OSQPendAbort()                          */
-#define OS_Q_POST_EN              1u   /*     Include code for OSQPost()                               */
-#define OS_Q_POST_FRONT_EN        1u   /*     Include code for OSQPostFront()                          */
-#define OS_Q_POST_OPT_EN          1u   /*     Include code for OSQPostOpt()                            */
-#define OS_Q_QUERY_EN             1u   /*     Include code for OSQQuery()                              */
+#define OS_CFG_TASK_CHANGE_PRIO_EN      DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskChangePrio()                     */
+#define OS_CFG_TASK_DEL_EN              DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskDel()                            */
+#define OS_CFG_TASK_IDLE_EN             DEF_ENABLED        /* Include (DEF_ENABLED) the idle task                                   */
+#define OS_CFG_TASK_PROFILE_EN          DEF_DISABLED       /* Include (DEF_ENABLED) variables in OS_TCB for profiling               */
+#define OS_CFG_TASK_Q_EN                DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskQXXXX()                          */
+#define OS_CFG_TASK_Q_PEND_ABORT_EN     DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskQPendAbort()                     */
+#define OS_CFG_TASK_REG_TBL_SIZE        1u                 /* Number of task specific registers                                     */
+#define OS_CFG_TASK_STK_REDZONE_EN      DEF_DISABLED       /* Enable (DEF_ENABLED) stack redzone                                    */
+#define OS_CFG_TASK_STK_REDZONE_DEPTH   8u                 /*     Depth of the stack redzone                                        */
+#define OS_CFG_TASK_SEM_PEND_ABORT_EN   DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskSemPendAbort()                   */
+#define OS_CFG_TASK_SUSPEND_EN          DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTaskSuspend() and OSTaskResume()     */
+#define OS_CFG_TASK_TICK_EN             DEF_ENABLED        /* Include (DEF_ENABLED) the kernel tick task                            */
 
+                                                           /* ------------------ TASK LOCAL STORAGE MANAGEMENT -------------------  */
+#define OS_CFG_TLS_TBL_SIZE             0u                 /* Include (DEF_ENABLED) code for Task Local Storage (TLS) registers     */
 
-                                       /* ------------------------ SEMAPHORES ------------------------ */
-#define OS_SEM_EN                 1u   /* Enable (1) or Disable (0) code generation for SEMAPHORES     */
-#define OS_SEM_ACCEPT_EN          1u   /*    Include code for OSSemAccept()                            */
-#define OS_SEM_DEL_EN             1u   /*    Include code for OSSemDel()                               */
-#define OS_SEM_PEND_ABORT_EN      1u   /*    Include code for OSSemPendAbort()                         */
-#define OS_SEM_QUERY_EN           1u   /*    Include code for OSSemQuery()                             */
-#define OS_SEM_SET_EN             1u   /*    Include code for OSSemSet()                               */
+                                                           /* ------------------------- TIME MANAGEMENT --------------------------  */
+#define OS_CFG_TIME_DLY_HMSM_EN         DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTimeDlyHMSM()                        */
+#define OS_CFG_TIME_DLY_RESUME_EN       DEF_ENABLED        /* Include (DEF_ENABLED) code for OSTimeDlyResume()                      */
 
+                                                           /* ------------------------- TIMER MANAGEMENT -------------------------- */
+#define OS_CFG_TMR_EN                   DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for TIMERS                       */
+#define OS_CFG_TMR_DEL_EN               DEF_ENABLED        /* Enable (DEF_ENABLED) code generation for OSTmrDel()                   */
 
-                                       /* --------------------- TIME MANAGEMENT ---------------------- */
-#define OS_TIME_DLY_HMSM_EN       1u   /*     Include code for OSTimeDlyHMSM()                         */
-#define OS_TIME_DLY_RESUME_EN     1u   /*     Include code for OSTimeDlyResume()                       */
-#define OS_TIME_GET_SET_EN        1u   /*     Include code for OSTimeGet() and OSTimeSet()             */
-#define OS_TIME_TICK_HOOK_EN      1u   /*     Include code for OSTimeTickHook()                        */
-
-
-                                       /* --------------------- TIMER MANAGEMENT --------------------- */
-#define OS_TMR_EN                 1u   /* Enable (1) or Disable (0) code generation for TIMERS         */
-#define OS_TMR_CFG_MAX           16u   /*     Maximum number of timers                                 */
-#define OS_TMR_CFG_NAME_EN        1u   /*     Determine timer names                                    */
-#define OS_TMR_CFG_WHEEL_SIZE     8u   /*     Size of timer wheel (#Spokes)                            */
-#define OS_TMR_CFG_TICKS_PER_SEC 10u   /*     Rate at which timer management task runs (Hz)            */
+                                                           /* ------------------------- TRACE RECORDER ---------------------------- */
+#define OS_CFG_TRACE_EN                 DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace instrumentation                  */
+#define OS_CFG_TRACE_API_ENTER_EN       DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace API enter instrumentation        */
+#define OS_CFG_TRACE_API_EXIT_EN        DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace API exit  instrumentation        */
 
 #endif
-	 	   	  		 			 	    		   		 		 	 	 			 	    		   	 			 	  	 		 				 		  			 		 					 	  	  		      		  	   		      		  	 		 	      		   		 		  	 		 	      		  		  		  

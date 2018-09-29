@@ -361,9 +361,9 @@ But a better alternative is to use a generic include and define which microcontr
 
 The command line must then include the *-DEMF32GG990F1024* parameter. To use this alternative one, has to copy the *em_device.h* to the project folder and used quote marks (“”) instead of angle brackets (<>) in the include line.
 
-Instead of using symbols like *0x2* to access the bit to control the *LED0*, it is better to use a symbol LED0 as below.
+Instead of using symbols like *0x2* to access the bit to control the *LED1*, it is better to use a symbol LED1 as below.
 
-    #define LED0 0x2
+    #define LED1 0x2
 
 To define it, a common idiom is to use a BIT macro defined as below (the parenthesis are recommended to avoid surprises).
    
@@ -371,8 +371,8 @@ To define it, a common idiom is to use a BIT macro defined as below (the parenth
 
 The symbols to access the LEDs in the GPIO Port E registers can then be defined as
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
 
 To use the GPIO Port, where the LEDs are attached, it is necessary to:
 
@@ -399,15 +399,15 @@ To configure the pins as outputs one has to set the mode fields in the MODE regi
     
 Finally, to set the desired value, one can or a value with a bit 1 in the desired position and all other bits set to 0.
 
-    GPIOE->DOUT |= LED0;
+    GPIOE->DOUT |= LED1;
 
 To clear it, one must AND a value with a bit 0 in the desired position and all other bit set to 1
 
-    GPIOE->DOUT &= ~LED0;
+    GPIOE->DOUT &= ~LED1;
 
 To toggle a bin, one can XOR a value with a bit 1 in the desired position (and other bits set to 0).
 
-    GPIOE->DOUT ^= LED0;
+    GPIOE->DOUT ^= LED1;
 
 ***************************************
 
@@ -483,28 +483,28 @@ The parameter mode can be one of the symbols listed in the table below.
 
 The symbols to access the LEDs in the GPIO Port E registers can be defined as
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
     
 To configure the LED pins, the instruction below can do the job.
 
-    GPIO_Init(GPIOE,0,LED0|LED1);
+    GPIO_Init(GPIOE,0,LED1|LED2);
 
-To turn on the LED0, just code
+To turn on the LED1, just code
     
-    GPIO_WritePins(GPIOE,0,LED0);
+    GPIO_WritePins(GPIOE,0,LED1);
 
-To turn off the LED0, just
+To turn off the LED1, just
 
-    GPIO_WritePins(GPIOE,LED0,0);
+    GPIO_WritePins(GPIOE,LED1,0);
 
-To toggle the LED0, just
+To toggle the LED1, just
 
-    GPIO_TogglePines(GPIOE,LED0);
+    GPIO_TogglePines(GPIOE,LED1);
 
 In all cases above, it is possible to modify more than on LED. For example, to clear both LEDs,
 
-    GPIO_WritePins(GPIOE,LED0|LED1,0);
+    GPIO_WritePins(GPIOE,LED1|LED2,0);
 
 **************************************************
 
@@ -536,8 +536,8 @@ The main functions for a LED are:
 
 The symbols to access the LEDs are defined as bit masks to easy the access the corresponding pins of the GPIO Port E.
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
 
 ###LED_Init
 
@@ -563,23 +563,23 @@ The symbols to access the LEDs are defined as bit masks to easy the access the c
 
 To configure the LED pins, the instruction below can do the job.
 
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
-To turn on the LED0, just code
+To turn on the LED1, just code
 
-    LED_Write(0,LED0);
+    LED_Write(0,LED1);
 
-To turn off the LED0, just
+To turn off the LED1, just
 
-    LED_Write(LED0,0);
+    LED_Write(LED1,0);
 
-To toggle the LED0, just
+To toggle the LED1, just
 
-    LED_Toggle(LED0);
+    LED_Toggle(LED1);
 
 In all cases above, it is possible to modify more than on LED. For example, to clear both LEDs,
 
-    LED_Write(LED0|LED1,0);
+    LED_Write(LED1|LED2,0);
 
 **************************************************
 
@@ -610,8 +610,8 @@ The main functions for a LED are:
 
 The symbols to access the LEDs are defined as bit masks to easy the access the corresponding pins of the GPIO Port E.
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
 
 ###LED_Init
 
@@ -637,23 +637,23 @@ The symbols to access the LEDs are defined as bit masks to easy the access the c
 
 To configure the LED pins, the instruction below can do the job.
 
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
-To turn on the LED0, just code
+To turn on the LED1, just code
 
-    LED_Write(0,LED0);
+    LED_Write(0,LED1);
 
-To turn off the LED0, just
+To turn off the LED1, just
 
-    LED_Write(LED0,0);
+    LED_Write(LED1,0);
 
-To toggle the LED0, just
+To toggle the LED1, just
 
-    LED_Toggle(LED0);
+    LED_Toggle(LED1);
 
 In all cases above, it is possible to modify more than on LED. For example, to clear both LEDs,
 
-    LED_Write(LED0|LED1,0);
+    LED_Write(LED1|LED2,0);
 
 ******************************************
 
@@ -890,15 +890,15 @@ The structure of a program using interrupts is very different of the structure o
     
         switch(state) {
         case 0:
-            LED_Toggle(LED0);
+            LED_Toggle(LED1);
             state = 1;
             break;
         case 1:
-            LED_Toggle(LED1);
+            LED_Toggle(LED2);
             state = 2;
             break;
         case 2:
-            LED_Write(0,LED0|LED1);
+            LED_Write(0,LED1|LED2);
             state = 0;
             break;
         }
@@ -962,7 +962,7 @@ The main function is implemented in a very direct way.
     uint32_t b;
     
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
     /* Configure buttons */
     Button_Init(BUTTON0|BUTTON1);
     
@@ -970,10 +970,10 @@ The main function is implemented in a very direct way.
     while (1) {
         b = Button_ReadReleased();
         if( b&BUTTON0 ) {
-            LED_Toggle(LED0);
+            LED_Toggle(LED1);
         }
          if( b&BUTTON1 ) {
-            LED_Toggle(LED1);
+            LED_Toggle(LED2);
         }
     }
     
@@ -1038,14 +1038,14 @@ The functionalities are split between the main function and the callback functio
 	void buttoncallback(uint32_t v) {
 
         if( Button_ReadReleased() )
-             LED_Toggle(LED1);
+             LED_Toggle(LED2);
         }
 	}
 	...
 
     int main(void) {
          /* Configure LEDs */
-         LED_Init(LED0|LED1);
+         LED_Init(LED1|LED2);
 
         /* Configure buttons */
          Button_Init(BUTTON0|BUTTON1);
@@ -1054,7 +1054,7 @@ The functionalities are split between the main function and the callback functio
          /* Configure Sys Tick */
          SysTickConfig(SystemCoreClock/1000);
 
-         LED_Write(0,LED0|LED1);
+         LED_Write(0,LED1|LED2);
          /*
          * Read button loop. ATTENTION: No debounce
          */
@@ -1526,15 +1526,15 @@ In the last example a counter was used to divide further the interrupts, because
         // Processing
             switch(state) {
             case 0:
-                LED_Toggle(LED0);
+                LED_Toggle(LED1);
                 state = 1;
             break;
             case 1:
-                LED_Toggle(LED1);
+                LED_Toggle(LED2);
                 state = 2;
             break;
             case 2:
-                LED_Write(0,LED0|LED1);
+                LED_Write(0,LED1|LED2);
                 state = 0;
             break;
             }
@@ -1574,15 +1574,15 @@ A better alternative is the interrupt processing routine to signalize that a tas
 
          switch(state) {
          case 0:
-	         LED_Toggle(LED0);
+	         LED_Toggle(LED1);
 	         state = 1;
 	         break;
          case 1:
-    	     LED_Toggle(LED1);
+    	     LED_Toggle(LED2);
       	    state = 2;
          break;
          case 2:
-	         LED_Write(0,LED0|LED1);
+	         LED_Write(0,LED1|LED2);
 	         state = 0;
 	         break;
          }
@@ -1625,15 +1625,15 @@ The scheduler is initialized through Task_Init. Tasks are inserted using the Tas
     static int8_t state = 0; // must be static
         switch(state) {
         case 0:
-			LED_Toggle(LED0);
+			LED_Toggle(LED1);
 			state = 1;
 			break;
 		case 1:
-			LED_Toggle(LED1);
+			LED_Toggle(LED2);
 			state = 2;
 			break;
 		case 2:
-			LED_Write(0,LED0|LED1);
+			LED_Write(0,LED1|LED2);
 			State = 0;
 			break;
 		}
@@ -1680,11 +1680,11 @@ The code for the Blinker Task is very similar of the main code in example 03. It
 
      while(1) {
          // Processing
-         LED_Toggle(LED0);
-         PT_DELAY(1000);
          LED_Toggle(LED1);
          PT_DELAY(1000);
-         LED_Write(0,LED0|LED1);
+         LED_Toggle(LED2);
+         PT_DELAY(1000);
+         LED_Write(0,LED1|LED2);
          PT_DELAY(1000);
          }
          PT_END(pt);

@@ -55,23 +55,23 @@ The functionalities are split between the main function and the callback functio
 	void buttoncallback(uint32_t v) {
 
         if( Button_ReadReleased() )
-             LED_Toggle(LED1);
+             LED_Toggle(LED2);
         }
 	}
 	...
 
     int main(void) {
          /* Configure LEDs */
-         LED_Init(LED0|LED1);
+         LED_Init(LED1|LED2);
 
         /* Configure buttons */
-         Button_Init(BUTTON0|BUTTON1);
+         Button_Init(BUTTON1|BUTTON2);
 
          Button_SetCallback(buttoncallback);
          /* Configure Sys Tick */
          SysTickConfig(SystemCoreClock/1000);
 
-         LED_Write(0,LED0|LED1);
+         LED_Write(0,LED1|LED2);
          /*
          * Read button loop. ATTENTION: No debounce
          */

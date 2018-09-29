@@ -37,7 +37,7 @@ It is composed of a small set of C source and header files common to all platfor
 |  Project Folder                                              |  os_cfg.h includes.h                                      |
 
 
-The uC/OS II version from Micrium website lacks the port folder entirely. Ports available in the Micrium do not use GCC compiler. A Cortex M3 port for GCC could be found in [github](https://github.com/huyugui/STDFS/tree/master/lcd-demo/ucos/uCOS-II/Ports/ARM-Cortex-M3/Generic/GCC)[25].
+The uC/OS II version from Micrium website lacks the port folder entirely. Ports available in the Micrium do not use GCC compiler. A Cortex M3 port for GCC could be found in [github](https://github.com/huyugui/STDFS/tree/master/lcd-demo/ucos/uCOS-II/Ports/ARM-Cortex-M3/Generic/GCC)[25]. *But beware!! Both must be compatible. i.e. same version.*
 
 ##Configuration
 
@@ -131,6 +131,9 @@ The infinite loop can be replaced by *OSTaskDel(0)*, which autodelete the *TaskS
             // Initialize statistics
             OSStatInit();
 
+            // Time enough to calculate Maximal number of idle task activation
+            OSTimeDly(2);
+
             // Create tasks
             OSCreateTask(Task1,.......);
             OSCreateTask(Task2,.......);
@@ -159,6 +162,9 @@ The infinite loop can be replaced by *OSTaskDel(0)*, which autodelete the *TaskS
     }
     ´´´'
 
+# How to get uC/OS-II
+
+From https://github.com/tony/gpc, you can get in folder 3rd_party/uCOS-II a ucos version ported to GCC, CMSIS and Cortex M3
 ##More information
 
 [uC/OS II on Cortex M](https://www.state-machine.com/qpc/ucos-ii.html)[26]

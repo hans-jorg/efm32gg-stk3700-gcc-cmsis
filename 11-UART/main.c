@@ -28,7 +28,7 @@ static int counter = 0;
     if( counter == 0 ) {
         counter = TickDivisor;
         // Process every second
-        LED_Toggle(LED0);
+        LED_Toggle(LED1);
     }
     counter--;
 }
@@ -49,7 +49,7 @@ int cntchar;
 unsigned ch,checho;
 
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
@@ -58,7 +58,7 @@ unsigned ch,checho;
     ClockGetConfiguration(&clockconf);
 #endif
     /* Turn on LEDs */
-    LED_Write(0,LED0|LED1);
+    LED_Write(0,LED1|LED2);
 
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/TickDivisor);
@@ -72,7 +72,7 @@ unsigned ch,checho;
     while (1) {
 
         if( (ch = UART_GetCharNoWait()) != 0 ) {
-            LED_Toggle(LED1);
+            LED_Toggle(LED2);
             if( (ch != '\n') && (ch != '\r') )
                 checho = ch;
         }

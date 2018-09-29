@@ -27,16 +27,16 @@ void Button_Init(uint32_t buttons) {
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
 
-    if ( buttons&BUTTON0 ) {
-        GPIOB->MODEH &= ~(_GPIO_P_MODEL_MODE1_MASK);    // Clear bits
+    if ( buttons&BUTTON1 ) {
+        GPIOB->MODEH &= ~_GPIO_P_MODEL_MODE1_MASK;      // Clear bits
         GPIOB->MODEH |= GPIO_P_MODEL_MODE1_INPUT;       // Set bits
-        inputpins |= BUTTON0;
+        inputpins |= BUTTON1;
     }
 
-    if ( buttons&BUTTON1 ) {
-        GPIOB->MODEH &= ~(_GPIO_P_MODEL_MODE2_MASK);    // Clear bits
-        GPIOB->MODEH |= GPIO_P_MODEL_MODE2_INPUT;  // Set bits
-        inputpins |= BUTTON1;
+    if ( buttons&BUTTON2 ) {
+        GPIOB->MODEH &= ~_GPIO_P_MODEL_MODE2_MASK;      // Clear bits
+        GPIOB->MODEH |= GPIO_P_MODEL_MODE2_INPUT;       // Set bits
+        inputpins |= BUTTON2;
     }
     // First read
     lastread = GPIOB->DIN;

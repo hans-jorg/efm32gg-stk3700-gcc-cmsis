@@ -119,15 +119,15 @@ In all examples, a direct access to registers approach was used. It means that n
 -   06-SysTick: Blink LEDs and changing the core frequency
 -   07-SysTick: Blink LEDs using Time Triggered Tasks
 -   08-Button: Control LEDs using buttons (without debounce)
--   *09-Button: Control LEDs using buttons (without debounce)
--   10-Debounce*: Control LEDs using buttons (without debounce)
+-   09-Button: Control LEDs using buttons (without debounce)
+-   *10-Debounce: Control LEDs using buttons (without debounce)
 -   11-UART: Uses UART1 to communicate with host computer via USB cable
 -   *12-UART: USART1 interface using interrupts
 -   13-Ministdio: Implements a mini stdio package (printf, gets, etc)
 -   14-Newlib: Implements full access to newlib
 -   15-TimeTriggered: Uses a Time-Triggered approach[5]
 -   16-Protothreads: Uses a proto thread approach
--   17-FreeRTOS: Uses a (free) preemptive real time kernel
+-   *17-FreeRTOS: Uses a (free) preemptive real time kernel
 -   *18-ucos2: Uses ucos version 2
 -   *19-ucos3: Uses ucos version 3
 -   20-LCD: Controls the LCD display

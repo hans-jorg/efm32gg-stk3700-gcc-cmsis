@@ -23,11 +23,11 @@ The code for the Blinker Task is very similar of the main code in example 03. It
 
      while(1) {
          // Processing
-         LED_Toggle(LED0);
-         PT_DELAY(1000);
          LED_Toggle(LED1);
          PT_DELAY(1000);
-         LED_Write(0,LED0|LED1);
+         LED_Toggle(LED2);
+         PT_DELAY(1000);
+         LED_Write(0,LED1|LED2);
          PT_DELAY(1000);
          }
          PT_END(pt);

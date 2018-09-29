@@ -24,18 +24,18 @@ void LED_Init(uint32_t leds) {
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
 
-    if( leds&LED0 ) {
+    if( leds&LED1 ) {
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE2_MASK;      // Clear bits
         GPIOE->MODEL |= GPIO_P_MODEL_MODE2_PUSHPULL;    // Set bits
     }
 
-    if( leds&LED1 ) {
+    if( leds&LED2 ) {
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE3_MASK;      // Clear bits
         GPIOE->MODEL |= GPIO_P_MODEL_MODE3_PUSHPULL;    // Set bits
     }
 
     // Turn Off LEDs
-    LED_Off(LED0|LED1);
+    LED_Off(LED1|LED2);
 
 }
 

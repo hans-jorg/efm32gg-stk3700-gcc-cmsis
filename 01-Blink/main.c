@@ -21,14 +21,8 @@
 
 ///@{
 /// LEDs are on Port E
-#define LED0 BIT(2)
-#define LED1 BIT(3)
-///@}
-
-/// Buttons are on Port B
-///@{
-#define BUTTON0 BIT(9)
-#define BUTTON1 BIT(10)
+#define LED1 BIT(2)
+#define LED2 BIT(3)
 ///@}
 
 /// Default delay value.
@@ -71,21 +65,21 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);  // GPIOE
     GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);  // Set bits
 
     /* Initial values for LEDs */
-    GPIOE->DOUT &= ~(LED0|LED1);                                               // Turn Off LEDs
+    GPIOE->DOUT &= ~(LED1|LED2);                                               // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
 
-        GPIOE->DOUT ^= LED0;
-        Delay(DELAYVAL);
-
         GPIOE->DOUT ^= LED1;
         Delay(DELAYVAL);
 
-        GPIOE->DOUT |= LED0|LED1;
+        GPIOE->DOUT ^= LED2;
+        Delay(DELAYVAL);
+
+        GPIOE->DOUT |= LED1|LED2;
         Delay(2*DELAYVAL);
 
-        GPIOE->DOUT &= ~(LED0|LED1);
+        GPIOE->DOUT &= ~(LED1|LED2);
         Delay(DELAYVAL);
 
     }

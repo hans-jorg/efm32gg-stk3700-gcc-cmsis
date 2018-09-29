@@ -26,8 +26,8 @@ The main functions for a LED are:
 
 The symbols to access the LEDs are defined as bit masks to easy the access the corresponding pins of the GPIO Port E.
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
 
 ###LED_Init
 
@@ -53,20 +53,20 @@ The symbols to access the LEDs are defined as bit masks to easy the access the c
 
 To configure the LED pins, the instruction below can do the job.
 
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
-To turn on the LED0, just code
+To turn on the LED1, just code
 
-    LED_Write(0,LED0);
+    LED_Write(0,LED1);
 
-To turn off the LED0, just
+To turn off the LED1, just
 
-    LED_Write(LED0,0);
+    LED_Write(LED1,0);
 
-To toggle the LED0, just
+To toggle the LED1, just
 
-    LED_Toggle(LED0);
+    LED_Toggle(LED1);
 
 In all cases above, it is possible to modify more than on LED. For example, to clear both LEDs,
 
-    LED_Write(LED0|LED1,0);
+    LED_Write(LED1|LED2,0);

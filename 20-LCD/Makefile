@@ -564,7 +564,7 @@ all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 # Clean out all the generated files
 #
 clean:
-	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
+	@rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
 
 #
 # Transfer binary to board

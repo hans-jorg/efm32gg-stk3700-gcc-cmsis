@@ -68,25 +68,25 @@ The parameter mode can be one of the symbols listed in the table below.
 
 The symbols to access the LEDs in the GPIO Port E registers can be defined as
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
     
 To configure the LED pins, the instruction below can do the job.
 
-    GPIO_Init(GPIOE,0,LED0|LED1);
+    GPIO_Init(GPIOE,0,LED1|LED2);
 
-To turn on the LED0, just code
+To turn on the LED1, just code
     
-    GPIO_WritePins(GPIOE,0,LED0);
+    GPIO_WritePins(GPIOE,0,LED1);
 
-To turn off the LED0, just
+To turn off the LED1, just
 
-    GPIO_WritePins(GPIOE,LED0,0);
+    GPIO_WritePins(GPIOE,LED1,0);
 
-To toggle the LED0, just
+To toggle the LED1, just
 
-    GPIO_TogglePines(GPIOE,LED0);
+    GPIO_TogglePines(GPIOE,LED1);
 
 In all cases above, it is possible to modify more than on LED. For example, to clear both LEDs,
 
-    GPIO_WritePins(GPIOE,LED0|LED1,0);
+    GPIO_WritePins(GPIOE,LED1|LED2,0);

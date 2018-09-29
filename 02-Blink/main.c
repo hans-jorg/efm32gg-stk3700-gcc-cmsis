@@ -12,8 +12,8 @@
 #define BIT(N) (1U<<(N))
 
 // LEDs are on PE
-#define LED0 BIT(2)
-#define LED1 BIT(3)
+#define LED1 BIT(2)
+#define LED2 BIT(3)
 
 #define DELAYVAL 1
 
@@ -47,21 +47,21 @@ int i;
 int main(void) {
 
     /* Configure Pins in GPIOE */
-    GPIO_Init(GPIOE,0,LED0|LED1);       // LED pins configured as output
+    GPIO_Init(GPIOE,0,LED1|LED2);       // LED pins configured as output
 
-    GPIO_WritePins(GPIOE,0,LED0|LED1);  // Turn Off LEDs
+    GPIO_WritePins(GPIOE,0,LED1|LED2);  // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
 
         Delay(DELAYVAL);
-        GPIO_TogglePins(GPIOE,LED0);            // Toggle LED0
+        GPIO_TogglePins(GPIOE,LED1);            // Toggle LED2
 
         Delay(DELAYVAL);
-        GPIO_TogglePins(GPIOE,LED1);            // Toggle LED1
+        GPIO_TogglePins(GPIOE,LED2);            // Toggle LED2
 
         Delay(DELAYVAL);
-        GPIO_WritePins(GPIOE,0,LED0|LED1);      // Turn On All LEDs
+        GPIO_WritePins(GPIOE,0,LED1|LED2);      // Turn On All LEDs
 
     }
 }

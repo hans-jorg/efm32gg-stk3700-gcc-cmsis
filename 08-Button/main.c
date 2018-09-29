@@ -28,10 +28,10 @@ int main(void) {
 uint32_t b;
 
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     /* Configure buttons */
-    Button_Init(BUTTON0|BUTTON1);
+    Button_Init(BUTTON1|BUTTON2);
 
     /*
      * Read button loop
@@ -40,11 +40,11 @@ uint32_t b;
      */
     while (1) {
         b = Button_ReadReleased();
-        if( b&BUTTON0 ) {
-            LED_Toggle(LED0);
-        }
         if( b&BUTTON1 ) {
             LED_Toggle(LED1);
+        }
+        if( b&BUTTON2 ) {
+            LED_Toggle(LED2);
         }
     }
 

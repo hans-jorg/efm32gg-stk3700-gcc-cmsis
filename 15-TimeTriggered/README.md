@@ -28,15 +28,15 @@ In the last example a counter was used to divide further the interrupts, because
         // Processing
             switch(state) {
             case 0:
-                LED_Toggle(LED0);
+                LED_Toggle(LED1);
                 state = 1;
             break;
             case 1:
-                LED_Toggle(LED1);
+                LED_Toggle(LED2);
                 state = 2;
             break;
             case 2:
-                LED_Write(0,LED0|LED1);
+                LED_Write(0,LED1|LED2);
                 state = 0;
             break;
             }
@@ -76,15 +76,15 @@ A better alternative is the interrupt processing routine to signalize that a tas
 
          switch(state) {
          case 0:
-	         LED_Toggle(LED0);
+	         LED_Toggle(LED1);
 	         state = 1;
 	         break;
          case 1:
-    	     LED_Toggle(LED1);
+    	     LED_Toggle(LED2);
       	    state = 2;
          break;
          case 2:
-	         LED_Write(0,LED0|LED1);
+	         LED_Write(0,LED1|LED2);
 	         state = 0;
 	         break;
          }
@@ -127,15 +127,15 @@ The scheduler is initialized through Task_Init. Tasks are inserted using the Tas
     static int8_t state = 0; // must be static
         switch(state) {
         case 0:
-			LED_Toggle(LED0);
+			LED_Toggle(LED1);
 			state = 1;
 			break;
 		case 1:
-			LED_Toggle(LED1);
+			LED_Toggle(LED2);
 			state = 2;
 			break;
 		case 2:
-			LED_Write(0,LED0|LED1);
+			LED_Write(0,LED1|LED2);
 			State = 0;
 			break;
 		}

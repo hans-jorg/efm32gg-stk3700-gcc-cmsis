@@ -20,8 +20,8 @@
  */
 ///@{
 // LEDs are on PE
-#define LED0 BIT(2)
-#define LED1 BIT(3)
+#define LED1 BIT(2)
+#define LED2 BIT(3)
 ///@}
 
 /**

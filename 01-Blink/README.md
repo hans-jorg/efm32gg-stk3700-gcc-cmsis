@@ -25,9 +25,9 @@ But a better alternative is to use a generic include and define which microcontr
 
 The command line must then include the *-DEMF32GG990F1024* parameter. To use this alternative one, has to copy the *em_device.h* to the project folder and used quote marks (“”) instead of angle brackets (<>) in the include line.
 
-Instead of using symbols like *0x2* to access the bit to control the *LED0*, it is better to use a symbol LED0 as below.
+Instead of using symbols like *0x2* to access the bit to control the *LED1*, it is better to use a symbol LED1 as below.
 
-    #define LED0 0x2
+    #define LED1 0x2
 
 To define it, a common idiom is to use a BIT macro defined as below (the parenthesis are recommended to avoid surprises).
    
@@ -35,8 +35,8 @@ To define it, a common idiom is to use a BIT macro defined as below (the parenth
 
 The symbols to access the LEDs in the GPIO Port E registers can then be defined as
 
-    #define LED0 BIT(2)
-    #define LED1 BIT(3)
+    #define LED1 BIT(2)
+    #define LED2 BIT(3)
 
 To use the GPIO Port, where the LEDs are attached, it is necessary to:
 
@@ -63,12 +63,12 @@ To configure the pins as outputs one has to set the mode fields in the MODE regi
     
 Finally, to set the desired value, one can or a value with a bit 1 in the desired position and all other bits set to 0.
 
-    GPIOE->DOUT |= LED0;
+    GPIOE->DOUT |= LED1;
 
 To clear it, one must AND a value with a bit 0 in the desired position and all other bit set to 1
 
-    GPIOE->DOUT &= ~LED0;
+    GPIOE->DOUT &= ~LED1;
 
 To toggle a bin, one can XOR a value with a bit 1 in the desired position (and other bits set to 0).
 
-    GPIOE->DOUT ^= LED0;
+    GPIOE->DOUT ^= LED1;

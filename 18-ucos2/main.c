@@ -16,45 +16,124 @@
 #include "clock_efm32gg.h"
 
 #include "ucos_ii.h"
-
 #include "led.h"
-#include "uart.h"
 
 
-/**************************************************************************//**
+/**
+ * @brief Semiperiod values for LED1 and LED2
+ */
+//{
+#define DELAY0 1500
+#define DELAY1 3500
+//}
+
+
+/**
+ * Stacks for tasks
+ */
+//{
+#define TASKSTARTSTACKSIZE 100
+static OS_STK TaskStartStack[TASKSTARTSTACKSIZE];
+#define TASK0STACKSIZE 100
+static OS_STK Task0Stack[TASK0STACKSIZE];
+#define TASK1STACKSIZE 100
+static OS_STK Task1Stack[TASK1STACKSIZE];
+
+//}
+
+/**
+ * @brief  Task for blinking LED1
+ *
+ * @note   LED_Init must be called before
+ */
+
+void Task0(void *param) {
+
+    while(1) {
+        LED_Toggle(LED1);
+        OSTimeDly(DELAY0);
+    }
+}
+
+/**
+ * @brief  Task for blinking LED2
+ *
+ * @note   LED_Init must be called before
+ */
+
+void Task1(void *param) {
+
+    while(1) {
+        LED_Toggle(LED2);
+        OSTimeDly(DELAY1);
+    }
+}
+
+/**
+ * @brief  Task for starting other tasks
+ *
+ * @note   It is recommended to create task when uc/os is already running
+ */
+
+
+void TaskStart(void *param) {
+
+    // 
+//    OS_CPU_TickInit(OS_TICKS_PER_SEC);          // Initialize the Tick interrupt
+
+#if (OS_TASK_STAT_EN > 0)
+    OSStatInit();                               // Determine CPU capacity
+#endif
+
+    // Create a task to blink LED 0
+    OSTaskCreate(   Task0,
+                    (void *) 0,
+                    (void *) &Task0Stack[TASK0STACKSIZE-1],
+                    0);
+                            
+    // Create a task to blink LED 1
+    OSTaskCreate(   Task1,
+                    (void *) 0,
+                    (void *) &Task1Stack[TASK1STACKSIZE-1],
+                    0);
+                    
+}
+
+
+
+
+/**
  * @brief  Main function
  *
  * @note   Using external crystal oscillator
- *         HFCLK = HFXO
- *         HFCORECLK = HFCLK
- *         HFPERCLK  = HFCLK
+ *         HFCLK = HFXO, HFCORECLK = HFCLK, HFPERCLK  = HFCLK
  */
-
 int main(void) {
-char line[100];
 
+    
+    // Initialize uc/os II
+    OSInit();
+    
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
-
+    LED_Init(LED1|LED2);
+    LED_Write(0,LED1|LED2);         // Turn them on
+    
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-    /* Turn on LEDs */
-    LED_Write(0,LED0|LED1);
-
-    /* Configure SysTick */
+    // Configure SysTick
     SysTick_Config(SystemCoreClock/1000);
+    
+    // Create a task to start the other tasks
+    OSTaskCreate(   TaskStart,
+                    (void *) 0,
+                    (void *) &TaskStartStack[TASKSTARTSTACKSIZE-1],
+                    0);
 
-    /* Configure UART */
-    UART_Init();
-
+    // Should be inside TaskStart ?
     __enable_irq();
 
-    printf("\r\n\n\n\rHello\n\r");
-    while (1) {
-        printf("\r\n\n\n\rWhat is your name?\n");
-        fgets(line,99,stdin);
-        printf("Hello %s\n",line);
-    }
+    // Enter uc/os and never returns
+    OSStart();
 
 }

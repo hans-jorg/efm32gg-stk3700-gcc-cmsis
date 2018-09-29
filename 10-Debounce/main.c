@@ -36,16 +36,16 @@ int main(void) {
 volatile uint32_t b;
 
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
 
     /* Configure buttons */
-    Button_Init(BUTTON0|BUTTON1);
+    Button_Init(BUTTON1|BUTTON2);
     Button_SetCallback(buttoncallback);
 
     /* Enable interrupts */
     __enable_irq();
 
-    LED_Write(0,LED0|LED1);
+    LED_Write(0,LED1|LED2);
     /*
      * Read button loop
      *
@@ -55,15 +55,15 @@ volatile uint32_t b;
 #if 0
         b = Button_ReadReleased();
         if( b&BUTTON0 ) {
-            LED_Toggle(LED0);
+            LED_Toggle(LED1);
         }
         if( b&BUTTON1 ) {
-            LED_Toggle(LED1);
+            LED_Toggle(LED2);
         }
 #else
         b = 1000000;
         while(b) {b--;}
-        LED_Toggle(LED0);
+        LED_Toggle(LED2);
 #endif
     }
 

@@ -14,40 +14,40 @@ The functions implemented are:
     uint32_t Button_ReadChanges(void);
     uint32_t Button_ReadPressed(void);
     uint32_t Button_ReadReleased(void);
-    
+
 As an example, the function *Button_ReadReleased* is shown. There in a static variable called *lastread*, updated every time a read is done. The expression *changes = newread&~lastread* returns 1 in the corresponding bit position when the present read value is 1 and the last read value is 0.
 
     uint32_t Button_ReadReleased(void) {
     uint32_t newread;
     uint32_t changes;
-    
+
      newread = GPIOB->DIN;
      changes = newread&~lastread;
      lastread = newread;
      return changes&inputpins;
     }
-    
+
 ##Main function
 
 The main function is implemented in a very direct way.
 
     int main(void) {
     uint32_t b;
-    
+
     /* Configure LEDs */
-    LED_Init(LED0|LED1);
+    LED_Init(LED1|LED2);
     /* Configure buttons */
     Button_Init(BUTTON0|BUTTON1);
-    
+
     /* Blink loop */
     while (1) {
         b = Button_ReadReleased();
-        if( b&BUTTON0 ) {
-            LED_Toggle(LED0);
-        }
-         if( b&BUTTON1 ) {
+        if( b&BUTTON1 ) {
             LED_Toggle(LED1);
         }
+        if( b&BUTTON2 ) {
+            LED_Toggle(LED2);
+        }
     }
-    
+
 }

@@ -26,7 +26,7 @@
 #
 # Program name
 #
-PROGNAME=uart-cdc
+PROGNAME=led-ucos2
 
 #
 # Defines the part (device) that this project uses
@@ -63,25 +63,32 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # UCOS Dir
-UCOSDIR=../../Micrium/Software/uCOS-II/
-UCOSSRCDIR=$(UCOSDIR)/Source
-UCOSPORTDIR=$(UCOSDIR)/Ports/ARM-Cortex-M3/Generic/GCC
+#UCOS_DIR=../../Micrium/Software/uCOS-II/
+UCOS_DIR=uCOS-II
+UCOS_SRCDIR=$(UCOS_DIR)/Source
+#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GCC
+UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/Generic/GCC
+
 
 # Virtual path
-VPATH=$(UCOSSRCDIR) $(UCOSPORTDIR)
+VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR)
 
 # UCOS Include Path
-UCOSINCPATH=$(UCOSDIR)/Source  $(UCOSPORTDIR)
+UCOS_INCLUDEPATH=$(UCOS_SRCDIR)  $(UCOS_PORTDIR)
 
 # UCOS Source Files
-UCOSFILES=       ucos_ii.c     os_mbox.c     os_mutex.c  os_sem.c    os_time.c os_core.c \
-                 os_flag.c     os_mem.c      os_q.c      os_task.c   os_tmr.c
-UCOSPORTFILES=   os_cpu_c.c    os_dbg.c
-UCOSPORTASMFILES=os_cpu_a.S
+UCOS_FILES=        os_mbox.c     os_mutex.c  os_sem.c    os_time.c os_core.c \
+                   os_flag.c     os_mem.c      os_q.c      os_task.c   os_tmr.c
+UCOS_PORTCFILES=   os_cpu_c.c    os_dbg.c
+UCOS_PORTASMFILES= os_cpu_a.S
 
-UCOSSRCFILES= $(addprefix $(UCOSDIR)/,$(UCOSFILES) )  $(addprefix $(UCOSPORTDIR)/,$(UCOSPORTFILES) )
+UCOS_SRCFILES= $(addprefix $(UCOS_SRCDIR)/,$(UCOS_FILES) )  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTCFILES))  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTASMFILES)  )
+
+UCOS_OBJFILES= $(addprefix ${OBJDIR}/, $(notdir $(UCOS_FILES:.c=.o) $(UCOS_PORTCFILES:.c=.o) $(UCOS_PORTASMFILES:.S=.o)))
 
 
+# App_TaskCreateHook App_TaskDelHook App_TaskIdleHook App_TaskReturnHook App_TaskStatHook
+# App_TaskSwHook App_TCBInitHook App_TimeTickHook
 #
 # Main target
 #
@@ -92,7 +99,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-#.SILENT:
+.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -217,7 +224,7 @@ OBJDIR=gcc
 #
 # Object files
 #
-OBJFILES=$(addprefix ${OBJDIR}/,$(notdir $(SRCFILES:.c=.o) $(UCOSSRCFILES:.c=.o) $(UCOSPORTFILES:.c=.o) $(UCOSPORTASMFILES:.S=.o) ))
+OBJFILES=$(addprefix ${OBJDIR}/,$(notdir $(SRCFILES:.c=.o))) $(UCOS_OBJFILES)
 
 #
 # Set the compiler CPU/FPU options.
@@ -305,7 +312,7 @@ LDFLAGS=--gc-sections
 # Include path
 #
 CMSISINCDIR=${CMSISDIR}/Include
-INCLUDEPATH= . $(UCOSINCPATH) ${CMSISDEVINCDIR} ${CMSISINCDIR}
+INCLUDEPATH= . $(UCOS_INCLUDEPATH) ${CMSISDEVINCDIR} ${CMSISINCDIR}
 
 
 ###############################################################################
@@ -577,24 +584,28 @@ usage:
 	@echo "make openocd      start an openocd proxy"
 	@echo "make docs         generates docs using doxygen"
 
+
 #
 # The default rule, which causes the $(PROGNAME) example to be built.
 #
-
-all:
-	@echo "Common files"
-	@echo $(UCOSFILES)
-	@echo "Port files"
-	@echo $(UCOSPORTFILES)
-	@echo $(UCOSPORTASMFILES)
-	@echo "All source files"
-	@echo $(UCOSSRCFILES)
-	@echo "Object files"
-	@echo $(OBJFILES)
-
-
-allx: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
+all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 	@echo "Done"
+
+
+
+listvars:
+	@echo "====== Common files ======"
+	@echo $(UCOS_FILES)
+	@echo "====== Port files ======"
+	@echo $(UCOS_PORTCFILES)
+	@echo $(UCOS_PORTASMFILES)
+	@echo "======= All source files ======="
+	@echo $(UCOS_SRCFILES)
+	@echo "======== Object files ========"
+	@echo $(OBJFILES)
+	@echo "======== VPATH ========"
+	@echo $(VPATH)
+
 
 #
 # Clean out all the generated files

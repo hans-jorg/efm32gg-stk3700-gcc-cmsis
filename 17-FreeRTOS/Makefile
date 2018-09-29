@@ -62,17 +62,33 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 # FreeRTOS Configuration
 #
 
+#
+# There are 5 alternatives for heap management
+#
+#     heap_1.c    Does not free memory
+#     heap_2.c    Uses a best fit allocation algorithm, but does not combine adjacent areas
+#     heap_3.c    Uses the malloc/free routines provided
+#     heap_4.c    Full implementation but not deterministic
+#     heap_5.c    Can use multiple memory pools
+#
 # FreeRTOS Dir
 FREERTOSDIR=../../FreeRTOSv10.0.0
 
 # Virtual path
-VPATH=$(FREERTOSDIR)/FreeRTOS/Source $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3
+VPATH=      $(FREERTOSDIR)/FreeRTOS/Source:\
+            $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3:\
+            $(FREERTOSDIR)/FreeRTOS/Source/portable/MemMang
 
 # FreeRTOS Include Path
-FREERTOSINCPATH=$(FREERTOSDIR)/FreeRTOS/Source/include  $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3/
+FREERTOSINCPATH=    $(FREERTOSDIR)/FreeRTOS/Source/include \
+                    $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3/
 
 # FreeRTOS Source Files
-FREERTOSFILES=croutine.c tasks.c event_groups.c list.c queue.c stream_buffer.c timers.c portable/GCC/ARM_CM3/port.c
+# Some files can be ommited if their funcionalities are not used
+#
+FREERTOSFILES=  tasks.c event_groups.c list.c queue.c stream_buffer.c timers.c croutine.c \
+                portable/GCC/ARM_CM3/port.c portable/MemMang/heap_2.c
+
 FREERTOSSRCFILES= $(addprefix $(FREERTOSDIR)/FreeRTOS/Source/,$(FREERTOSFILES))
 
 
@@ -516,39 +532,40 @@ ENTRY=Reset_Handler
 # The rule for building the object file from each C source file.
 #
 ${OBJDIR}/%.o: %.c
-	@echo "  Compiling           ${<}";
-	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	@echo "  Compiling           `basename ${<}`";
+	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
 #
 ${OBJDIR}/%.o: %.S
-	@echo "  Assembling          ${<}";
-	${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
+	@echo "  Assembling          `basename ${<}`";
+	@${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
 
 #
 # The rule for creating an object library.
 #
 ${OBJDIR}/%.a:
-	@echo "  Archiving           ${@}";
-	${AR} -cr ${@} ${^}
+	@echo "  Archiving           `basename ${@}`";
+	@${AR} -cr ${@} ${^}
 
 #
 # The rule for linking the application.
 #
 ${OBJDIR}/%.axf:
-	@echo "  Linking             ${@} ";
-	${LD}   -T '${LINKERSCRIPT}' \
+	@echo "  Linking             `basename ${@}` ";
+	@${LD}   -T '${LINKERSCRIPT}' \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \
 	         -lm -lc -lgcc
-	         # \
-	         # ${LIBM} ${LIBC} ${LIBGCC}
+
+
+#        ${LIBM} ${LIBC} ${LIBGCC}
 
 ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
 	@echo "  Generating binary   ${@} ";
-	${OBJCOPY} -O binary ${^} ${@}
+	@${OBJCOPY} -O binary ${^} ${@}
 
 
 ###############################################################################
@@ -581,7 +598,7 @@ all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 # Clean out all the generated files
 #
 clean:
-	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
+	@rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
 
 #
 # Transfer binary to board

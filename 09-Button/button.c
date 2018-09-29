@@ -75,10 +75,10 @@ void Button_Init(uint32_t buttons) {
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
 
-    if ( buttons&BUTTON0 ) {
+    if ( buttons&BUTTON1 ) {
         GPIOB->MODEH &= ~(_GPIO_P_MODEH_MODE9_MASK);    // Clear bits
         GPIOB->MODEH |= GPIO_P_MODEH_MODE9_INPUT;       // Set bits
-        inputpins |= BUTTON0;
+        inputpins |= BUTTON1;
         /* Interrupt */
 
         GPIO->EXTIPSELH = (GPIO->EXTIPSELH&~(_GPIO_EXTIPSELH_EXTIPSEL9_MASK))
@@ -89,10 +89,10 @@ void Button_Init(uint32_t buttons) {
 
     }
 
-    if ( buttons&BUTTON1 ) {
+    if ( buttons&BUTTON2 ) {
         GPIOB->MODEH &= ~(_GPIO_P_MODEH_MODE10_MASK);    // Clear bits
         GPIOB->MODEH |= GPIO_P_MODEH_MODE10_INPUT;       // Set bits
-        inputpins |= BUTTON1;
+        inputpins |= BUTTON2;
         /* Interrupt */
         GPIO->EXTIPSELH = (GPIO->EXTIPSELH&~(_GPIO_EXTIPSELH_EXTIPSEL10_MASK))
                             |GPIO_EXTIPSELH_EXTIPSEL10_PORTB;
