@@ -25,7 +25,7 @@
 #ifndef OS_CFG_H
 #define OS_CFG_H
 
-
+#include "em_device.h"
                                        /* ---------------------- MISCELLANEOUS ----------------------- */
 #define OS_APP_HOOKS_EN           1u   /* Application-defined hooks are called from the uC/OS-II hooks */
 #define OS_ARG_CHK_EN             0u   /* Enable (1) or Disable (0) argument checking                  */
@@ -139,6 +139,13 @@
 #define OS_TMR_CFG_NAME_EN        1u   /*     Determine timer names                                    */
 #define OS_TMR_CFG_WHEEL_SIZE     8u   /*     Size of timer wheel (#Spokes)                            */
 #define OS_TMR_CFG_TICKS_PER_SEC 10u   /*     Rate at which timer management task runs (Hz)            */
+
+/*
+ * In CMSIS
+ * BSP_CPU_ClkFreq = SystemCoreClock
+ */
+
+//#define BSP_CPU_ClkFreq()       SystemCoreClock
 
 #endif
 	 	   	  		 			 	    		   		 		 	 	 			 	    		   	 			 	  	 		 				 		  			 		 					 	  	  		      		  	   		      		  	 		 	      		   		 		  	 		 	      		  		  		  

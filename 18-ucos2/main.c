@@ -1,7 +1,7 @@
 /** ***************************************************************************
  * @file    main.c
  * @brief   Simple UART Demo for EFM32GG_STK3700
- * @version 1.0
+ * @version 1.1
 ******************************************************************************/
 
 #include <stdint.h>
@@ -32,12 +32,13 @@
  * Stacks for tasks
  */
 //{
-#define TASKSTARTSTACKSIZE 100
-static OS_STK TaskStartStack[TASKSTARTSTACKSIZE];
-#define TASK0STACKSIZE 100
-static OS_STK Task0Stack[TASK0STACKSIZE];
-#define TASK1STACKSIZE 100
-static OS_STK Task1Stack[TASK1STACKSIZE];
+#define TASKSTART_STACKSIZE 100
+#define TASK0_STACKSIZE 100
+#define TASK1_STACKSIZE 100
+
+static OS_STK TaskStartStack[TASKSTART_STACKSIZE];
+static OS_STK Task0Stack[TASK0_STACKSIZE];
+static OS_STK Task1Stack[TASK1_STACKSIZE];
 
 //}
 
@@ -72,31 +73,36 @@ void Task1(void *param) {
 /**
  * @brief  Task for starting other tasks
  *
- * @note   It is recommended to create task when uc/os is already running
+ * @note   It is recommended to create tasks when uc/os is already running.
+ *         This enable the calibration of Stats module.
  */
 
 
 void TaskStart(void *param) {
 
-    // 
-//    OS_CPU_TickInit(OS_TICKS_PER_SEC);          // Initialize the Tick interrupt
+//
+//    OS_CPU_TickInit(OS_TICKS_PER_SEC);        // Initialize the Tick interrupt
 
 #if (OS_TASK_STAT_EN > 0)
     OSStatInit();                               // Determine CPU capacity
 #endif
-
+                  
     // Create a task to blink LED 0
-    OSTaskCreate(   Task0,
-                    (void *) 0,
-                    (void *) &Task0Stack[TASK0STACKSIZE-1],
-                    0);
+    OSTaskCreate(   Task0,                                      // Pointer to task
+                    (void *) 0,                                 // Parameter
+                    (void *) &Task0Stack[TASK0_STACKSIZE-1],    // Initial value of SP
+                    TASK0_PRIO);                                // Task Priority/ID
                             
     // Create a task to blink LED 1
-    OSTaskCreate(   Task1,
-                    (void *) 0,
-                    (void *) &Task1Stack[TASK1STACKSIZE-1],
-                    0);
-                    
+    OSTaskCreate(   Task1,                                      // Pointer to task
+                    (void *) 0,                                 // Parameter
+                    (void *) &Task1Stack[TASK1_STACKSIZE-1],    // Initial value of SP
+                    TASK1_PRIO);                                // Task Priority/ID
+
+    // Effectively starting uC/OS
+    __enable_irq();
+    
+    OSTaskDel(OS_PRIO_SELF);                    // Kill itself. Task should never return
 }
 
 
@@ -121,17 +127,14 @@ int main(void) {
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-    // Configure SysTick
-    SysTick_Config(SystemCoreClock/1000);
+    // Configure SysTick (Maybe this should be in TaskStart)
+    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);
     
     // Create a task to start the other tasks
-    OSTaskCreate(   TaskStart,
-                    (void *) 0,
-                    (void *) &TaskStartStack[TASKSTARTSTACKSIZE-1],
-                    0);
-
-    // Should be inside TaskStart ?
-    __enable_irq();
+    OSTaskCreate(   TaskStart,                                          // Pointer to function
+                    (void *) 0,                                         // Parameter for task
+                    (void *) &TaskStartStack[TASKSTART_STACKSIZE-1],    // Initial value of SP
+                    TASKSTART_PRIO);                                    // Task Priority/ID
 
     // Enter uc/os and never returns
     OSStart();

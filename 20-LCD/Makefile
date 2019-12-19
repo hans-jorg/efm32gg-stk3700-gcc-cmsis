@@ -67,7 +67,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-#.SILENT:
+.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -500,7 +500,7 @@ ENTRY=Reset_Handler
 #
 ${OBJDIR}/%.o: %.c
 	@echo "  Compiling           ${<}";
-	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.

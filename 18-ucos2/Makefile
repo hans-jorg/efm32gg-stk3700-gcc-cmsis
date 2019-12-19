@@ -63,11 +63,9 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # UCOS Dir
-#UCOS_DIR=../../Micrium/Software/uCOS-II/
-UCOS_DIR=uCOS-II
+UCOS_DIR=../../../Micrium/Software/uCOS-II/
 UCOS_SRCDIR=$(UCOS_DIR)/Source
-#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GCC
-UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/Generic/GCC
+UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GCC
 
 
 # Virtual path

@@ -72,7 +72,7 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #     heap_5.c    Can use multiple memory pools
 #
 # FreeRTOS Dir
-FREERTOSDIR=../../FreeRTOSv10.0.0
+FREERTOSDIR=../../../FreeRTOSv10
 
 # Virtual path
 VPATH=      $(FREERTOSDIR)/FreeRTOS/Source:\

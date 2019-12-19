@@ -62,17 +62,18 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 # UCOS Configuration
 #
 
-# UCOS Dir
-#UCOS_DIR=../../Micrium/Software/uCOS-II/
-UCOS_DIR=uCOS-III
+# Micrium Dir
+UCOS_DIR=../../../Micrium/Software/
+
+# uCOS-III is the main requisite
 UCOS_SRCDIR=$(UCOS_DIR)/uCOS-III/Source
-#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GNU
-UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M3/Generic/GNU
+#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/Generic/GNU
+UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M3/CMSIS/GNU
 
 # uC/CPU is needed by uC/OS
 UCCPU_DIR=$(UCOS_DIR)/uC-CPU
 UCCPU_SRCDIR=$(UCCPU_DIR)
-UCCPU_PORTDIR=$(UCCPU_DIR)/ARM-Cortex-M3/GNU
+UCCPU_PORTDIR=$(UCCPU_DIR)/Ports/ARM-Cortex-M3/GNU
 
 # uC/Lib is needed by uC/CPU
 UCLIB_DIR=$(UCOS_DIR)/uC-LIB
@@ -91,7 +92,7 @@ UCOS_INCLUDEPATH=   $(UCOS_SRCDIR)  $(UCOS_PORTDIR) \
 # UCOS Source Files
 UCOS_FILES=         os_cfg_app.c    os_mutex.c      os_stat.c       os_tmr.c     \
                     os_core.c       os_mem.c        os_prio.c       os_task.c    \
-                    os_dbg.c        os_mon.c        os_q.c          os_tick.c    \
+                    os_dbg.c        os_q.c          os_tick.c    \
                     os_flag.c       os_msg.c        os_sem.c        os_time.c    \
                     os_var.c
 UCOS_PORTCFILES=    os_cpu_c.c
@@ -141,7 +142,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-#.SILENT:
+.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -652,6 +653,8 @@ listvars:
 	@echo $(UCOS_OBJFILES)
 	@echo "======== VPATH ========"
 	@echo $(VPATH)
+	@echo "======== Include dirs =========="
+	@echo $(UCOS_INCLUDEPATH)
 
 
 #

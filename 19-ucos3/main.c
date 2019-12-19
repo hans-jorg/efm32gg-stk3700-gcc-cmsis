@@ -16,14 +16,11 @@
 #include "clock_efm32gg.h"
 
 
-//#include "app_cfg.h"
+#include "app_cfg.h"
 #include "os.h"
 
 #include "led.h"
 #include "uart.h"
-
-// Should be in app_cfg.h ??
-#define APP_TASK_START_PRIO 1
 
 /**
  *  Stop function. The parameter can indicate where it was called
@@ -50,27 +47,27 @@ void Stop(int n) {
  * Parameters for Task TaskStart
  */
 //{
-#define TASKSTARTSTACKSIZE 100
-static CPU_STK TaskStartStack[TASKSTARTSTACKSIZE];
-static OS_TCB  AppTaskStartTCB;
+#define TASKSTART_STACKSIZE 100
+static CPU_STK TaskStart_Stack[TASKSTART_STACKSIZE];
+static OS_TCB  TaskStart_TCB;
 //}
 
 /**
  * Parameters for Task Task 0
  */
 //{
-#define TASK0STACKSIZE 100
-static CPU_STK Task0Stack[TASKSTARTSTACKSIZE];
-static OS_TCB  Task0TCB;
+#define TASK0_STACKSIZE 100
+static CPU_STK Task0_Stack[TASK0_STACKSIZE];
+static OS_TCB  Task0_TCB;
 //}
 
 /**
  * Parameters for Task Task 1
  */
 //{
-#define TASK1STACKSIZE 100
-static CPU_STK Task1Stack[TASKSTARTSTACKSIZE];
-static OS_TCB  Task1TCB;
+#define TASK1_STACKSIZE 100
+static CPU_STK Task1_Stack[TASK1_STACKSIZE];
+static OS_TCB  Task1_TCB;
 //}
 
 
@@ -125,14 +122,14 @@ OS_ERR err;
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-    OSTaskCreate(   (OS_TCB *)      &Task0TCB,
+    OSTaskCreate(   (OS_TCB *)      &Task0_TCB,
                     (CPU_CHAR *)    "Task 0",
                     (OS_TASK_PTR )  Task0,
                     (void *)        0,
-                    (OS_PRIO )      5,
-                    (CPU_STK *)     &Task0Stack[0],
+                    (OS_PRIO )      TASK0_PRIO,
+                    (CPU_STK *)     &Task0_Stack[0],
                     (CPU_STK_SIZE)  0,
-                    (CPU_STK_SIZE)  TASK0STACKSIZE,
+                    (CPU_STK_SIZE)  TASK0_STACKSIZE,
                     (OS_MSG_QTY )   0,
                     (OS_TICK )      0,
                     (void *)        0,
@@ -140,14 +137,14 @@ OS_ERR err;
                     (OS_ERR *)      &err
                 );
 
-    OSTaskCreate(   (OS_TCB *)      &Task1TCB,
+    OSTaskCreate(   (OS_TCB *)      &Task1_TCB,
                     (CPU_CHAR *)    "Task 1",
                     (OS_TASK_PTR )  Task1,
                     (void *)        0,
-                    (OS_PRIO )      5,
-                    (CPU_STK *)     &Task1Stack[0],
+                    (OS_PRIO )      TASK1_PRIO,
+                    (CPU_STK *)     &Task1_Stack[0],
                     (CPU_STK_SIZE)  0,
-                    (CPU_STK_SIZE)  TASK1STACKSIZE,
+                    (CPU_STK_SIZE)  TASK1_STACKSIZE,
                     (OS_MSG_QTY )   0,
                     (OS_TICK )      0,
                     (void *)        0,
@@ -171,7 +168,7 @@ OS_ERR err;
                         (OS_ERR *)      &err
                     );
         if( err != OS_ERR_NONE )
-            Stop(3);
+            Stop(1);
         LED_Toggle(LED1|LED2);
     }
 }
@@ -196,17 +193,15 @@ OS_ERR err;
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
-  
-    
     // Create a task to start the other tasks
-    OSTaskCreate(   (OS_TCB   *)        &AppTaskStartTCB,           // TCB
+    OSTaskCreate(   (OS_TCB   *)        &TaskStart_TCB,             // TCB
                     (CPU_CHAR *)        "App Task Start",           // Name
                     (OS_TASK_PTR )      TaskStart,                  // Function
                     (void*)             0,                          // Parameter
-                    (OS_PRIO)           APP_TASK_START_PRIO,        // Priority (in app_cfg.h)
-                    (CPU_STK *)         &TaskStartStack[0],         // Stack
-                    (CPU_STK_SIZE)      TASKSTARTSTACKSIZE/10,      // Slack
-                    (CPU_STK_SIZE)      TASKSTARTSTACKSIZE,         // Size
+                    (OS_PRIO)           TASKSTART_PRIO,             // Priority (in app_cfg.h)
+                    (CPU_STK *)         &TaskStart_Stack[0],         // Stack
+                    (CPU_STK_SIZE)      TASKSTART_STACKSIZE/10,     // Slack
+                    (CPU_STK_SIZE)      TASKSTART_STACKSIZE,        // Size
                     (OS_MSG_QTY )       0,
                     (OS_TICK )          0,
                     (void *)            0,
@@ -221,7 +216,7 @@ OS_ERR err;
     // Enter uc/os and never returns
     OSStart(&err);
     if( err != OS_ERR_NONE )
-        Stop(2);
+        Stop(3);
     
 
 }

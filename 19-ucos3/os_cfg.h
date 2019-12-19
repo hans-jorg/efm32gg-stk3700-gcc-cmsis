@@ -121,4 +121,10 @@
 #define OS_CFG_TRACE_API_ENTER_EN       DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace API enter instrumentation        */
 #define OS_CFG_TRACE_API_EXIT_EN        DEF_DISABLED       /* Enable (DEF_ENABLED) uC/OS-III Trace API exit  instrumentation        */
 
+/* Added for compatibility */
+#define OS_CFG_PEND_MULTI_EN        (0)
+#define OS_CFG_TICK_WHEEL_SIZE      (16)
+#define OS_CFG_TMR_WHEEL_SIZE       (16)
+
+
 #endif

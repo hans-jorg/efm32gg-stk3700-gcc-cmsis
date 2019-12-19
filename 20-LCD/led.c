@@ -26,7 +26,7 @@ void LED_Init(uint32_t leds) {
 
     if( leds&LED1 ) {
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE2_MASK;          // Clear bits
-        GPIOE->MODEL |= GPIO_P_MODEL_MODE2_PUSHPULL|;       // Set bits
+        GPIOE->MODEL |= GPIO_P_MODEL_MODE2_PUSHPULL;        // Set bits
     }
 
     if( leds&LED2 ) {

@@ -53,7 +53,7 @@ GECKOSDKDIR=../../Gecko_SDK
 #
 # Protothread Dir
 #
-PROTOTHREADDIR=../../pt-1.4
+PROTOTHREADDIR=../../../pt-1.4
 
 #
 # CMSIS Dir
