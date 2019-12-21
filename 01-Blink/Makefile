@@ -346,7 +346,7 @@ GDB=$(PREFIX)-gdb
 #
 # GUI Editor
 #
-GUIEDITOR=gedit
+GUIEDITOR=gedit --new-window
 #GUIEDITOR=geany
 
 #

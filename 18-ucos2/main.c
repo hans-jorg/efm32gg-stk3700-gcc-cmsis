@@ -18,13 +18,28 @@
 #include "ucos_ii.h"
 #include "led.h"
 
+/**
+ * @brief   Board Support Package (BSP)
+ */
+typedef unsigned int CPU_INT32U;
+
+void  OS_CPU_TickInit (CPU_INT32U  tick_rate)
+{
+    CPU_INT32U  cnts;
+    CPU_INT32U  cpu_freq;
+    
+    cpu_freq = SystemCoreClock;
+    cnts     = (cpu_freq / tick_rate);                          /* Calculate the number of SysTick counts               */
+
+    OS_CPU_SysTickInit(cnts);                                   /* Call the Generic OS Systick initialization           */
+}
 
 /**
  * @brief Semiperiod values for LED1 and LED2
  */
 //{
-#define DELAY0 1500
-#define DELAY1 3500
+#define DELAY0 750
+#define DELAY1 1750
 //}
 
 
@@ -80,8 +95,16 @@ void Task1(void *param) {
 
 void TaskStart(void *param) {
 
-//
-//    OS_CPU_TickInit(OS_TICKS_PER_SEC);        // Initialize the Tick interrupt
+    /* Configure LEDs */
+    LED_Init(LED1|LED2);
+    LED_Write(0,LED1|LED2);                                     // Turn them on
+    
+    // Set clock source to external crystal: 48 MHz
+    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
+//    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);         // Initialize the Tick interrupt (CMSIS way)
+
+    OS_CPU_TickInit(OS_TICKS_PER_SEC);                          // Initialize the Tick interrupt (uCOS way)
 
 #if (OS_TASK_STAT_EN > 0)
     OSStatInit();                               // Determine CPU capacity
@@ -102,7 +125,7 @@ void TaskStart(void *param) {
     // Effectively starting uC/OS
     __enable_irq();
     
-    OSTaskDel(OS_PRIO_SELF);                    // Kill itself. Task should never return
+    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
 }
 
 
@@ -114,22 +137,11 @@ void TaskStart(void *param) {
  * @note   Using external crystal oscillator
  *         HFCLK = HFXO, HFCORECLK = HFCLK, HFPERCLK  = HFCLK
  */
-int main(void) {
-
+int main(void) { 
     
     // Initialize uc/os II
     OSInit();
-    
-    /* Configure LEDs */
-    LED_Init(LED1|LED2);
-    LED_Write(0,LED1|LED2);         // Turn them on
-    
-    // Set clock source to external crystal: 48 MHz
-    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
-
-    // Configure SysTick (Maybe this should be in TaskStart)
-    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);
-    
+     
     // Create a task to start the other tasks
     OSTaskCreate(   TaskStart,                                          // Pointer to function
                     (void *) 0,                                         // Parameter for task

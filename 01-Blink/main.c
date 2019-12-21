@@ -26,7 +26,7 @@
 ///@}
 
 /// Default delay value.
-#define DELAYVAL 5
+#define DELAYVAL 3
 /**
  * @brief  Quick and dirty delay function
  * @note   Do not use it in production code
@@ -37,7 +37,7 @@ volatile uint32_t counter;
 int i;
 
     for(i=0;i<delay;i++) {
-        counter = 1000000;
+        counter = 100000;
         while( counter ) counter--;
     }
 }

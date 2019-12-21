@@ -206,4 +206,5 @@ SECTIONS
 
   /* Check if FLASH usage exceeds FLASH size */
   ASSERT( LENGTH(FLASH) >= (__etext + SIZEOF(.data)), "FLASH memory overflowed !")
+
 }

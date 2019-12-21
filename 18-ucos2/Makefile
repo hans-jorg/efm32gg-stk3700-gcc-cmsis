@@ -65,7 +65,7 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 # UCOS Dir
 UCOS_DIR=../../../Micrium/Software/uCOS-II/
 UCOS_SRCDIR=$(UCOS_DIR)/Source
-UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/CMSIS/GCC
+UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/GNU
 
 
 # Virtual path
@@ -658,8 +658,14 @@ disassembly: $(OBJDIR)/$(PROGNAME).axf
 dump: $(OBJDIR)/$(PROGNAME).axf
 	@echo "  Dumping ${^} and storing output in $(OBJDIR)/$(PROGNAME).dump"
 	$(OBJDUMP) $(ODDUMPFLAGS) $^ > $(OBJDIR)/$(PROGNAME).dump
+
 imagedump: $(OBJDIR)/$(PROGNAME).bin
+	@echo "  Hex dumping ${^} stored in $(OBJDIR)/$(PROGNAME).hexdump"
 	od -x $^ > $(OBJDIR)/$(PROGNAME).hexdump
+
+list: $(OBJDIR)/$(PROGNAME).axf
+	@echo "  List file of ${^} stored in $(OBJDIR)/$(PROGNAME).list"
+	$(OBJDUMP) -S  $^ > $(OBJDIR)/$(PROGNAME).list
 
 #
 # List size
