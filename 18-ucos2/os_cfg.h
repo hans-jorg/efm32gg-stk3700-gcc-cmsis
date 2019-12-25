@@ -10,12 +10,12 @@
 *
 * File    : OS_CFG.H
 * By      : Jean J. Labrosse
-* Version : V2.91
+* Version : V2.92.11
 *
 * LICENSING TERMS:
 * ---------------
 *   uC/OS-II is provided in source form for FREE evaluation, for educational use or for peaceful research.
-* If you plan on using  uC/OS-II  in a commercial product you need to contact Micriµm to properly license
+* If you plan on using  uC/OS-II  in a commercial product you need to contact Micrium to properly license
 * its use in your product. We provide ALL the source code for your convenience and to help you experience
 * uC/OS-II.   The fact that the  source is provided does  NOT  mean that you can use it without  paying a
 * licensing fee.
@@ -28,7 +28,7 @@
 #include "em_device.h"
                                        /* ---------------------- MISCELLANEOUS ----------------------- */
 #define OS_APP_HOOKS_EN           1u   /* Application-defined hooks are called from the uC/OS-II hooks */
-#define OS_ARG_CHK_EN             0u   /* Enable (1) or Disable (0) argument checking                  */
+#define OS_ARG_CHK_EN             1u   /* Enable (1) or Disable (0) argument checking                  */
 #define OS_CPU_HOOKS_EN           1u   /* uC/OS-II hooks are found in the processor port files         */
 
 #define OS_DEBUG_EN               1u   /* Enable(1) debug variables                                    */
@@ -49,6 +49,8 @@
 
 #define OS_TICK_STEP_EN           1u   /* Enable tick stepping feature for uC/OS-View                  */
 #define OS_TICKS_PER_SEC        100u   /* Set the number of ticks in one second                        */
+
+#define OS_TLS_TBL_SIZE           0u   /* Size of Thread-Local Storage Table                           */
 
 
                                        /* --------------------- TASK STACK SIZE ---------------------- */
@@ -137,7 +139,7 @@
 #define OS_TMR_EN                 1u   /* Enable (1) or Disable (0) code generation for TIMERS         */
 #define OS_TMR_CFG_MAX           16u   /*     Maximum number of timers                                 */
 #define OS_TMR_CFG_NAME_EN        1u   /*     Determine timer names                                    */
-#define OS_TMR_CFG_WHEEL_SIZE     8u   /*     Size of timer wheel (#Spokes)                            */
+#define OS_TMR_CFG_WHEEL_SIZE     7u   /*     Size of timer wheel (#Spokes)                            */
 #define OS_TMR_CFG_TICKS_PER_SEC 10u   /*     Rate at which timer management task runs (Hz)            */
 
 /*

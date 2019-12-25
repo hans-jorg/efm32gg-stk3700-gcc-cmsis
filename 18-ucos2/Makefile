@@ -54,7 +54,9 @@ GECKOSDKDIR=../../Gecko_SDK
 # CMSIS Dir
 #
 # Use CMSIS inside Gecko SDK
-CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
+#CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
+#CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
+CMSISDIR=../../CMSIS
 CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 
 
@@ -64,8 +66,11 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 
 # UCOS Dir
 UCOS_DIR=../../../Micrium/Software/uCOS-II/
+#UCOS_DIR=uCOS-II
 UCOS_SRCDIR=$(UCOS_DIR)/Source
-UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/GNU
+# Ports Dir for uCOS-II
+#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/GNU
+UCOS_PORTDIR=uCOS-II/Ports/ARM-Cortex-M/GNU
 
 
 # Virtual path
