@@ -131,7 +131,7 @@ There are two versions of CMSIS:
 * [version 5](https://github.com/ARM-software/CMSIS_5): new version with a broader license (apache) and support for new cores.
 
 
-*** The EFM32 support library (see next) comes with a version 4 CMSIS library! ***
+**The EFM32 support library (see next) comes with a version 4 CMSIS library!**
 
 To download the version 4, one have to use the following command on the target folder
 
@@ -154,11 +154,12 @@ The files needed for development for microcontroller are:
 There is a Software Development Kit [SDK](https://github.com/SiliconLabs/Gecko_SDK), provided the manufacturer, but no more supported. It can be still dowloaded from github using the following command.
 
     git clone https://github.com/SiliconLabs/Gecko_SDK
+**The above repository was deleted!**
 
 There is an older version, which can be downloaded from [Gecko_SDK.zip](http://www.silabs.com/Support%20Documents/Software/Gecko_SDK.zip). IT is a huge file, about 300 MBytes zipped and and 2,4 GBytes after unzipping.
 
 
-A Silicon Labs provides an Development Environment called [Simplicity Studio](https://www.silabs.com/products/development-tools/software/simplicity-studio), based on [Eclipse](www.eclipse.org), which downloads the files as they are needed. It is possible to use Simplicity just to download the files and copy them to another folder. this has the advantage of downloading only what is needed.
+A Silicon Labs provides an Development Environment called [Simplicity Studio](https://www.silabs.com/products/development-tools/software/simplicity-studio), based on [Eclipse](www.eclipse.org), which downloads the files as they are needed. It is possible to use Simplicity just to download the files and copy them to another folder. this has the advantage of downloading only what is needed. The folder is located in &lt;SimplicityStudio_v4 folder &gt;/developer/sdks/gecko_sdk_suite/v2.6/platform/CMSIS.
 
 
 ###  4.3.1 headers
