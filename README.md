@@ -128,8 +128,8 @@ In all examples, a direct access to registers approach was used. It means that n
 -   15-TimeTriggered: Uses a Time-Triggered approach[5]
 -   16-Protothreads: Uses a proto thread approach
 -   *17-FreeRTOS: Uses a (free) preemptive real time kernel
--   *18-ucos2: Uses ucos version 2
+-   18-ucos2: Uses ucos version 2
 -   *19-ucos3: Uses ucos version 3
 -   20-LCD: Controls the LCD display
 
-Those marked with an asterisk are unfinished!!!
+**Those marked with an asterisk are unfinished!!!**
