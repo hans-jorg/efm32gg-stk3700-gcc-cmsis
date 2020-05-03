@@ -448,21 +448,6 @@ GDBFLAGS=-x $(GDBINIT) -n
 GDBINIT=$(OBJDIR)/gdbinit
 
 #
-# Get the location of libgcc.a from the GCC front-end.
-#
-LIBGCC:=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
-
-#
-# Get the location of libc.a from the GCC front-end.
-#
-LIBC:=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-
-#
-# Get the location of libm.a from the GCC front-end.
-#
-LIBM:=${shell ${CC} ${CFLAGS} -print-file-name=libm.a}
-
-#
 # Generate debug version if DEBUG is set
 #
 ifneq ($DEBUG,)
@@ -529,8 +514,6 @@ ${OBJDIR}/%.axf:  $(OBJFILES)
 	        -o ${@} \
 	         $(OBJFILES) \
 	         -lm -lc -lgcc
-	         # \
-	         # ${LIBM} ${LIBC} ${LIBGCC}
 
 ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
 	@echo "  Generating binary   ${@} ";

@@ -63,17 +63,18 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # Micrium Dir
-UCOS_DIR=../../../Micrium/Software/
+#UCOS_DIR=../../../Micrium/Software/
+UCOS_DIR=.
 
 # uCOS-III is the main requisite
 UCOS_SRCDIR=$(UCOS_DIR)/uCOS-III/Source
 #UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/Generic/GNU
-UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M3/CMSIS/GNU
+UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M/GNU
 
 # uC/CPU is needed by uC/OS
-UCCPU_DIR=$(UCOS_DIR)/uC-CPU
+UCCPU_DIR=./uC-CPU
 UCCPU_SRCDIR=$(UCCPU_DIR)
-UCCPU_PORTDIR=$(UCCPU_DIR)/Ports/ARM-Cortex-M3/GNU
+UCCPU_PORTDIR=$(UCCPU_DIR)/Ports/ARM-Cortex-M/GNU
 
 # uC/Lib is needed by uC/CPU
 UCLIB_DIR=$(UCOS_DIR)/uC-LIB
@@ -518,21 +519,6 @@ GDBFLAGS=-x $(GDBINIT) -n
 GDBINIT=$(OBJDIR)/gdbinit
 
 #
-# Get the location of libgcc.a from the GCC front-end.
-#
-LIBGCC:=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
-
-#
-# Get the location of libc.a from the GCC front-end.
-#
-LIBC:=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-
-#
-# Get the location of libm.a from the GCC front-end.
-#
-LIBM:=${shell ${CC} ${CFLAGS} -print-file-name=libm.a}
-
-#
 # Generate debug version if DEBUG is set
 #
 ifneq ($DEBUG,)
@@ -594,15 +580,11 @@ ${OBJDIR}/%.a:
 #
 ${OBJDIR}/%.axf:
 	@echo "  Linking             `basename ${@}` ";
-	@${LD}   -T '${LINKERSCRIPT}' \
+	${LD}   -T '${LINKERSCRIPT}' \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \
 	         -lm -lc -lgcc
-
-
-
-
 
 #
 # ${LIBM} ${LIBC} ${LIBGCC}
