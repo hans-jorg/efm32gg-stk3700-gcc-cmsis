@@ -1,10 +1,13 @@
 ##
 #  @file     Makefile
 #  @brief    General makefile for EMF32GG
-#  @version  V1.0
-#  @date     05/12/2017
+#  @version  V1.1
+#  @date     04/05/2020
 #
 #  @note     CMSIS library used
+#
+#  @note     It works now with gnuwin32 Make. It can be find in
+#            http://gnuwin32.sourceforge.net/packages/make.htm
 #
 #  @note options
 #  @param all      generate image file
@@ -606,17 +609,17 @@ flash: deploy
 burn: deploy
 ifneq ($(USE_JLINK),)
 deploy: ${OBJDIR}/$(PROGNAME).bin $(JLINKFLASHSCRIPT)
-	echo ${JLINK} $(JLINKPARMS) -CommandScript $(JLINKFLASHSCRIPT)
+	echo ${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
 	${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
 
 #
 # Flash script
 #
 $(JLINKFLASHSCRIPT): FORCE
-	echo "r" > $(JLINKFLASHSCRIPT)
-	echo "h" >> $(JLINKFLASHSCRIPT)
-	echo "loadbin ${OBJDIR}/$(PROGNAME).bin,0" >> $(JLINKFLASHSCRIPT)
-	echo "exit" >> $(JLINKFLASHSCRIPT)
+	echo r > $(JLINKFLASHSCRIPT)
+	echo h >> $(JLINKFLASHSCRIPT)
+	echo loadbin ${OBJDIR}/$(PROGNAME).bin,0 >> $(JLINKFLASHSCRIPT)
+	echo exit >> $(JLINKFLASHSCRIPT)
 FORCE:
 endif
 
