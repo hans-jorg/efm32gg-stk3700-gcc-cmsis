@@ -1,0 +1,28 @@
+
+Project Status
+==============
+
+|Projects            |   Status                              |
+|--------------------|---------------------------------------|
+|01-Blink            | Done                                  |
+|02-Blink            | Done                                  |
+|03-Blink            | Done                                  |
+|04-Blink            | Done                                  |
+|05-SysTick          | Done                                  |
+|06-SysTick          | Misplaced. Rename or delete           |
+|07-SysTick          | Done                                  |
+|08-Button           | Done                                  |
+|09-Button           | Uncompleted                           |
+|10-Debounce         | Done                                  |
+|11-UART             | Done                                  |
+|12-UART             | Uncompleted                           |
+|13-Ministdio        | Done                                  |
+|14-Newlib           | Done. Uses clock_efm32gg              |
+|15-TimeTriggered    | Done                                  |
+|16-Protothreads     | Done                                  |
+|17-FreeRTOS         | Done                                  |
+|18-ucos2            | Done                                  |
+|19-ucos3            | Done                                  |
+|20-LCD              | Done                                  |
+|21-Temperature      | Uncompleted                           |
+|--------------------|---------------------------------------|

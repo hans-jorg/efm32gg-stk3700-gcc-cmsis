@@ -160,7 +160,7 @@ default: all
 #| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
 #| Cortex-R5  |                                            | /thumb       |
 #| Cortex-R7  |                                            |              |
-#| Cortex-R8  |						  |		 |
+#| Cortex-R8  |                                            |              |
 #| (No FP)    |                                            |              |
 #|------------|--------------------------------------------|--------------|
 #| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
@@ -485,28 +485,28 @@ ENTRY=Reset_Handler
 # The rule for building the object file from each C source file.
 #
 ${OBJDIR}/%.o: %.c
-	@echo "  Compiling           ${<}";
+	@echo   "Compiling           ${<}"
 	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
 #
 ${OBJDIR}/%.o: %.S
-	@echo "  Assembling          ${<}";
+	@echo   "Assembling          ${<}"
 	${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
 
 #
 # The rule for creating an object library.
 #
 ${OBJDIR}/%.a:
-	@echo "  Archiving           ${@}";
+	@echo   "Archiving           ${@}"
 	${AR} -cr ${@} ${^}
 
 #
 # The rule for linking the application.
 #
 ${OBJDIR}/%.axf:  $(OBJFILES)
-	@echo "  Linking             ${@} ";
+	@echo   "Linking             ${@}"
 	${LD}   -T '${LINKERSCRIPT}' \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
@@ -514,7 +514,7 @@ ${OBJDIR}/%.axf:  $(OBJFILES)
 	         -lm -lc -lgcc
 
 ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
-	@echo "  Generating binary   ${@} ";
+	@echo   "Generating binary   ${@}"
 	${OBJCOPY} -O binary ${^} ${@}
 
 
@@ -525,6 +525,7 @@ ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
 #
 #
 #
+help: usage
 usage:
 	@echo "Usage:"
 	@echo "make all          generate image file in $(OBJDIR)"
@@ -542,13 +543,13 @@ usage:
 # The default rule, which causes the $(PROGNAME) example to be built.
 #
 all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
-	@echo "Done"
+	@echo Done
 
 #
 # Clean out all the generated files
 #
 clean:
-	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
+	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo Done
 
 #
 # Transfer binary to board
@@ -580,10 +581,10 @@ deploy: ${OBJDIR}/$(PROGNAME).bin $(OPENOCDFLASHSCRIPT)
 # Flash script
 #
 $(OPENOCDFLASHSCRIPT):
-	echo "reset halt" > $(OPENOCDFLASHSCRIPT)
-	echo "flash probe 0" >> $(OPENOCDFLASHSCRIPT)
-	echo "flash write_image erase ${OBJDIR}/$(PROGNAME).bin 0" >> $(OPENOCDFLASHSCRIPT)
-	echo "reset run" >> $(OPENOCDFLASHSCRIPT)
+	echo reset halt > $(OPENOCDFLASHSCRIPT)
+	echo flash probe 0 >> $(OPENOCDFLASHSCRIPT)
+	echo flash write_image erase ${OBJDIR}/$(PROGNAME).bin 0 >> $(OPENOCDFLASHSCRIPT)
+	echo reset run >> $(OPENOCDFLASHSCRIPT)
 endif
 
 #
@@ -591,11 +592,11 @@ endif
 #
 dis: disassembly
 disassembly: $(OBJDIR)/$(PROGNAME).axf
-	@echo "  Disassembling ${^} and storing output in $(OBJDIR)/$(PROGNAME).S"
+	@echo   "Disassembling ${^} and storing output in $(OBJDIR)/$(PROGNAME).S"
 	$(OBJDUMP) $(ODDISFLAGS) $^ > $(OBJDIR)/$(PROGNAME).S
 
 dump: $(OBJDIR)/$(PROGNAME).axf
-	@echo "  Dumping ${^} and storing output in $(OBJDIR)/$(PROGNAME).dump"
+	@echo   "Dumping ${^} and storing output in $(OBJDIR)/$(PROGNAME).dump"
 	$(OBJDUMP) $(ODDUMPFLAGS) $^ > $(OBJDIR)/$(PROGNAME).dump
 imagedump: $(OBJDIR)/$(PROGNAME).bin
 	od -x $^ > $(OBJDIR)/$(PROGNAME).hexdump
@@ -642,34 +643,34 @@ debug: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
 ifneq ($(USE_JLINK),)
 gdbproxy:
 	echo "Starting GDB Proxy"; \
-	echo "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
+	echo sh -c \" $(GDBPROXY) $(JLINKPARMS) \"  ; \
 	$(TERMAPP) -e "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
 #
 # Create gdbinit
 #
 $(GDBINIT): FORCE
-	echo "# Run this script using gdb source command" > $(GDBINIT)
-	echo "target remote localhost:2331" >> $(GDBINIT)
-	echo "monitor halt" >> $(GDBINIT)
-	echo "load $(OBJDIR)/$(PROGNAME).axf" >> $(GDBINIT)
-	echo "monitor reset" >> $(GDBINIT)
-	echo "break main" >> $(GDBINIT)
-	echo "monitor go" >> $(GDBINIT)
+	echo # Run this script using gdb source command > $(GDBINIT)
+	echo target remote localhost:2331 >> $(GDBINIT)
+	echo monitor halt >> $(GDBINIT)
+	echo load $(OBJDIR)/$(PROGNAME).axf >> $(GDBINIT)
+	echo monitor reset >> $(GDBINIT)
+	echo break main >> $(GDBINIT)
+	echo monitor go >> $(GDBINIT)
 endif
 
 ifneq ($(USE_OPENOCD),)
 gdbproxy:
 	if [ -c $(TTYTERM) ] ; then echo "Starting OpenOCD"; \
-	$(TERMAPP) -e "sh -c \" $(GDBPROXY) -f $(OPENOCDBOARD) \" " ; \
+	    $(TERMAPP) -e "sh -c \" $(GDBPROXY) -f $(OPENOCDBOARD) \" " ; \
 	else echo "Could not open $(GDBPROXY)"; fi
 #
 # Create gdbinit
 #
 $(GDBINIT):
-	echo "# Run this script using gdb source command" > $(GDBINIT)
-	echo "target remote localhost:3333" >> $(GDBINIT)
-	echo "break main" >> $(GDBINIT)
-	echo "continue" >> $(GDBINIT)
+	echo # Run this script using gdb source command > $(GDBINIT)
+	echo target remote localhost:3333 >> $(GDBINIT)
+	echo break main >> $(GDBINIT)
+	echo continue >> $(GDBINIT)
 endif
 
 #
@@ -678,7 +679,7 @@ endif
 #
 terminal: term
 term:
-	if [ -c $(TTYTERM) ] ; then echo "Starting terminal"; \
+	if [ -c $(TTYTERM) ] ; then echo Starting terminal; \
 	$(TERMAPP) -e "sh -c \" $(TTYPROG) $(TTYPARMS) \" " ; \
 	else echo "Could not open $(TTYTERM)"; fi
 
@@ -693,11 +694,11 @@ doxygen: $(DOXYGENCFG)
 SEDSCRIPT=dox.sed
 $(DOXYGENCFG):
 	$(DOXYGEN) -g $(DOXYGENCFG)
-	echo "/^PROJECT_NAME/cPROJECT_NAME           = \"$(PROJNAME)\"" > $(SEDSCRIPT)
-	echo "/^FULL_PATH_NAMES/cFULL_PATH_NAMES     = NO" >> $(SEDSCRIPT)
-	echo "/^OPTIMIZE_OUTPUT_FOR_C/cOPTIMIZE_OUTPUT_FOR_C    = YES" >> $(SEDSCRIPT)
-	echo "/^DISTRIBUTE_GROUP_DOC/cDISTRIBUTE_GROUP_DOC    = YES" >> $(SEDSCRIPT)
-	echo "/^EXTRACT_STATIC/cEXTRACT_STATIC    = YES" >> $(SEDSCRIPT)
+	echo /^PROJECT_NAME/cPROJECT_NAME           = \"$(PROJNAME)\" > $(SEDSCRIPT)
+	echo /^FULL_PATH_NAMES/cFULL_PATH_NAMES     = NO >> $(SEDSCRIPT)
+	echo /^OPTIMIZE_OUTPUT_FOR_C/cOPTIMIZE_OUTPUT_FOR_C    = YES >> $(SEDSCRIPT)
+	echo /^DISTRIBUTE_GROUP_DOC/cDISTRIBUTE_GROUP_DOC    = YES >> $(SEDSCRIPT)
+	echo /^EXTRACT_STATIC/cEXTRACT_STATIC    = YES >> $(SEDSCRIPT)
 	sed -i -f $(SEDSCRIPT) $(DOXYGENCFG)
 	rm  -f  $(SEDSCRIPT)
 
@@ -708,8 +709,9 @@ docs-clean:
 	echo Done.
 
 # These symbols are not files (or directories)
-.PHONY: default all clean flash burn deploy disassembly dump size
-.PHONY: nm edit debug terminal term doxygen docs
+.PHONY: all burn clean debug default deploy deploy dis disassembly
+.PHONY: docs docs-clean doxygen dump edit flash gdbproxy gdbproxy
+.PHONY: help imagedump nm size term terminal usage
 
 #
 # Dependencies

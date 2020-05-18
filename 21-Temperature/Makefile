@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=lcd
+PROGNAME=adctemp
 
 #
 # Defines the part (device) that this project uses
@@ -160,7 +160,7 @@ default: all
 #| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
 #| Cortex-R5  |                                            | /thumb       |
 #| Cortex-R7  |                                            |              |
-#| Cortex-R8  |						  |		 |
+#| Cortex-R8  |                                            |              |
 #| (No FP)    |                                            |              |
 #|------------|--------------------------------------------|--------------|
 #| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
