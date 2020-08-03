@@ -57,8 +57,12 @@ uint64_t l = tick+delay;
  *         HFPERCLK  = HFCLK
  */
 
+extern int tty_read_lb(int,char *,int);
+extern int tty_write(int,char *,int);
+
 int main(void) {
 char line[100];
+int tryn = 0;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
@@ -77,11 +81,13 @@ char line[100];
 
     __enable_irq();
 
-    printf("\r\n\n\n\rHello\n\r");
+    printf("Hello\n");
     while (1) {
-        printf("\r\n\n\n\rWhat is your name?\n");
+        printf("Try %d\n",tryn++);
+        printf("\nYour name: ");
         fgets(line,99,stdin);
         printf("Hello %s\n",line);
+        Delay(100);
     }
 
 }

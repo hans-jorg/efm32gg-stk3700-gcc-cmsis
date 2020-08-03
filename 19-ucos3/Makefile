@@ -741,7 +741,7 @@ ifneq ($(USE_JLINK),)
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
-	$(TERMAPP) -e "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
+	$(TERMAPP) -- $(GDBPROXY) $(JLINKPARMS)  ; \
 #
 # Create gdbinit
 #
@@ -758,7 +758,7 @@ endif
 ifneq ($(USE_OPENOCD),)
 gdbproxy:
 	if [ -c $(TTYTERM) ] ; then echo "Starting OpenOCD"; \
-	$(TERMAPP) -e "sh -c \" $(GDBPROXY) -f $(OPENOCDBOARD) \" " ; \
+	$(TERMAPP) -- $(GDBPROXY) -f $(OPENOCDBOARD)  ; \
 	else echo "Could not open $(GDBPROXY)"; fi
 #
 # Create gdbinit
@@ -777,7 +777,7 @@ endif
 terminal: term
 term:
 	if [ -c $(TTYTERM) ] ; then echo "Starting terminal"; \
-	$(TERMAPP) -e "sh -c \" $(TTYPROG) $(TTYPARMS) \" " ; \
+	$(TERMAPP) -- $(TTYPROG) $(TTYPARMS)  ; \
 	else echo "Could not open $(TTYTERM)"; fi
 
 #

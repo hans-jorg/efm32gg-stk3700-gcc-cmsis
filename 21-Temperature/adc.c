@@ -116,10 +116,8 @@ static const uint32_t default_singlectrl[SINGLECTRL_REGTABSIZE] = {
 //}
 
 /**
- *  Default values for SINGLECTRL register
+ *  Values of SINGLECTRL register for each channel
  *
- *  0-15 : Single ended
- * 16-20 : Differential
  */
 static uint32_t singlectrl[SINGLECTRL_REGTABSIZE];
 
@@ -191,6 +189,9 @@ ADC0_IRQHandler(void) {
 uint32_t ADC_Init(uint32_t adcfreq, uint32_t config) {
 const uint32_t adcwarmfreq = 1000000; // 1 MHz for 1 us period
 uint32_t presc;
+
+    // If ADC running stop it
+    ADC0->CMD = ADC_CMD_SINGLESTOP | ADC_CMD_SCANSTOP;
 
     // Put adc frequency into limits
     if( adcfreq < ADC_FREQMIN )
@@ -289,6 +290,9 @@ uint32_t ADC_Read(uint32_t ch) {
 }
 
 uint32_t ADC_StartReading(uint32_t ch) {
+
+    // If ADC running, stop it
+    ADC0->CMD = ADC_CMD_SINGLESTOP;
 
     // Save SINGLECTRL register
     uint32_t oldsinglectrl = ADC0->SINGLECTRL;

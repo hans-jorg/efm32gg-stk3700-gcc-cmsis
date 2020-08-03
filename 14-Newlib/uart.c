@@ -180,12 +180,15 @@ uint32_t bauddiv;
 void UART0_RX_IRQHandler(void) {
 uint8_t ch;
 
-    if( UART0->STATUS&UART_STATUS_RXDATAV ) {
+    if ( UART0->IF&(UART_IF_RXDATAV|UART_IF_RXFULL) ) {
         // Put in input buffer
         ch = UART0->RXDATA;
+//        ENTER_ATOMIC();
         (void) buffer_insert(inputbuffer,ch);
+//        EXIT_ATOMIC();
     }
-
+//  UART0->IFS |= UART_IFS_TXC;
+//  UART0->IFC = UART_IFC_RXFULL|UART_IFC_RXOF;
 }
 
 
@@ -260,15 +263,19 @@ void UART_SendString(char *s) {
 /**
  * @brief   Get a char from UART without waiting
  *
- * @note    Does no block. Returns 0 when there is none
+ * @note    Does not block. Returns 0 when there is none
  */
 
 unsigned UART_GetCharNoWait(void) {
+int ch;
 
     if( buffer_empty(inputbuffer) )
         return 0;
 
-    return buffer_remove(inputbuffer);
+    ENTER_ATOMIC();
+    ch = buffer_remove(inputbuffer);
+    EXIT_ATOMIC();
+    return ch;
 }
 
 /**
@@ -278,20 +285,13 @@ unsigned UART_GetCharNoWait(void) {
  */
 
 unsigned UART_GetChar(void) {
+int ch;
 
     while( buffer_empty(inputbuffer) ) {}
 
-    return buffer_remove(inputbuffer);
+    ENTER_ATOMIC();
+    ch = buffer_remove(inputbuffer);
+    EXIT_ATOMIC();
+    return ch;
 }
 
-/**
- * @brief   Get a string from UART
- *
- * @note    Does block!!!!!
- * @note    Not implemented yet
- */
-
-void UART_GetString(char *s, int n) {
-
-    return;
-}

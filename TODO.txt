@@ -9,7 +9,7 @@ Project Status
 |03-Blink            | Done                                  |
 |04-Blink            | Done                                  |
 |05-SysTick          | Done                                  |
-|06-SysTick          | Misplaced. Rename or delete           |
+|06-ClockFrequency   | Done                                  |
 |07-SysTick          | Done                                  |
 |08-Button           | Done                                  |
 |09-Button           | Uncompleted                           |
@@ -26,3 +26,10 @@ Project Status
 |20-LCD              | Done                                  |
 |21-Temperature      | Uncompleted                           |
 |--------------------|---------------------------------------|
+
+*  All: Update gnome-terminal parameter (-e is obsolete)
+   14-Newlib: Complete read
+*             Error in second read
+*             Error in buffering: Use no buffer or flush (problem is inside newlib)
+*                Not needed. Working now.
+   21-Temperature: Add printing. Test conversion.

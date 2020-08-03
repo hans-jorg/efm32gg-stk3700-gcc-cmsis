@@ -24,6 +24,6 @@ void UART_SendString(char *s);
 
 unsigned UART_GetChar(void);
 unsigned UART_GetCharNoWait(void);
-void UART_GetString(char *s, int n);
+
 
 #endif // UART_H

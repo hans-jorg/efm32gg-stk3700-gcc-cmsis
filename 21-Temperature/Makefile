@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=adctemp
+PROGNAME=uart-cdc
 
 #
 # Defines the part (device) that this project uses
@@ -160,7 +160,7 @@ default: all
 #| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
 #| Cortex-R5  |                                            | /thumb       |
 #| Cortex-R7  |                                            |              |
-#| Cortex-R8  |                                            |              |
+#| Cortex-R8  |						  |		 |
 #| (No FP)    |                                            |              |
 #|------------|--------------------------------------------|--------------|
 #| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
@@ -233,7 +233,7 @@ CPUFLAGS=-mcpu=cortex-m3
 # This parameter is only recognized by gcc.
 # Linking must be done by a gcc call instead of ld
 #
-SPECFLAGS= --specs=nano.specs
+#SPECFLAGS= --specs=nano.specs
 
 
 ###############################################################################
@@ -264,8 +264,6 @@ CFLAGS=-mthumb                                  \
        -std=c11                                 \
        -pedantic                                \
        $(SPECFLAGS)
-
-#       -DTWO_STEPS_ENCODING
 
 
 #
@@ -415,7 +413,7 @@ PROJNAME=$(shell basename $(CURDIR))
 # Serial terminal communication
 #
 TTYTERM=/dev/ttyACM0
-TTYBAUD=155200
+TTYBAUD=115200
 
 #
 # Serial terminal emulator
@@ -488,7 +486,7 @@ ENTRY=Reset_Handler
 #
 ${OBJDIR}/%.o: %.c
 	@echo "  Compiling           ${<}";
-	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
@@ -550,7 +548,7 @@ all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 # Clean out all the generated files
 #
 clean:
-	@rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
+	rm -rf ${OBJDIR} ${wildcard *~} html latex docs && echo "Done."
 
 #
 # Transfer binary to board
@@ -606,7 +604,7 @@ imagedump: $(OBJDIR)/$(PROGNAME).bin
 # List size
 #
 size: $(OBJDIR)/$(PROGNAME).axf
-	$(OBJSIZE) -A -x $^
+	$(OBJSIZE)  $^
 
 #
 # List size
@@ -645,7 +643,7 @@ ifneq ($(USE_JLINK),)
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
-	$(TERMAPP) -e "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
+	$(TERMAPP) -- $(GDBPROXY) $(JLINKPARMS)  ; \
 #
 # Create gdbinit
 #
@@ -656,13 +654,13 @@ $(GDBINIT): FORCE
 	echo "load $(OBJDIR)/$(PROGNAME).axf" >> $(GDBINIT)
 	echo "monitor reset" >> $(GDBINIT)
 	echo "break main" >> $(GDBINIT)
-	echo "monitor go" >> $(GDBINIT)
+	echo "continue" >> $(GDBINIT)
 endif
 
 ifneq ($(USE_OPENOCD),)
 gdbproxy:
 	if [ -c $(TTYTERM) ] ; then echo "Starting OpenOCD"; \
-	$(TERMAPP) -e "sh -c \" $(GDBPROXY) -f $(OPENOCDBOARD) \" " ; \
+	$(TERMAPP) -- $(GDBPROXY) -f $(OPENOCDBOARD)  ; \
 	else echo "Could not open $(GDBPROXY)"; fi
 #
 # Create gdbinit
@@ -681,7 +679,7 @@ endif
 terminal: term
 term:
 	if [ -c $(TTYTERM) ] ; then echo "Starting terminal"; \
-	$(TERMAPP) -e "sh -c \" $(TTYPROG) $(TTYPARMS) \" " ; \
+	$(TERMAPP) -- $(TTYPROG) $(TTYPARMS)  ; \
 	else echo "Could not open $(TTYTERM)"; fi
 
 #

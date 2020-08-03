@@ -58,11 +58,104 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
 //@{
 #include "uart.h"
 
-void SerialInit(void)           { UART_Init();                }
-void SerialWrite(char c)        { UART_SendChar(c);           }
-int  SerialRead(void)           { return UART_GetChar();  }
-int  SerialStatus(void)         { return UART_GetStatus();    }
+void SerialInit(int chn)           { UART_Init();                }
+void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
+int  SerialRead(int chn)           { return UART_GetChar();      }
+int  SerialStatus(int chn)         { return UART_GetStatus();    }
 //@}
+
+
+
+
+/**
+ *  @brief  TTY interface
+ *
+ *  @brief  TTY_write and TTY_READ
+ *
+ */
+#define TTY_ICRLF       0x0001
+#define TTY_OCRLF       0x0002
+#define TTY_IECHO       0x0004
+#define TTY_UNBUFF      0x0010
+
+#define TTY_BS          '\b'
+
+static unsigned ttyconfig = TTY_IECHO|TTY_OCRLF|TTY_ICRLF;
+
+/**
+ *  @brief  tty_write
+ */
+int tty_write(int chn, char *ptr, int len) {
+int cnt;
+char ch;
+int i;
+
+    cnt = 0;
+    for (i = 0; i < len; i++) {
+        ch = *ptr++;
+        if( (ch == '\n') && ttyconfig&TTY_OCRLF ) {
+            SerialWrite(chn,'\r');
+            cnt++;
+        }
+        SerialWrite(chn,ch);
+        cnt++;
+    }
+    return cnt;
+}
+
+/**
+ *  @brief  tty_read_un
+ *  @note   unbuffered
+ *  @note   No timeout yet
+ */
+int tty_read_un(int chn, char *ptr, int len) {
+int cnt;
+int ch;
+
+    for(cnt=0;cnt < len;cnt++ ) {
+        ch = SerialRead(chn);
+        if( ttyconfig&TTY_IECHO )
+            SerialWrite(chn,ch);
+        ptr[cnt] = ch;
+    }
+
+    return cnt;
+}
+
+/**
+ *  @brief  tty_read_lb
+ *  @note   line buffered
+ *  @note   no timeout yet!!
+ */
+int tty_read_lb(int chn, char *ptr, int len) {
+int cnt;
+int ch;
+
+    cnt = 0;
+    while ( ((ch=SerialRead(chn)) != '\n') && (ch!='\r') ) {
+        if( ch == TTY_BS ) {
+            if( cnt > 0 )
+                cnt--;
+            SerialWrite(chn,'\b');
+            SerialWrite(chn,' ');
+            SerialWrite(chn,'\b');
+        } else {
+            if( ttyconfig&TTY_IECHO )
+                SerialWrite(chn,ch);
+            if( cnt < len )         // overflow characters not stored
+                ptr[cnt++] = ch;
+        }
+    }
+
+    if( cnt < len ) {
+        ptr[cnt++] = '\n';
+    }
+    if(ttyconfig&TTY_ICRLF ) {
+        SerialWrite(chn,'\r');
+        SerialWrite(chn,'\n');
+    }
+    return cnt;
+}
 
 /**
  * @brief   Library initialization
@@ -70,7 +163,7 @@ int  SerialStatus(void)         { return UART_GetStatus();    }
  */
 
 void _main(void) {
-    SerialInit();
+    SerialInit(0);
 }
 
 /**
@@ -212,7 +305,10 @@ int _open(const char *name, int flags, int mode) {
  */
 
 int _read(int file, char *ptr, int len) {
-    return 0;
+
+    if( ttyconfig & TTY_UNBUFF )
+        return tty_read_un(0,ptr,len);
+    return tty_read_lb(0,ptr,len);  // Default
 }
 
 /**
@@ -298,10 +394,6 @@ int _wait(int *status) {
  */
 
 int _write(int file, char *ptr, int len) {
-    int todo;
 
-    for (todo = 0; todo < len; todo++) {
-        SerialWrite(*ptr++);
-    }
-    return len;
+    return tty_write(0,ptr,len);
 }
