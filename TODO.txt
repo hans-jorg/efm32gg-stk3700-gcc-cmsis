@@ -17,7 +17,7 @@ Project Status
 |11-UART             | Done                                  |
 |12-UART             | Uncompleted                           |
 |13-Ministdio        | Done                                  |
-|14-Newlib           | Done. Uses clock_efm32gg              |
+|14-Newlib           | Done.                                 |
 |15-TimeTriggered    | Done                                  |
 |16-Protothreads     | Done                                  |
 |17-FreeRTOS         | Done                                  |
@@ -28,8 +28,9 @@ Project Status
 |--------------------|---------------------------------------|
 
 *  All: Update gnome-terminal parameter (-e is obsolete)
-   14-Newlib: Complete read
-*             Error in second read
+   09-Button: Implement debounce (state machine and conventional)
+   12-UART:   ??
+*  14-Newlib: Complete read
 *             Error in buffering: Use no buffer or flush (problem is inside newlib)
 *                Not needed. Working now.
    21-Temperature: Add printing. Test conversion.

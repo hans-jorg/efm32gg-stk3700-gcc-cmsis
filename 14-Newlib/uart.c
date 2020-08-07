@@ -211,7 +211,7 @@ uint8_t ch;
                 UART0->TXDATA = ch;
             }
         }
-        UART0->IFC = UART_IFC_TXC;
+       UART0->IFC = UART_IFC_TXC;
     }
 }
 
@@ -234,16 +234,13 @@ uint32_t w;
  * @note    Generates an interrupt to send char
  */
 
-void UART_SendChar(char c) {
-
+void UART_SendChar(char ch) {
     if ( buffer_empty(outputbuffer) ) {
-        ENTER_ATOMIC();
-        buffer_insert(outputbuffer,c);
-        UART0->IFS |= UART_IFS_TXC;
-        EXIT_ATOMIC();
+        while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+        UART0->TXDATA = ch;
     } else {
         ENTER_ATOMIC();
-        (void) buffer_insert(outputbuffer,c);
+        buffer_insert(outputbuffer,ch);
         EXIT_ATOMIC();
     }
 }
@@ -293,5 +290,70 @@ int ch;
     ch = buffer_remove(inputbuffer);
     EXIT_ATOMIC();
     return ch;
+}
+
+/**
+ * @brief   Disable interrupts
+ *
+ */
+
+void UART_EnableInterrupts(uint32_t m) {
+
+    if( m&UART_TXINT ) UART0->IEN |= UART_IEN_TXC;
+    if( m&UART_RXINT ) UART0->IEN |= UART_IEN_RXDATAV;
+}
+
+/**
+ * @brief   Disable interrupts
+ *
+ */
+
+void UART_DisableInterrupts(uint32_t m) {
+
+    if( m&UART_TXINT ) UART0->IEN &= ~UART_IEN_TXC;
+    if( m&UART_RXINT ) UART0->IEN &= ~UART_IEN_RXDATAV;
+}
+
+/**
+ * @brief   Output char using polling
+ *
+ * @note    Does block!!!!!
+ * @note    Trasmitter interrupts must be disabled
+ */
+
+void UART_PutCharPolling(char ch) {
+
+    while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+    UART0->TXDATA = ch;
+
+}
+
+
+/**
+ * @brief   Flush buffer
+ *
+ * @note    Does block!!!!!
+ */
+
+int UART_Flush(void) {
+int cnt;
+int ch;
+
+    // Clear input buffer
+    buffer_clear(inputbuffer);
+
+    // Clear output buffer
+    cnt = 0;
+    // Disable interrupts
+    UART0->IEN &= ~(UART_IEN_TXC|UART_IEN_RXDATAV);
+    while( ! buffer_empty(outputbuffer) ) {
+        // Wait until UART TX is free
+        ch = buffer_remove(outputbuffer);
+        UART_PutCharPolling(ch);
+        cnt++;
+    }
+    // Reenable interrupts
+    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+    return cnt;
 }
 

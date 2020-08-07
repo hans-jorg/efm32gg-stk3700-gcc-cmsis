@@ -18,6 +18,9 @@
 #include "led.h"
 #include "uart.h"
 
+//void UART0_TX_IRQHandler(void);
+#define ENTER_ATOMIC() __disable_irq()
+#define EXIT_ATOMIC()  __enable_irq()
 
 /*************************************************************************//**
  * @brief  Sys Tick Handler
@@ -56,9 +59,6 @@ uint64_t l = tick+delay;
  *         HFCORECLK = HFCLK
  *         HFPERCLK  = HFCLK
  */
-
-extern int tty_read_lb(int,char *,int);
-extern int tty_write(int,char *,int);
 
 int main(void) {
 char line[100];
