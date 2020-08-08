@@ -23,13 +23,8 @@
  */
 const int TickDivisor = 1000; // milliseconds
 
-volatile uint64_t tick = 0;
-
 void SysTick_Handler (void) {
 static int counter = 0;
-
-    tick++;
-
     if( counter == 0 ) {
         counter = TickDivisor;
         // Process every second
@@ -38,13 +33,6 @@ static int counter = 0;
     counter--;
 }
 
-
-void Delay(int delay) {
-uint64_t l = tick+delay;
-
-    while(tick<l) {}
-
-}
 
 /*****************************************************************************
  * @brief  Main function
@@ -57,8 +45,8 @@ uint64_t l = tick+delay;
 
 int main(void) {
 ClockConfiguration_t clockconf;
-unsigned ch;
-int counter;
+int cntchar;
+unsigned ch,checho;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
@@ -78,26 +66,21 @@ int counter;
     /* Configure UART */
     UART_Init();
 
-    __enable_irq();
-
-    counter = 0;
-    UART_SendString("\r\n\n\n\rHello\n\r");
+    cntchar = 0;
+    ch = '*';
+    checho = ch;
     while (1) {
 
         if( (ch = UART_GetCharNoWait()) != 0 ) {
             LED_Toggle(LED2);
-            if( (ch == '\n') || (ch == '\r') ) {
-                UART_SendString("\n\r");
-            } else if( ch == '\x1B' ) {
-                UART_SendString("12345678901234567890\n\r");
-            } else {
-                UART_SendChar(ch);
-            }
+            if( (ch != '\n') && (ch != '\r') )
+                checho = ch;
         }
-        counter++;
-        if( counter > 100000000 ) {
-            UART_SendChar('*');
-            counter = 0;
+        if( (cntchar++%80)!=0 ) {
+            UART_SendChar(checho);
+        } else {
+            UART_SendChar('\n');
+            UART_SendChar('\r');
         }
     }
 

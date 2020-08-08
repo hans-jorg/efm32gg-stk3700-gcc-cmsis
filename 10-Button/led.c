@@ -1,4 +1,4 @@
-/** **************************************************************************
+/**************************************************************************//**
  * @file    led.c
  * @brief   LED HAL for EFM32GG STK
  * @version 1.0
@@ -28,6 +28,7 @@ void LED_Init(uint32_t leds) {
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE2_MASK;      // Clear bits
         GPIOE->MODEL |= GPIO_P_MODEL_MODE2_PUSHPULL;    // Set bits
     }
+
     if( leds&LED2 ) {
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE3_MASK;      // Clear bits
         GPIOE->MODEL |= GPIO_P_MODEL_MODE3_PUSHPULL;    // Set bits

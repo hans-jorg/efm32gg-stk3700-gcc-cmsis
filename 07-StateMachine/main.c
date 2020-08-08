@@ -12,6 +12,7 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
+#include "system_efm32gg-ext.h"
 #include "led.h"
 
 #define DIVIDER 1000
@@ -58,6 +59,11 @@ static int8_t state = 0;            // must be static
 
 int main(void) {
 
+
+    // Set clock source to external crystal: 48 MHz
+    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
+    
     /* Configure Pins in GPIOE */
     LED_Init(LED1|LED2);
 

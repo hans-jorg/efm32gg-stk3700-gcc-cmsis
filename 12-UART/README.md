@@ -1,98 +1,116 @@
-#*12* Serial Communication using interrupts
+#*11* Serial Communication using polling
+
+##Serial interface using USB
+
+Before developing application that uses the serial-USB bridge, it is necessary to update the firmware in the board controller.
+
+##Using Simplicity
+
+1.  With the board disconnected, start Simplicity
+2.  If there is a message, suggesting to upgrade, accept it.
+3.  Connect the board
+4.  In the *Device* panel, right click over the *J-Link Silicon Labs* line and select *Device Configuration*.
+5.  Accept the offer to upgrade the firmware.
+
+##Using J-Link
+
+TBD!!!
+
+##Serial interface
 
 
-##Interrupt based serial communication
+                    +------------+                           +-------------------+
+                    |  Board     |        Serial             |                   |
+    USB ------------| Controller |---------------------------| EFM32GG990F1024   |
+    COMx            |            |         TX/RX             |                   |
+                    +------------+                           +-------------------+
 
-This describes an interrupt based implementation of serial communication. The device used for serial communication using USB is the UART0 (not USART0). It uses the PE0 and PE1 pins for RX and TX, respectively, and the PF7 to enable a transceiver.
 
-The EMF32GG990F1024 has two interrupts for the UART0: *UART0_TX_IRQn* and *UART0_RX_IRQn*. The generated interrupts calls the routines *UART0_RX_IRQHandler* and *UART0_TX_IRQHandler*.
+In Linux, a device named *ttyACM0* appears in the */dev* folder. In Windows, a new COM device appears. There is a permission problem in some Linux machines. There are two ways to solve it. One is add the user to the dialout group with the following command
 
-Both use a FIFO buffer to store the characters handled. This avoid to need to wait. When the buffer is full, the extra characters are discarded. The FIFO buffer is defined in buffer.h and buffer.c.
+	sudo usermod -a -G dialout $(USER)
 
-##Enabling interrupts
+The dialout group can access the serial devices (*/dev/tty\*\* *). Other way is add a file (*50-segger.rules*) with following rules to /etc/udev/rules.d folder.
 
-	// Enable interrupts on UART
-    UART0->IFC = (uint32_t) -1;
-    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+	KERNEL=="ttyACM[0-9]*",MODE="0666"
 
-    // Enable interrupts on NVIC
-    NVIC_SetPriority(UART0_RX_IRQn,RXINTLEVEL);
-    NVIC_SetPriority(UART0_TX_IRQn,TXINTLEVEL);
-    NVIC_ClearPendingIRQ(UART0_RX_IRQn);
-    NVIC_ClearPendingIRQ(UART0_TX_IRQn);
-    NVIC_EnableIRQ(UART0_RX_IRQn);
-    NVIC_EnableIRQ(UART0_TX_IRQn);
+The serial interface between EFM32GG and the board controller has a fixed configuration: 115200 bps, 8 bits, no parity, 1 stop bit, no hardware flow control.
 
-##Hazard conditions
+The board is wired to use the *PE0 (TX)* and *PE1 (RX)* pins. There is an enable signal on PF7. It must be set to 1 to communication between the EFM32GG and Board Controller happens. It signals a TS3A4751 SPST (Single Pole - Single Throw ) Analog Switch to connect the EFM32GG and the Board Controller.
 
-When using interrupt, it is possible to access data while it is being modified. This can lead to data corruption and unexpected behaviors. In this case, the access to buffer must be done without interrupts by using the *ENTER_CRITICAL* and *EXIT_CRITICAL* macros pairs. They are just *__disable_irq()* and *__enable_irq()*, respectively.
+The I/O pins used for the UART0 can be choosen from three sets (Location) and one of them include PE0 and PE1. Attention: they are controlled by UART0, not USART0.
 
-##Transmitting a char
+|      Signal          |     0        |      1       |       2      |
+|----------------------|--------------|--------------|--------------|
+|       U0_RX          |    PF7       |     PE1      |      PA4     |
+|       U0_TX          |    PF6       |     PE0      |      PA3     |
 
-The interrupt routine is called when there is a modification in *TXC* flag in *STATUS* register and enable by setting the *TXC* bit in *IEN*.
 
-    void UART0_TX_IRQHandler(void) {
-    uint8_t ch;
 
-     // if data in output buffer and transmitter idle, send it
-     if( UART0->IF&UART_IF_TXC ) {
-         if( UART0->STATUS&UART_STATUS_TXBL ) {
-             if( !buffer_empty(outputbuffer) ) {
-                 // Get from output buffer
-                 ch = buffer_remove(outputbuffer);
-                 UART0->TXDATA = ch;
-            }
-         }
-        UART0->IFC = UART_IFC_TXC;
-    	}
-	}
+The same device is used to implement a serial bootloader. See [AN0042](https://www.silabs.com/application-notes/an0042-efm32-usb-uart-bootloader.pdf)[13] and [AN0042-KB](https://www.silabs.com/community/mcu/32-bit/knowledge-base.entry.html/2017/09/01/use_an0042_bootloade-N9Zn)[14].
 
-To transmit, just put the data in the buffer and if it was empty, raise an interrupt.
+The UART uses the HFPERCLK clock signal, which is derived from the HFClock with a divisor specified by the field *HFPERCLKDIV* in register *CMU_HFPERCLKDIV*. The signal must be enable by setting the *HFPERCLKEN* in register *CMU_HFPERCLKDIV*. The divisor is a power of 2 in the range 1 to 512, specified by a value 0 to 8 in the field *HFPERCLKDIV*.
 
-    void UART_SendChar(char c) {
+The HFClock source can be the HFXO (external high frequency crystal oscillator), HFRCO (internal high frequency RC oscillator, the default) or a low frequency source: LFXO (external low frequency crystal oscillator) or LFRCO (internal low frequency RC oscillator).
 
-	    if ( buffer_empty(outputbuffer) ) {
-			ENTER_ATOMIC();
-		    buffer_insert(outputbuffer,c);
-			UART0->IFS |= UART_IFS_TXC;
-		    EXIT_ATOMIC();
-	    } else {
-			ENTER_ATOMIC();
-		    (void) buffer_insert(outputbuffer,c);
-		    EXIT_ATOMIC();
-		}
-	}
+| Clock source    |   Frequency                                     |
+|-----------------|-------------------------------------------------|
+|  HFRCO          |  1-28 MHz (default: 14 MHz nominal )            |
+|  HFXO           |  4-48 MHz (crystal)                             |
+|  LFRCO          |   32768 Hz nominal                              |
+|  LFXO           |   32768 Hz (crystal)                            |
 
-##Receiving a char
+The crystal on the STK3700 has a 48 MHz frequency, the maximal frequency of the device.
 
-The interrupt routine is straightforward.
+There is an important note in the Item 13.1 of Application Note *USART/UART - Asynchronous mode* (AN0045).
 
-    void UART0_RX_IRQHandler(void) {
-    uint8_t ch;
+Often, the HFRCO is too unprecise to be used for communications. So using the HFXO with an external crystal is recommended when using the EFM32 UART/USART.
 
-    if( UART0->STATUS&UART_STATUS_RXDATAV ) {
-        // Put in input buffer
-        ch = UART0->RXDATA;
-        (void) buffer_insert(inputbuffer,ch);
-        }
-    }
+In some cases, the internal HFRCO can be used. But then careful considerations should be taken to ensure that the clock performance is acceptable for the communication link.
 
-The API for receiving a char includes a non block *UART_GetCharNoWait* to get the char of buffer if there is one there. Otherwise returns 0.
+The reason for this note is hidden in the page 24 of the datasheet of the EFM32GG990F1024. RC based oscillators are inherently not very precise. They have a thermal drift, which must be compensated by calibration.
 
-    unsigned UART_GetCharNoWait(void) {
+|   Clock source  |  Nominal frequency  |  Minimum frequency    | Maximum frequency  |           |
+|-----------------|---------------------|-----------------------|--------------------|           |
+|    LFXO         |   32768 Hz          |      31290 Hz         |    34280 Hz        |           |
+|    HFRCO        |       1 MHz         |       1.15 MHz        |     1.25 MHz       |           |
+|    HFRCO        |       7 MHz         |       6.48 MHz        |     6.72 MHz       |           |
+|    HFRCO        |      11 MHz         |       10.8 MHz        |     11.2 MHz       |           |
+|    HFRCO        |      14 MHz         |       13.7 MHz        |     14.3 MHz       |  default  |
+|    HFRCO        |      21 MHz         |       20.6 MHz        |     21.4 MHz       |           |
+|    HFRCO        |      28 MHz         |       27.5 MHz        |     28.5 MHz       |           |
 
-    if( buffer_empty(inputbuffer) )
-        return 0;
-    return buffer_remove(inputbuffer);
-    }
 
-##Notes
+To configure UART0:
 
-1.  Before developing application that uses the serial-USB bridge, it is necessary to update the firmware in the board controller.
-2.  The interface appears as a */dev/ttyACMx* in Linux machines and *COMx* in Window machines.
+1.  Configure pins PE0 and PE1 to be controlled by UART0. Configure UART0 to use LOC1 for RX and TX pins.
+2.  Configure oversampling factor 16 in *UART0_CTRL* (higher is better), setting OVS to 00.
+3.  Speed is configured by setting the *CLKDIV* field (in *UART0_CLKDIV*) according the formula
+                            f_HFPERCLK
+        speed =  -------------------------------------
+                      Oversampling ( 1 + CLKVDIV/4 )
+
+    or
+
+                    /       f_HFPERCLK            \
+        CLKDIV = 4 | ------------------------ - 1 |
+                    \  Oversampling x Speed       /
+or
+
+4.  The formulas are different from EMF32GG Reference Manual, which use the whole register value. The formulas above use field values.
+5.  Configure stop bits setting *STOPBITS* field in *UART0_CTRL* to 01.
+6.  Configure 8 bits data setting *DATABITS* field in *UART0_CTRL* to 0101.
+7.  Configure no parity by setting *PARITY* field in *UART0_CTRL* to 00.
+8.  Enable transmit operations by writing *TXEN* to *UART0_CMD*.
+9.  Enable receiving operations by writing *RXEN* to *UART0_CMD*.
+
+To use it in polling mode:
+
+1.  To transmit: test *TXC* in *UART0_STATUS*. If set, write data to *UART0_TXDATA*.
+2.  Yo receive: test *RXDATAV* in *UART0_STATUS*. If set, get data from *UART0_RXDATA*.
 
 ##More information
 
-1.  [EFM32 STK Virtual COM port](https://www.silabs.com/community/mcu/32-bit/knowledge-base.entry.html/2015/07/06/efm32_stk_virtualco-aT2m)[17]
-2.  [Using stdio on Silicon Labs platforms](https://os.mbed.com/teams/SiliconLabs/wiki/Using-stdio-on-Silicon-Labs-platforms)[18]
-3.  [AN0045](http://www.silabs.com/Support%20Documents/TechnicalDocs/AN0045.pdf)[19]
+[EFM32 STK Virtual COM port](https://www.silabs.com/community/mcu/32-bit/knowledge-base.entry.html/2015/07/06/efm32_stk_virtualco-aT2m)[15]
+
+[Using stdio on Silicon Labs platforms](https://os.mbed.com/teams/SiliconLabs/wiki/Using-stdio-on-Silicon-Labs-platforms)[16]

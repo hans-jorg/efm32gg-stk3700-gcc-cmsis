@@ -26,14 +26,51 @@
 #include "em_device.h"
 #include "clock_efm32gg.h"
 #include "uart.h"
+#include "buffer.h"
 
+/**
+ * @brief   Macros to enhance portability
+ */
 #define BIT(N) (1U<<(N))
+#define ENTER_ATOMIC() __disable_irq()
+#define EXIT_ATOMIC()  __enable_irq()
 
+/**
+ * @brief   Configuration
+ */
+/// Buffer size for input and output
+#define INPUTBUFFERSIZE 100
+#define OUTPUTBUFFERSIZE 100
+/// Interrupt level
+#define RXINTLEVEL 6
+#define TXINTLEVEL 6
+
+/// baudrate
 const uint32_t BAUD = 115200;
 const uint32_t OVERSAMPLING = 16;
 
+/// GPIO Port used for RX/TX
 static GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);    // GPIOE
+/// GPIO Port used for enable transceiver
 static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
+
+
+
+/**
+ * @brief   Global variables
+ *
+ * @note    To avoid use of malloc, it uses a macro to define area
+ */
+
+DECLARE_BUFFER_AREA(inputbufferarea,INPUTBUFFERSIZE);
+DECLARE_BUFFER_AREA(outputbufferarea,OUTPUTBUFFERSIZE);
+buffer inputbuffer = 0;
+buffer outputbuffer = 0;
+
+
+/**
+ * @brief   Resets UART
+ */
 
 void UART_Reset(void) {
 
@@ -51,8 +88,17 @@ void UART_Reset(void) {
     UART0->IRCTRL    = _UART_IRCTRL_RESETVALUE;
     UART0->INPUT     = _UART_INPUT_RESETVALUE;
 
+    buffer_deinit(inputbuffer);
+    buffer_deinit(outputbuffer);
+
 }
 
+
+/**
+ * @brief   Initializes UART
+ *
+ * @note    Does not enable interrupts!!!!
+ */
 
 void UART_Init(void) {
 uint32_t bauddiv;
@@ -103,12 +149,74 @@ uint32_t bauddiv;
     // Set which location to be used
     UART0->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
 
+    // Initializes buffers
+    inputbuffer  = buffer_init(inputbufferarea,INPUTBUFFERSIZE);
+    outputbuffer = buffer_init(outputbufferarea,OUTPUTBUFFERSIZE);
+
+    // Enable interrupts on UART
+    UART0->IFC = (uint32_t) -1;
+    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+
+    // Enable interrupts on NVIC
+    NVIC_SetPriority(UART0_RX_IRQn,RXINTLEVEL);
+    NVIC_SetPriority(UART0_TX_IRQn,TXINTLEVEL);
+    NVIC_ClearPendingIRQ(UART0_RX_IRQn);
+    NVIC_ClearPendingIRQ(UART0_TX_IRQn);
+    NVIC_EnableIRQ(UART0_RX_IRQn);
+    NVIC_EnableIRQ(UART0_TX_IRQn);
+
     // Disable and then enable RX and TX
     UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
     UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
 }
 
 
+/**
+ * @brief   UART Interrupt routine for receiving data
+ *
+ * @note    Receives and put it in buffer
+ */
+
+void UART0_RX_IRQHandler(void) {
+uint8_t ch;
+
+    if( UART0->STATUS&UART_STATUS_RXDATAV ) {
+        // Put in input buffer
+        ch = UART0->RXDATA;
+        (void) buffer_insert(inputbuffer,ch);
+    }
+
+}
+
+
+/**
+ * @brief   UART Interrupt routine for transmitting data
+ *
+ * @note    If there is data to transmit, send it
+ * @note    UART_SendChar generates this interrupt
+ */
+
+void UART0_TX_IRQHandler(void) {
+uint8_t ch;
+
+    // if data in output buffer and transmitter idle, send it
+    if( UART0->IF&UART_IF_TXC ) {
+        if( UART0->STATUS&UART_STATUS_TXBL ) {
+            if( !buffer_empty(outputbuffer) ) {
+                // Get from output buffer
+                ch = buffer_remove(outputbuffer);
+                UART0->TXDATA = ch;
+            }
+        }
+        UART0->IFC = UART_IFC_TXC;
+    }
+}
+
+/**
+ * @brief   Get status of UART
+ *
+ * @note    Could be inline in uart.h
+ */
 
 unsigned UART_GetStatus(void) {
 uint32_t w;
@@ -117,12 +225,31 @@ uint32_t w;
     return w;
 }
 
+/**
+ * @brief   Send a char
+ *
+ * @note    Generates an interrupt to send char
+ */
+
 void UART_SendChar(char c) {
 
-    while( (UART_GetStatus()&UART_TXREADY)==0 ) {};
-
-    UART0->TXDATA = (uint32_t) c;
+    if ( buffer_empty(outputbuffer) ) {
+        ENTER_ATOMIC();
+        buffer_insert(outputbuffer,c);
+        UART0->IFS |= UART_IFS_TXC;
+        EXIT_ATOMIC();
+    } else {
+        ENTER_ATOMIC();
+        (void) buffer_insert(outputbuffer,c);
+        EXIT_ATOMIC();
+    }
 }
+
+/**
+ * @brief   Send a string
+ *
+ * @note    Could be inline in uart.h
+ */
 
 void UART_SendString(char *s) {
 
@@ -130,23 +257,49 @@ void UART_SendString(char *s) {
 
 }
 
+/**
+ * @brief   Get a char from UART without waiting
+ *
+ * @note    Does no block. Returns 0 when there is none
+ */
 
 unsigned UART_GetCharNoWait(void) {
+char ch;
 
-    if( (UART_GetStatus()&UART_RXDATAV)==0 )
+    if( buffer_empty(inputbuffer) )
         return 0;
-    return UART0->RXDATA;
+
+    ENTER_ATOMIC();
+    ch = buffer_remove(inputbuffer);
+    EXIT_ATOMIC();
+    return  ch;
 }
+
+/**
+ * @brief   Get a char from UART
+ *
+ * @note    Does block!!!!!
+ */
 
 unsigned UART_GetChar(void) {
+char ch;
 
-    while( (UART_GetStatus()&UART_RXDATAV)==0 ) {};
-    return UART0->RXDATA;
+    while( buffer_empty(inputbuffer) ) {}
+
+    ENTER_ATOMIC();
+    ch = buffer_remove(inputbuffer);
+    EXIT_ATOMIC();
+    return  ch;
 }
 
-void UART_GetString(char *s, int n) {
-char *p = s;
+/**
+ * @brief   Get a string from UART
+ *
+ * @note    Does block!!!!!
+ * @note    Not implemented yet
+ */
 
-    while( ((s-p)<n)&&(*s=UART_GetChar()) ) s++;
-    *s = 0;
+void UART_GetString(char *s, int n) {
+
+    return;
 }

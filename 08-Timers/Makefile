@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=button
+PROGNAME=blink-systick-v2
 
 #
 # Defines the part (device) that this project uses

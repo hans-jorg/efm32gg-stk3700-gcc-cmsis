@@ -12,7 +12,7 @@ Project Status
 |06-ClockFrequency   | Done                                  |
 |07-SysTick          | Done                                  |
 |08-Button           | Done                                  |
-|09-Button           | Uncompleted                           |
+|09-Button           | Done                                  |
 |10-Debounce         | Done                                  |
 |11-UART             | Done                                  |
 |12-UART             | Uncompleted                           |
@@ -27,10 +27,5 @@ Project Status
 |21-Temperature      | Uncompleted                           |
 |--------------------|---------------------------------------|
 
-*  All: Update gnome-terminal parameter (-e is obsolete)
-   09-Button: Implement debounce (state machine and conventional)
    12-UART:   ??
-*  14-Newlib: Complete read
-*             Error in buffering: Use no buffer or flush (problem is inside newlib)
-*                Not needed. Working now.
    21-Temperature: Add printing. Test conversion.

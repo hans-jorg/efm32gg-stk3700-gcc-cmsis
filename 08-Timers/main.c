@@ -15,24 +15,40 @@
 #include "system_efm32gg-ext.h"
 #include "led.h"
 
-#define DELAYVAL 1
+#define DIVIDER 1000
 
-/**
- * @brief  Quick and dirty delay function
- * @note   Do not use in production code
+/*****************************************************************************
+ * @brief  SysTick interrupt handler
+ *
+ * @note   Called every 1/DIVIDER seconds (1 ms)
  */
 
-void Delay(uint32_t delay) {
-volatile uint32_t counter;
-int i;
+void SysTick_Handler(void) {
+static int counter = 0;             // must be static
+static int8_t state = 0;            // must be static
 
-    for(i=0;i<delay;i++) {
-        counter = 1000000;
-        while( counter ) counter--;
+    if( counter != 0 ) {
+        counter--;
+    } else {
+        switch(state) {
+        case 0:
+            LED_Toggle(LED1);
+            state = 1;
+            break;
+        case 1:
+            LED_Toggle(LED2);
+            state = 2;
+            break;
+        case 2:
+            LED_Write(0,LED1|LED2);
+            state = 0;
+            break;
+        }
+        counter = DIVIDER-1;
     }
 }
 
-/**
+/*****************************************************************************
  * @brief  Main function
  *
  * @note   Using default clock configuration
@@ -43,23 +59,18 @@ int i;
 
 int main(void) {
 
+
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
     
     /* Configure Pins in GPIOE */
     LED_Init(LED1|LED2);
 
+    /* Configure SysTick */
+    SysTick_Config(SystemCoreClock/DIVIDER);
+
     /* Blink loop */
-    while (1) {
+    while (1) {}
 
-        Delay(DELAYVAL);
-        LED_Toggle(LED1);                                // Toggle LED1
-
-        Delay(DELAYVAL);
-        LED_Toggle(LED2);                                // Toggle LED2
-
-        Delay(DELAYVAL);
-        LED_Write(0,LED1|LED2);                          // Turn On All LEDs
-
-    }
 }

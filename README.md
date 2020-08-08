@@ -111,25 +111,27 @@ Examples for the EFM32GG-STK3700 Development Board
 
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
--   01-Blink: Blink LEDs with direct access to registers
--   02-Blink: Blink LEDs with a HAL for GPIO
--   03-Blink: Blink LEDs with a HAL for LEDs above GPIO HAL
--   04-Blink: Blink LEDs with a HAL for LEDs without a HAL for GPIO
--   05-SysTick: Blink LEDs using SysTick based delays
--   06-SysTick: Blink LEDs and changing the core frequency
--   07-SysTick: Blink LEDs using Time Triggered Tasks
--   08-Button: Control LEDs using buttons (without debounce)
--   09-Button: Control LEDs using buttons (without debounce)
--   *10-Debounce: Control LEDs using buttons (without debounce)
--   11-UART: Uses UART1 to communicate with host computer via USB cable
--   *12-UART: USART1 interface using interrupts
--   13-Ministdio: Implements a mini stdio package (printf, gets, etc)
--   14-Newlib: Implements full access to newlib
--   15-TimeTriggered: Uses a Time-Triggered approach[5]
--   16-Protothreads: Uses a proto thread approach
--   *17-FreeRTOS: Uses a (free) preemptive real time kernel
--   18-ucos2: Uses ucos version 2
--   *19-ucos3: Uses ucos version 3
--   20-LCD: Controls the LCD display
+-    01-Blink: Blick LEDs with direct access to registers
+-    02-Blink: Blick LEDs with a HAL for GPIO
+-    03-Blink: Blink LEDs with a LED HAL above the GPIO HAL
+-    04-Blink: Blink LEDs with a LED HAL above hardware
+-    05-SysTick: Using SysTick to implement delays
+-    06-ClockFrequency: Changing the core clock frequency
+-    07-StateMachine: Processing inside the SysTick Interrupt
+-    *08-Timers: Timers
+-    09-Button: Buttons
+-    10-Button: More about buttons
+-    *11-Debounce: Debouncing
+-    12-UART: Serial Communication using polling
+-    *13-UART: Serial Communication using interrupts
+-    14-Ministdio: Mini Standard I/O Package
+-    15-Newlib: Using Newlib
+-    16-TimeTriggered: Time Triggered Systems
+-    17-Protothreads: Using Protothreads
+-    *18-FreeRTOS: Using FreeRTOS
+-    19-ucos2: Using uC/OS-II
+-    *20-ucos3: Using uC/OS-III
+-    21-LCD: Using the LCD display
+-    *22-Temperature: Getting the CPU temperature
 
 **Those marked with an asterisk are unfinished!!!**
