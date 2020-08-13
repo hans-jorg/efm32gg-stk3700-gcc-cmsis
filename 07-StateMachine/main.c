@@ -1,9 +1,18 @@
-/** ***************************************************************************
- * @file    main.c
- * @brief   Simple LED Blink Demo for EFM32GG_STK3700
- * @version 1.0
-******************************************************************************/
-
+/**
+ * @note    Just blinks the LEDs of the STK3700
+ *
+ * @note    LEDs are on pins 2 and 3 of GPIO Port E
+ *
+ * @note    It uses a LED HAL.
+ *
+ * @note    It uses code in system-efm32gg-ext to change clock frequency.
+ *
+ * @note    All processing is done in the interrupt routine.
+ *
+ * @author  Hans
+ * @date    01/09/2018
+ */
+ 
 #include <stdint.h>
 /*
  * Including this file, it is possible to define which processor using command line
@@ -15,7 +24,8 @@
 #include "system_efm32gg-ext.h"
 #include "led.h"
 
-#define DIVIDER 1000
+#define SYSTICKDIVIDER 1000
+#define SOFTDIVIDER 1000
 
 /*****************************************************************************
  * @brief  SysTick interrupt handler
@@ -44,7 +54,7 @@ static int8_t state = 0;            // must be static
             state = 0;
             break;
         }
-        counter = DIVIDER-1;
+        counter = SOFTDIVIDER-1;
     }
 }
 
@@ -68,7 +78,7 @@ int main(void) {
     LED_Init(LED1|LED2);
 
     /* Configure SysTick */
-    SysTick_Config(SystemCoreClock/DIVIDER);
+    SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
 
     /* Blink loop */
     while (1) {}

@@ -1,8 +1,9 @@
-#*1* First Blink
+1 First Blink
+=============
 
-This is the 1th version of Blink. It uses direct access to register of the EFM32GG990F1024 microcontroller.
+This is the 1th version of Blink. It uses direct access to register of the EFM32GG990F1024 microcontroller on the EFM32STK3700 board.
 
-It is possible to use the Gecko SDK Library, which includes a HAL Library for GPIO. For didactic reasons and to avoid the restrictions imposed by the license, the direct access to registers is used in this document.
+It is possible to use the Gecko SDK Library, which includes a HAL Library for GPIO. For didactic reasons and to avoid the restrictions imposed by the license, the direct access to registers is used in this project.
 
 The architecture of the software is shown below.
 
@@ -13,7 +14,7 @@ The architecture of the software is shown below.
     +------------------------------------------------------+
     
 
-To access the registers, it is necessary to know their addresses and fields. These information can be found the data sheet and other documents from the manufacturer. The manufacturer (Silicon Labs) provides a CMSIS compatible header files in the *platform* folder of the Gecko SDK Library.
+To access the registers, it is necessary to know their addresses and fields. These information can be found in the data sheet and other documents from the manufacturer. The manufacturer (Silicon Labs) provides a CMSIS compatible header files in the *platform* folder of the Gecko SDK Library.
 
 The *platform* folder has the following sub-folders of interest: *Device* and *CMSIS*. In the *Device/SiliconLabs/EFM32GG/Include/* folder there is a header file named *emf32gg990f1024.h*, which includes the definition of all registers of the microcontroller. One has to be careful because it includes a lot of other header files (*emf32gg_*.h*). It is possible to include the *emf32gg990f1024.h* file directly in the code, like below.
 

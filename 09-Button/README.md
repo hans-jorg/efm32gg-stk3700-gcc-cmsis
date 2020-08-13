@@ -1,4 +1,5 @@
-#*8* Buttons
+9  Buttons
+==========
 
 
 This is the 1st version of Button. It implements a polling method to read the push buttons. It uses the HAL for LEDs (STK3700) used in the last Blink example.

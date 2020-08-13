@@ -1,4 +1,5 @@
-#*9* More about buttons
+10  More about buttons
+======================
 
 This is the 2nd version of Button. It implements an interrupt based method to read the push-buttons. It uses the HAL for LEDs (STK3700) used in the last Blink example.
 

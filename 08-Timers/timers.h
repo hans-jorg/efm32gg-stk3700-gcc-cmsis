@@ -11,14 +11,14 @@ typedef struct {
     int counter;
     int period;
     void (*function)(void);
-} timers_t;
+} Timers_t;
 
-#ifndef TIMERS_H
+#ifndef TIMERS_N
 #define TIMERS_N  10
 #endif
 
-int timers_add(int p, void (*fcnt)(void));
-int timers_del(void (*fcnt)(void));
-void timers_dispatch(void);
+int Timers_add(int p, void (*fcnt)(void));
+int Timers_del(void (*fcnt)(void));
+void Timers_dispatch(void);
 
 #endif

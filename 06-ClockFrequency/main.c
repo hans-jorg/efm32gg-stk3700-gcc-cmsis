@@ -1,8 +1,20 @@
-/** ***************************************************************************
- * @file    main.c
- * @brief   Simple LED Blink Demo for EFM32GG_STK3700
- * @version 1.0
-******************************************************************************/
+/**
+ * @note    Just blinks the LEDs of the STK3700
+ *
+ * @note    LEDs are on pins 2 and 3 of GPIO Port E
+ *
+ * @note    It uses a primitive delay mechanism. Do not use it in production code.
+ *
+ * @note    It uses a LED HAL.
+ *
+ * @note    It uses code in system-efm32gg-ext to change clock frequency.
+ *
+ * @note    With this frequency change, the delays play havoc.
+ *
+ * @author  Hans
+ * @date    01/09/2018
+ */
+
 
 #include <stdint.h>
 /*

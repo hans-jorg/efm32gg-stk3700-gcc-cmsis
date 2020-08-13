@@ -63,6 +63,17 @@ volatile uint32_t b;
 #else
         b = 1000000;
         while(b) {b--;}
+
+        // Wait until button is pressed
+        while (Button_Read()!=BUTTON_PRESSED) {}
+        cnt = 0;
+        do {
+            Delay(T1MS);
+            cnt++;
+            if ( Button_Read()!=BUTTON_PRESSED)
+                cnt = 0;    // Start again
+        } while (cnt < 3);
+
         LED_Toggle(LED2);
 #endif
     }

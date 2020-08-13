@@ -1,31 +1,31 @@
-
 Project Status
 ==============
 
-|Projects            |   Status                              |
-|--------------------|---------------------------------------|
-|01-Blink            | Done                                  |
-|02-Blink            | Done                                  |
-|03-Blink            | Done                                  |
-|04-Blink            | Done                                  |
-|05-SysTick          | Done                                  |
-|06-ClockFrequency   | Done                                  |
-|07-SysTick          | Done                                  |
-|08-Button           | Done                                  |
-|09-Button           | Done                                  |
-|10-Debounce         | Done                                  |
-|11-UART             | Done                                  |
-|12-UART             | Uncompleted                           |
-|13-Ministdio        | Done                                  |
-|14-Newlib           | Done.                                 |
-|15-TimeTriggered    | Done                                  |
-|16-Protothreads     | Done                                  |
-|17-FreeRTOS         | Done                                  |
-|18-ucos2            | Done                                  |
-|19-ucos3            | Done                                  |
-|20-LCD              | Done                                  |
-|21-Temperature      | Uncompleted                           |
-|--------------------|---------------------------------------|
+| Project                | Status                 |
+| ---------------------- | ---------------------- |
+| 01-Blink               | OK                     |
+| 02-Blink               | OK                     |
+| 03-Blink               | OK                     |
+| 04-Blink               | OK                     |
+| 05-SysTick             | OK                     |
+| 06-ClockFrequency      | OK                     |
+| 07-StateMachine        | OK                     |
+| 08-Timers              | OK                     |
+| 09-Button              | OK                     |
+| 10-Button              | OK                     |
+| 11-Debounce            | OK                     |
+| 12-UART                | OK                     |
+| 13-UART                | OK                     |
+| 14-Ministdio           | OK                     |
+| 15-Newlib              | OK                     |
+| 16-TimeTriggered       | OK                     |
+| 17-Protothreads        | OK                     |
+| 18-FreeRTOS            | OK                     |
+| 19-ucos2               | OK                     |
+| 20-ucos3               | OK                     |
+| 21-LCD                 | OK                     |
+| 22-Temperature         | OK                     |
 
-   12-UART:   ??
-   21-Temperature: Add printing. Test conversion.
+Notes
+-----
+

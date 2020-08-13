@@ -1,4 +1,5 @@
-#*7* Processing inside the SysTick Interrupt
+7  Processing inside the SysTick Interrupt
+===========================================
 
 This is the 7th version of Blink. It uses the same HAL for LEDs (STK3700). The main modification is the use a better way to control time.
 

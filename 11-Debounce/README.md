@@ -1,4 +1,5 @@
-#*10* Debouncing
+11  Debouncing
+==============
 
 Actually, this is the 3rd version of Button. It implements a debounce process using an interrupt based method. It uses the HAL for LEDs (STK3700) used in the last Blink example.
 

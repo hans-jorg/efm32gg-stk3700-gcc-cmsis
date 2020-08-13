@@ -1,4 +1,5 @@
-#*3* Blink revisited
+3 Blink revisited
+=================
 
 This is the 3rd version of Blink. It uses direct access to registers of the EFM32GG990F1024 microcontroller but with a simple Hardware Abstraction Layer (HAL) for the LED module. This HAL is built upon the GPIO HAL (See last example).
 The main objective of this HAL is to permit the control the LEDs without knowing anything about GPIO.

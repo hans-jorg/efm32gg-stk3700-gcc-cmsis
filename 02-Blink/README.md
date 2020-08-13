@@ -1,4 +1,6 @@
-#*2* Blink again
+2 Blink again
+=============
+
 
 This is the 2nd version of Blink. It uses direct access to register of the EFM32GG990F1024 microcontroller but with a simple Hardware Abstraction Layer (HAL) for the GPIO module.
 

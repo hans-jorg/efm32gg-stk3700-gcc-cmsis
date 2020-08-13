@@ -1,4 +1,5 @@
-#*18* Using uC/OS-II
+19  Using uC/OS-II
+==================
 
 uC/OS II is a proprietary[24] real time preemptive kernel with a small footprint. It can be downloaded from www.micrium.com for non commercial purposes. If it is used in a commercial product, there are license fees.
 

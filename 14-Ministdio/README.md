@@ -1,4 +1,5 @@
-#*13* Mini Standard I/O Package
+14  Mini Standard I/O Package
+=============================
 
 ##Input/output standard routines
 

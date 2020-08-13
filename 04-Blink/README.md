@@ -1,4 +1,5 @@
-#*4* Another Blink
+4 Another Blink
+===============
 
 
 This is the 4th version of Blink. It uses direct access to register of the EFM32GG990F1024 microcontroller but with a simple Hardware Abstraction Layer (HAL) for the LED module. This HAL is built directly upon GPIO, without using a GPIO HAL (See version 2 of Blink).

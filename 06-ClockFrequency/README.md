@@ -1,4 +1,5 @@
-#*6* Changing the core clock frequency
+6 Changing the core clock frequency
+===================================
 
 
 ##Processing during interrupt

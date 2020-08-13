@@ -1,10 +1,16 @@
 /**
  * @file    main.c
  * @brief   Simple LED Blink Demo for EFM32GG_STK3700
- * @version 1.0
+ * @version 1.1
  *
- * Just blinks the LEDs of the STK3200
+ * @note    Just blinks the LEDs of the STK3700
  *
+ * @note    LEDs are on pins 2 and 3 of GPIO Port E
+ *
+ * @note    It uses a primitive delay mechanism. Do not use it.
+ *
+ * @author  Hans
+ * @date    01/09/2018
  */
 
 #include <stdint.h>
@@ -54,7 +60,7 @@ int i;
 
 int main(void) {
 /// Pointer to GPIO Port E registers
-GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);  // GPIOE
+GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
 
     /* Enable Clock for GPIO */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK

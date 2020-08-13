@@ -1,4 +1,5 @@
-#*11* Serial Communication using polling
+12  Serial Communication using polling
+======================================
 
 ##Serial interface using USB
 

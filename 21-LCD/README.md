@@ -1,4 +1,5 @@
-#*20* Using the LCD display
+21  Using the LCD display
+=========================
 
 ##A HAL for the LCD
 

@@ -1,4 +1,5 @@
-#*5* Using SysTick to implement delays
+5 Using SysTick to implement delays
+===================================
 
 
 ##The SysTick Timer
