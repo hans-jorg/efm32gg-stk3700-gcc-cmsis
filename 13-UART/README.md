@@ -24,6 +24,11 @@ Both use a FIFO buffer to store the characters handled. This avoid to need to wa
     NVIC_EnableIRQ(UART0_RX_IRQn);
     NVIC_EnableIRQ(UART0_TX_IRQn);
 
+    // Disable and then enable RX and TX
+    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
+    UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
+
+
 ##Hazard conditions
 
 When using interrupt, it is possible to access data while it is being modified. This can lead to data corruption and unexpected behaviors. In this case, the access to buffer must be done without interrupts by using the *ENTER_CRITICAL* and *EXIT_CRITICAL* macros pairs. They are just *__disable_irq()* and *__enable_irq()*, respectively.
@@ -35,34 +40,31 @@ The interrupt routine is called when there is a modification in *TXC* flag in *S
     void UART0_TX_IRQHandler(void) {
     uint8_t ch;
 
-     // if data in output buffer and transmitter idle, send it
-     if( UART0->IF&UART_IF_TXC ) {
-         if( UART0->STATUS&UART_STATUS_TXBL ) {
-             if( !buffer_empty(outputbuffer) ) {
-                 // Get from output buffer
-                 ch = buffer_remove(outputbuffer);
-                 UART0->TXDATA = ch;
-            }
-         }
-        UART0->IFC = UART_IFC_TXC;
-    	}
-	}
+        // if data in output buffer and transmitter idle, send it
+        if( UART0->IF&UART_IF_TXC ) {
+            if( UART0->STATUS&UART_STATUS_TXBL ) {
+                if( !buffer_empty(outputbuffer) ) {
+                    // Get from output buffer
+                    ch = buffer_remove(outputbuffer);
+                    UART0->TXDATA = ch;
+                }
+           }
+           UART0->IFC = UART_IFC_TXC;
+        }
+    }
 
 To transmit, just put the data in the buffer and if it was empty, raise an interrupt.
 
-    void UART_SendChar(char c) {
-
-	    if ( buffer_empty(outputbuffer) ) {
-			ENTER_ATOMIC();
-		    buffer_insert(outputbuffer,c);
-			UART0->IFS |= UART_IFS_TXC;
-		    EXIT_ATOMIC();
-	    } else {
-			ENTER_ATOMIC();
-		    (void) buffer_insert(outputbuffer,c);
-		    EXIT_ATOMIC();
-		}
-	}
+    void UART_SendChar(char ch) {
+        if ( buffer_empty(outputbuffer) ) {
+            while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+            UART0->TXDATA = ch;
+        } else {
+            ENTER_ATOMIC();
+            buffer_insert(outputbuffer,ch);
+            EXIT_ATOMIC();
+        }
+    }
 
 ##Receiving a char
 
@@ -81,10 +83,15 @@ The interrupt routine is straightforward.
 The API for receiving a char includes a non block *UART_GetCharNoWait* to get the char of buffer if there is one there. Otherwise returns 0.
 
     unsigned UART_GetCharNoWait(void) {
+    int ch;
 
-    if( buffer_empty(inputbuffer) )
-        return 0;
-    return buffer_remove(inputbuffer);
+        if( buffer_empty(inputbuffer) )
+            return 0;
+
+        ENTER_ATOMIC();
+        ch = buffer_remove(inputbuffer);
+        EXIT_ATOMIC();
+        return ch;
     }
 
 ##Notes

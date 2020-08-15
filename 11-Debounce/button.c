@@ -19,43 +19,76 @@
 #define BUTTON_INT_LEVEL 3
 #endif
 
-
 static GPIO_P_TypeDef * const GPIOB = &(GPIO->P[1]);    // GPIOB
 
-static uint32_t lastread    = 0;
-static uint32_t newestread  = 0;
-static uint32_t inputpins   = 0;
+typedef struct {
+    uint32_t    mask;
+    uint32_t    counter;
+    uint32_t    status;
+    } Button_t;
+
+static Button_t buttontable[] = {
+    {   BUTTON1,    0,  0   },
+    {   BUTTON2,    0,  0   },
+    {   0,          0,  0   }
+};
+
+static uint32_t pressed    = 0;
+static uint32_t released   = 0;
+static uint32_t changed    = 0;
+
+
 static void   (*callback)(uint32_t) = 0;
 
+void Button_Processing(void) {
 
+    uint32_t b = GPIOB->DIN;
 
-void GPIO_EVEN_IRQHandler(void) {
-uint32_t newread;
-const uint32_t mask = BIT(10);
-
-    if( GPIO->IF&mask ) {
-        lastread   = (lastread&~mask)|(newestread&mask);
-        newread = GPIOB->DIN&mask;
-        newestread = (newestread&~mask)|newread;
+    Button_t *p = buttontable;
+    while(p->mask ) {
+        switch(p->status) {
+        case 0:         // Released
+            if( b&p->mask ) {
+                if( p->counter == 10 ) {
+                    p->status = 1;
+                    changed |= p->mask;
+                } else {
+                    p->counter++;
+                }
+            } else { // Not Pressed
+                p->counter = 0;
+            }
+        case 1:         // Pressed
+            if( b&p->mask ) {
+                p->counter = 0;
+            } else { // Not Pressed
+                if( p->counter == 10 ) {
+                    p->status = 0;
+                    released |= p->mask;
+                } else {
+                    p->counter++;
+                }
+            }
+        }
+        p++;
     }
-    GPIO->IFC = 0x5555;         // Clear all interrupts from even pins
-
-    if( callback ) callback(mask);
+    changed = pressed | released;
+    if( changed )
+        callback(changed);
 }
 
-void GPIO_ODD_IRQHandler(void) {
-uint32_t newread;
-const uint32_t mask = BIT(9);
+uint32_t Button_Status(void) {
+uint32_t b = 0;
 
-    if( GPIO->IF&mask ) {
-        lastread   = (lastread&~mask)|(newestread&mask);
-        newread = GPIOB->DIN&mask;
-        newestread = (newestread&~mask)|newread;
+    Button_t *p = buttontable;
+    while(p->mask ) {
+        if (p->status) b |= p->mask;
+        p++;
     }
-    GPIO->IFC = 0xAAAA;         // Clear all interrupts from odd pins
-
-    if( callback ) callback(mask);
+    return b;
 }
+
+
 
 
 void Button_Init(uint32_t buttons) {
@@ -67,74 +100,40 @@ void Button_Init(uint32_t buttons) {
     if ( buttons&BUTTON1 ) {
         GPIOB->MODEH &= ~(_GPIO_P_MODEH_MODE9_MASK);    // Clear bits
         GPIOB->MODEH |= GPIO_P_MODEH_MODE9_INPUT;       // Set bits
-        inputpins |= BUTTON1;
-        /* Interrupt */
-
-        GPIO->EXTIPSELH = (GPIO->EXTIPSELH&~(_GPIO_EXTIPSELH_EXTIPSEL9_MASK))
-                            |GPIO_EXTIPSELH_EXTIPSEL9_PORTB;
-        GPIO->EXTIRISE  |= BIT(9);
-        GPIO->EXTIFALL  |= BIT(9);
-        GPIO->IEN       |= BIT(9);
-
     }
 
     if ( buttons&BUTTON2 ) {
         GPIOB->MODEH &= ~(_GPIO_P_MODEH_MODE10_MASK);    // Clear bits
         GPIOB->MODEH |= GPIO_P_MODEH_MODE10_INPUT;       // Set bits
-        inputpins |= BUTTON2;
-        /* Interrupt */
-        GPIO->EXTIPSELH = (GPIO->EXTIPSELH&~(_GPIO_EXTIPSELH_EXTIPSEL10_MASK))
-                            |GPIO_EXTIPSELH_EXTIPSEL10_PORTB;
-        GPIO->EXTIRISE  |= BIT(10);
-        GPIO->EXTIFALL  |= BIT(10);
-        GPIO->IEN       |= BIT(10);
     }
-    // First read
-    lastread = GPIOB->DIN&inputpins;
 
-    // Clear all interrupts from GPIO
-    GPIO->IFC = 0xFFFF;
-
-    /* Enable interrupts */
-    NVIC_SetPriority(GPIO_EVEN_IRQn,BUTTON_INT_LEVEL);
-    NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
-    NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-
-    NVIC_SetPriority(GPIO_ODD_IRQn,BUTTON_INT_LEVEL);
-    NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
-    NVIC_EnableIRQ(GPIO_ODD_IRQn);
 }
 
 uint32_t Button_Read(void) {
 
-    return newestread&inputpins;
+    return Button_Status();
 }
 
+
 uint32_t Button_ReadChanges(void) {
-uint32_t changes;
+uint32_t c = changed;
 
-    changes = newestread^lastread;
-    lastread = newestread;
-
-    return changes&inputpins;
+    changed = 0;
+    return c;
 }
 
 uint32_t Button_ReadReleased(void) {
-uint32_t changes;
+uint32_t r = released;
 
-    changes = newestread&~lastread;
-    lastread = newestread;
-
-    return changes&inputpins;
+    released = 0;
+    return r;
 }
 
 uint32_t Button_ReadPressed(void) {
-uint32_t changes;
+uint32_t p = pressed;
 
-    changes = ~newestread&lastread;
-    lastread = newestread;
-
-    return changes&inputpins;
+    pressed = 0;
+    return p;
 }
 
 void Button_SetCallback( void (*proc)(uint32_t parm) ) {

@@ -15,7 +15,7 @@
 #include "led.h"
 #include "button.h"
 
-
+#define PRESSED BUTTON1
 
 void buttoncallback(uint32_t v) {
 
@@ -23,6 +23,16 @@ void buttoncallback(uint32_t v) {
         LED_Toggle(LED1);
 
 }
+
+
+
+void SysTick_Handler(void) {
+
+    Button_Processing();
+
+}
+
+
 /*****************************************************************************
  * @brief  Main function
  *
@@ -33,7 +43,6 @@ void buttoncallback(uint32_t v) {
  */
 
 int main(void) {
-volatile uint32_t b;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
@@ -52,30 +61,12 @@ volatile uint32_t b;
      * ATTENTION: No debounce
      */
     while (1) {
-#if 0
-        b = Button_ReadReleased();
-        if( b&BUTTON0 ) {
+        uint32_t b = Button_ReadReleased();
+        if( b&BUTTON1 ) {
             LED_Toggle(LED1);
         }
-        if( b&BUTTON1 ) {
+        if( b&BUTTON2 ) {
             LED_Toggle(LED2);
         }
-#else
-        b = 1000000;
-        while(b) {b--;}
-
-        // Wait until button is pressed
-        while (Button_Read()!=BUTTON_PRESSED) {}
-        cnt = 0;
-        do {
-            Delay(T1MS);
-            cnt++;
-            if ( Button_Read()!=BUTTON_PRESSED)
-                cnt = 0;    // Start again
-        } while (cnt < 3);
-
-        LED_Toggle(LED2);
-#endif
     }
-
 }
