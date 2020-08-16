@@ -1,145 +1,144 @@
 22 Temperature
 ===============
 
+#ADC Converters
 
-TBD
+The EFM32GG99 is part of the EMFG32 Gecko Series 0 Family. The members of this family have a 12-bit SAR (Successive Approximation Register) ADC (Analog-Digital Converter).
 
+![image0001](image0001.png)
 
+The ADC has 15 channels, 8 external and 6 internals channels.
 
+Channel| Signal       |  Input
+-------|--------------|---------
+0      | CH0          | External
+1      | CH1          | External
+2      | CH2          | External
+3      | CH3          | External
+4      | CH4          | External
+5      | CH5          | External
+6      | CH6          | External
+7      | CH7          | External
+8      | Temperature  | Internal
+9      | VDD/3        | Internal
+10     | VDD          | Internal
+11     | VSS          | Internal
+12     | Vref/2       | Internal
+13     | DAC0         | Internal
+14     | DAC1         | Internal
 
+The 8 external signals can be used as differential pairs
 
-##A port of stdio library to embedded systems
+Channel    | Positive Signal  | Negative Signal  |
+-----------|------------------|------------------|
+CH0_1      |     CH0          |      CH1         |
+CH2_3      |     CH2          |      CH3         |
+CH4_5      |     CH4          |      CH5         |
+CH6_7      |     CH6          |      CH7         |
 
-To enhance portability, a multiple layer systems composed of libraries of functions was added to the C language. In UNIX/Linux machines, the different layers are shown below.
+For the conversion, a stable reference voltage is neccessary. THere are the options shown bellow.
 
+Reference Voltage| Notes             |  Single/Differential |
+-----------------|-------------------|----------------------|
+V_DD             | internal buffered | Single/Differential  |
+1.25 V           | internal          |    Single            |
+2.5 V            | internal          |    Single            |
+5 V differential | internal          |  Differential        |
+EXTSINGLE        | external (CH6)    |    Single            |
+2xEXTDIFF        | external (CH6-CH7)|  Differential        |
+2xVDD            | unbuffered        |  Differential        |
 
-    +-----------------------------------+
-    |                                   |
-    |         Application               |
-    |                                   |
-    +-----------------------------------+
-    |                                   |
-    |           C Lib                   |
-    |                                   |
-    +-----------------------------------+
-    |                                   |
-    |           POSIX                   |
-    |                                   |
-    +-----------------------------------+
-    |                                   |
-    |      Operating System             |
-    |                                   |
-    +-----------------------------------+
-    |                                   |
-    |           Hardware                |
-    |                                   |
-    +-----------------------------------+
+There are basically two modes of operation:
 
-For clarification, both the C standard library and the POSIX provide functions to open, read, write and close files. The C standard library provides much more, including a stream based abstraction to I/O and a mathematical library.
-
-    +------------------+-----------------+-----------------+-----------------+-----------------+
-    |   Library        | Open a file     | Read from file  | Write to file   | Close file      |
-    +------------------+-----------------+-----------------+-----------------+-----------------+
-    |   C lib          |    fopen        |   fread         |   fwrite        |   fclose        |
-    +------------------+-----------------+-----------------+-----------------+-----------------+
-    |  POSIX           |    open         |   read          |   write         |   close         |
-    +------------------+-----------------+-----------------+-----------------+-----------------+
-    |  C99/C++ conform |   _open         |  _read          |  _write         |  _close         |
-    +------------------+-----------------+-----------------+-----------------+-----------------+
-
-
-In UNIX/Linux machines there is, for historical and compatibility, the symbols (function names, struct names, etc.) share the same space, which can lead to unexpected name collision (Try to give the name write to a function in your application!!). The correct way is to preprend an underscore (_) to these names, because all symbols started by underscore are reserved for the implementation.
-
-##Newlib
-
-A full implementation of the standard C library is part of the embedded arm gcc. It is based on [newlib](https://sourceware.org/newlib)[20]. The capacity of the library is only limited by the board hardware. For example, if there is no file system, all functions related to files are limited to *stdin* and *stdout*/*stderr*.
-
+* Single Sample. Each conversion must be started by a command
+* Scan mode. A set of conversions is started by a command 
 
 
-    +--------------------------------------------------------------------------------+
-    |                                                                                |
-    |                              Application                                       |
-    |                                                                                |
-    +--------------------------------------------------------------------------------+
-    |                                                                                |
-    |                              Newlib                                            |
-    |                                                                                |
-    |                                 +----------------------------------------------+
-    |                                 |                                              |
-    |                                 |               libgloss                       |
-    |                                 |                                              |
-    +---------------------------------+----------------------------------------------+
-    |                                                                                |
-    |                    Hardware                                                    |
-    |                                                                                |
-    +--------------------------------------------------------------------------------+
+# Timing
+
+A conversion takes TCONV = (TA+N)xOSR cycles, where TA is the acquisition time, N, the number of bits and OSR, the oversampling factor.
+
+The duration of a cycle depends on the clock source used and the prescaler factor. The clock source is the Peripheral CLock HFPERCLK, shared with many other peripherals. The prescaler value is in the range between 1 and 128. But the clock frequency must be greater than 32 KHz and less than 13 MHz.
+
+The is also an automatic warm up time after enabling the ADC or changing the reference voltage. It is a 1 us, plus an additional 5 us if an internal reference (bandgap)  voltage is used (1.25 or 2.5 V).
+
+There are 4 different warm-up modes:
+
+* NORMAL: The ADC and reference voltage are shut off when there is no samples waiting.
+* FASTBG: No warm up for the voltage reference but the accuracy is reduced. 
+* KEEPSCANREFWARM: The bandgap reference is kept warm during a scan. But there there must be a warm up before starting another scan. Only for bandgap reference voltage.
+* KEEPADCWARM: The ADC and the bandgap reference are kept warm for a scan. Only for bandgap reference voltage.
+
+The warmup is done automatically by the ADC, when the correct number of clock cycles is written in the TIMEBASE field of ADC0_CTRL. The number of cycles must correspond to, at least, a 1 us delay.
+
+There are bits in the ADC_STATUS register, that gives information about the warm-up status.
+
+Bit           | Symbol                      | Description
+--------------|-----------------------------|-----------------------------------------------
+WARM          | ADC_STATUS_WARM             | ADC is warmed up when 1
+SCANREFWARM   | ADC_STATUS_SCANREFWARM      | Reference is warmed up for scan mode when 1
+SINGLEREFWARM |  ADC_STATUS_SINGLEREFWARM   | Reference is warmed up for single mode when 1
 
 
-The libgloss is the glue between software and hardware. It includes routines that depends only on the microcontroller architecture (e.g. Cortex-M3) and routines that depends on the microcontroller and board.
+#Temperature measurement
 
-The newlib includes the following libraries:
+The Channel 8 is connected to a internal temperature sensor. This sensor is calibrated  during manufacturing and the calibration parameters are written to a ROM area, called Device information (DI) page.
 
--   *libc.a*: standard c library
--   *libm.a*: standard mathematical library
--   *libnosys.a*: library with stub
--   *libc-nano.a*: small footprint libc optimized for bare bone systems (without operating system)
--   *libg.a*: other name for *libc.a*
--   *libgcc.a*: routines needed in the code generated by the compiler.
+To get the temperature it is neccessary to use the following formula.
 
-There are different versions of the newlib, in the lib folder. The compiler will use one of them according the command line parameters.
+T_Celsius = CAL_TEMP_0 - (ADC0_TEMP_0_READ_1v25 - ADC_Result) x Vref/(4096 x TGRAD_ADCTH)
 
-    ./thumb/v8-m.main/fpv5-sp/hard/libc.a
-    ./thumb/v8-m.main/fpv5-sp/softfp/libc.a
-    ./thumb/v8-m.main/fpv5/hard/libc.a
-    ./thumb/v8-m.main/fpv5/softfp/libc.a
-    ./thumb/v8-m.main/libc.a
-    ./thumb/v7-ar/fpv3/hard/libc.a
-    ./thumb/v7-ar/fpv3/softfp/libc.a
-    ./thumb/v7-ar/libc.a
-    ./thumb/v8-m.base/libc.a
-    ./thumb/v7e-m/fpv5/hard/libc.a
-    ./thumb/v7e-m/fpv5/softfp/libc.a
-    ./thumb/v7e-m/fpv4-sp/hard/libc.a
-    ./thumb/v7e-m/fpv4-sp/softfp/libc.a
-    ./thumb/v7e-m/libc.a
-    ./thumb/v6-m/libc.a
-    ./thumb/v7-m/libc.a
-    ./thumb/libc.a
-    ./hard/libc.a
-    ./libc.a
+The CAL_TEMP_0 and ADC0_TEMP_0_READ_1v25 values can be found in the DI page (See bellow).
 
-One of the problems of using a library is that, inadvertently, a lot of dependencies is generated and the code size exploeds. For example, *printf* includes support for floating point, and using it, all support for floating point is added, and this is big for processors without floating point units.
+The TGRAD_ADCTH can be found on the device datasheet.
 
-To avoid it, newlib provides a *iprintf* without support for floating point.
+Value    |  Units   |
+---------|----------|
+-1.92    |  mV/C    |
+-6.3     |  units/C |
 
-##Compiling using newlib
+# Calibration
 
-In the previous examples, the library was not used. Symbols from the library were defined outside it and there was no need to use objects from the library.
+During manufacturing a set of additional information are written in the DI page, that can be used to calibrate the measurements.
 
-NewliB depends only on a set of functions, that mimic the corresponding POSIX functions. The functions that must be implemented are shown it the table below.
-
-|   &nbsp;    |   &nbsp;    |  &nbsp;    |   &nbsp;    |  &nbsp;    |   &nbsp;   | &nbsp;    | &nbsp;     |  &nbsp;    |
-|-------------|-------------|------------|-------------|------------|------------|-----------|------------|------------|
-| _exit       | close       | environ    | execve      | fork       | fstat      | getpid    | isatty     | kill       |
-| link        | lseek       | open       | read        | sbrk       | stat       | times     | unlink     | wait       |
-| write       |   &nbsp;    |    &nbsp;  |     &nbsp;  |   &nbsp;   |   &nbsp;   |   &nbsp;  |    &nbsp;  |    &nbsp;  |
+Name                   |   Address      |   Information                      |  Size   |
+-----------------------|----------------|------------------------------------|---------|
+ADC0_CAL               |   0x0FE08040   |  ??                                |   32    |
+ADC0_BIASPROG          |   0x0FE08058   |  ??                                |   32    |
+CAL_TEMP_0             |   0x0FE081B2   |  Calibration temperature (7:0)     |   16    |
+ADC0_CAL_1V25          |   0x0FE081B4   |  Gain (14:8) / Offset (6:0)        |   16    |
+ADC0_CAL_2V5           |   0x0FE081B6   |  Gain (14:8) / Offset (6:0)        |   16    |
+ADC0_CAL_VDD           |   0x0FE081B8   |  Gain (14:8) / Offset (6:0)        |   16    |
+ADC0_CAL_5VDIFF        |   0x0FE081BA   |  Gain (14:8) / Offset (6:0)        |   16    |
+ADC0_CAL_2xVDD         |   0x0FE081BC   |  Gain (14:8) / Offset (6:0)        |   16    |
+ADC0_TEMP_0_READ_1V25  |   0x0FE081BE   |  Temperature reading (15:4)        |   16    |
 
 
-Most of these function can be only a stub, returning a (non) fatal error or other meaningful result. Exceptions are the read and write function, that redirect the input and output to UART;
+The values should be accessed using the DEVINFO structure as seen in efm32gg_devinfo.h. But there is inconsistency between the info in the reference manual and the structure defined in the source code.
 
-The makefile is configured to use the nano version of the libraries. Commenting the line *SPECFLAGS= --specs=nano.specs* the normal libraries are used. The spec file specifies a rewriting of the linker parameters.
+So, to get a value, one should use the following code
 
-The size of the code generated can be obtained by the command
+    uint16_t val16 =  *( (uint16_t *) address )
+    uint32_t val32 =  *( (uint32_t *) address )
 
-	arm-none-eabi-size gcc/uart-cdc.axf
+Or define them as macros
 
-The results of using nano or normal version of the libraries and the ministdio (last example) can be compared in the table below.
+    #define  GET16(ADDR)      *( (uint16_t *) (ADDR) )
+    #define  GET32(ADDR)      *( (uint32_t *) (ADDR) )
+    ...
+    uint16_t val16 = GET16(address);
+    uint16_t val16 = GET16(address);
+
+During reset, the values for 1V25 are automatically written in ADC0_CAL register. The values for calibration (ADC0_CAL_*)  must be written to the ADC0_CAL register in order the ADC module automatically corrects the value read.
+
+#Implementation
 
 
-| Section   | Size using nano| Size using normal | Size using ministdio |
-|-----------|-----:|----------------------------:|---------------------:|
-  Code      | 9079 |     27437                   |            5282      |
-  Data      |  108 |      2484                   |               8      |
-  BSS       |  276 |       356                   |             256      |
-|-----------|-----:|----------------------------:|---------------------:|
-  Total     | 9463 |     30277                   |            5546      |
+#References
+
+[EMF32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
+
+[EFM32GG990 Data Sheet](https://www.silabs.com/documents/public/data-sheets/efm32gg-datasheet.pdf)
+
+[AN0021](https://www.silabs.com/documents/public/application-notes/AN0021.pdf)
+

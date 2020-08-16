@@ -21,9 +21,12 @@ void UART_Init(void);
 unsigned UART_GetStatus(void);
 void UART_SendChar(char c);
 void UART_SendString(char *s);
+int  UART_Flush(void);
 
 unsigned UART_GetChar(void);
 unsigned UART_GetCharNoWait(void);
 
+#define UART_TXINT  0x01
+#define UART_RXINT  0x02
 
 #endif // UART_H

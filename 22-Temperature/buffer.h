@@ -28,6 +28,7 @@ buffer  buffer_init(void *area,int size);
 void    buffer_deinit(buffer f);
 int     buffer_insert(buffer f, char x);
 int     buffer_remove(buffer f);
+void    buffer_clear(buffer f);
 
 #define buffer_capacity(F) ((F)->capacity)
 #define buffer_size(F) ((F)->size)

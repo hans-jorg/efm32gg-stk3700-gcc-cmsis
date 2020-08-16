@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=uart-cdc
+PROGNAME=adc-temp
 
 #
 # Defines the part (device) that this project uses
@@ -486,7 +486,7 @@ ENTRY=Reset_Handler
 #
 ${OBJDIR}/%.o: %.c
 	@echo "  Compiling           ${<}";
-	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.

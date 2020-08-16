@@ -17,18 +17,19 @@
 
 buffer
 buffer_init(void *b, int n) {
-buffer p = (buffer) b;
+buffer f = (buffer) b;
 
-    p->front = p->rear = p->data;
-    p->size = 0;
-    p->capacity = n;
-    return p;
+    f->front = f->rear = f->data;
+    f->size = 0;
+    f->capacity = n;
+    return f;
 }
 
 /**
  * @brief   Clears fifo
  *
  * @note    Does not free any area, because it is static
+            In future, it will free area
  */
 
 void
@@ -36,6 +37,20 @@ buffer_deinit(buffer f) {
 
     f->size = 0;
     f->front = f->rear = f->data;
+
+}
+
+/**
+ * @brief   Clears fifo
+ *
+ * @note    Does not free area. For now identical to deinit
+ */
+ void
+ buffer_clear(buffer f) {
+
+    f->size = 0;
+    f->front = f->rear = f->data;
+
 }
 
 /**
