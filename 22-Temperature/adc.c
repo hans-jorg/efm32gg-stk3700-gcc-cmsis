@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include "adc.h"
 #include "em_device.h"
-#include "system_efm32gg-ext.h"
+#include "clock_efm32gg.h"
 
 // Macros to access memory and registers
 #define GETREG32(ADDRESS)    *( (uint32_t *) ADDRESS )
@@ -200,7 +200,7 @@ uint32_t presc;
         adcfreq = ADC_FREQMAX;
 
     // Initialize ADC. Calculate TIMEBASE.
-    uint32_t freq = ClockGetHFPerClockFreq();
+    uint32_t freq = GetHFCoreClockFrequency();
 
     // Calculate rounded up presc value
     presc = (freq+adcfreq-1)/adcfreq;

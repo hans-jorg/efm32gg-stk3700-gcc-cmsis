@@ -1,11 +1,9 @@
-/** *************************************************************************//**
- * @file system_efm32gg-ext.c
- * @brief Additional CMSIS-like routines for Cortex-M3 System Layer for EFM32GG devices.
+/** 
+ * @file    system_efm32gg-ext.c
+ * @brief   Additional CMSIS-like routines for Cortex-M3 System Layer 
+ *          for EFM32GG devices.
  * @version 1.0
  * @author  Hans
- ******************************************************************************
- *
- *
  *****************************************************************************/
 
 #include <stdint.h>
@@ -421,7 +419,7 @@ uint32_t newctrl;
 
 
 void
-ClockSetHFCLockDivisor(uint32_t div) {
+ClockSetHFClockDivisor(uint32_t div) {
 
     // Put div in valid range
     if ( div > 8 ) div = 8;

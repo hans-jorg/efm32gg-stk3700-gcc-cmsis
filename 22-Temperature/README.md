@@ -5,7 +5,7 @@
 
 The EFM32GG99 is part of the EMFG32 Gecko Series 0 Family. The members of this family have a 12-bit SAR (Successive Approximation Register) ADC (Analog-Digital Converter).
 
-![image0001](image0001.png)
+![image0001](efm32gg-adc.png)
 
 The ADC has 15 channels, 8 external and 6 internals channels.
 

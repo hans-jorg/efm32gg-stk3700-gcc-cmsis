@@ -58,11 +58,11 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
 //@{
 #include "uart.h"
 
-inline void SerialInit(int chn)           { UART_Init();                }
-inline void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
-inline int  SerialRead(int chn)           { return UART_GetChar();      }
-inline int  SerialStatus(int chn)         { return UART_GetStatus();    }
-inline int  SerialFlush(int chn)          { return UART_Flush();        }
+static inline void SerialInit(int chn)           { UART_Init();                }
+static inline void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
+static inline int  SerialRead(int chn)           { return UART_GetChar();      }
+static inline int  SerialStatus(int chn)         { return UART_GetStatus();    }
+static inline int  SerialFlush(int chn)          { return UART_Flush();        }
 //@}
 
 
