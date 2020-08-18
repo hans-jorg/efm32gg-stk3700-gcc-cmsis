@@ -64,7 +64,7 @@ uint32_t ClockConfigureForFrequency(uint32_t freq);
 uint32_t ClockSetHFClockDivisor(uint32_t div);
 uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
 
-uint32_t GetHFPeripheralClockFrequency(void);
-uint32_t GetHFCoreClockFrequency(void);
+uint32_t ClockGetPeripheralClockFrequency(void);
+uint32_t ClockGetCoreClockFrequency(void);
 
 #endif //SYSTEM_EFM32GG_EXT_H

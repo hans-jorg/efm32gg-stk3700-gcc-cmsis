@@ -28,7 +28,6 @@ typedef enum {  CLOCK_NONE=0,
                 // Below only for Low Frequency Clock A and B
                 CLOCK_ULFRCO,            ///< Ultra Low Frequency
                 CLOCK_HFCORECLOCK_2      ///< HF Core Clock divided by 2
-
              }  ClockSource_t;
 
 
@@ -59,14 +58,13 @@ typedef struct {
 /* CMSIS Like */
 uint32_t SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv);
 
+
 uint32_t ClockGetConfiguration(ClockConfiguration_t *p);
 uint32_t ClockConfigureForFrequency(uint32_t freq);
+uint32_t ClockSetHFClockDivisor(uint32_t div);
+uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
 
-uint32_t ClockSetHFCLKDivisor(uint32_t div);
-uint32_t ClockSetHFPrescalers(uint32_t corediv, uint32_t perdiv);
-uint32_t ClockSetLFCLKA(ClockSource_t source);
-uint32_t ClockSetLFCLKB(ClockSource_t source);
-
-uint32_t nearestpower2exp(uint32_t n);
+uint32_t ClockGetPeripheralClockFrequency(void);
+uint32_t ClockGetCoreClockFrequency(void);
 
 #endif //SYSTEM_EFM32GG_EXT_H

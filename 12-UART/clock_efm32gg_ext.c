@@ -657,7 +657,7 @@ uint32_t freq;
  */
  
 uint32_t
-GetHFPeripheralClockFrequency(void) {
+ClockGetPeripheralClockFrequency(void) {
 ClockConfiguration_t clockconf;
 
     ClockGetConfiguration(&clockconf);
@@ -673,7 +673,7 @@ ClockConfiguration_t clockconf;
  */
 
 uint32_t
-GetHFCoreClockFrequency(void) {
+ClockGetCoreClockFrequency(void) {
 ClockConfiguration_t clockconf;
 
     ClockGetConfiguration(&clockconf);
