@@ -516,3 +516,37 @@ const uint32_t PERDIVMASK  = (_CMU_HFPERCLKDIV_HFPERCLKDIV_MASK);
     
     return SystemCoreClock;
 }
+
+/*
+ * @brief   Returns the Peripheral Clock frequency
+ *
+ * @note    Uses ClockGetConfiguration
+ */
+
+uint32_t
+ClockGetPeripheralClockFrequency(void) {
+ClockConfiguration_t clockconf;
+
+    ClockGetConfiguration(&clockconf);
+
+    return clockconf.perfreq;
+
+}
+
+
+/*
+ * @brief   Returns the Core Clock frequency
+ *
+ * @note    Uses ClockGetConfiguration
+ */
+
+uint32_t
+ClockGetCoreClockFrequency(void) {
+ClockConfiguration_t clockconf;
+
+    ClockGetConfiguration(&clockconf);
+
+    return clockconf.corefreq;
+
+}
+

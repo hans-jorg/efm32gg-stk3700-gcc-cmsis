@@ -200,7 +200,7 @@ uint32_t presc;
         adcfreq = ADC_FREQMAX;
 
     // Initialize ADC. Calculate TIMEBASE.
-    uint32_t freq = GetHFCoreClockFrequency();
+    uint32_t freq = ClockGetCoreClockFrequency();
 
     // Calculate rounded up presc value
     presc = (freq+adcfreq-1)/adcfreq;

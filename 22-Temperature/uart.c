@@ -137,7 +137,7 @@ uint32_t bauddiv;
     UART0->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
 
     // Baud rate
-    bauddiv = (GetHFPeripheralClockFrequency()*4)/(OVERSAMPLING*BAUD)-4;
+    bauddiv = (ClockGetPeripheralClockFrequency()*4)/(OVERSAMPLING*BAUD)-4;
     UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
 
 
