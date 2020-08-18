@@ -13,7 +13,7 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
-#include "clock_efm32gg.h"
+#include "clock_efm32gg_ext.h"
 
 #include "led.h"
 #include "uart.h"

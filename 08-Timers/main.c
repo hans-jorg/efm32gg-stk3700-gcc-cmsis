@@ -12,7 +12,7 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
-#include "system_efm32gg-ext.h"
+#include "clock_efm32gg.h"
 #include "timers.h"
 #include "led.h"
 

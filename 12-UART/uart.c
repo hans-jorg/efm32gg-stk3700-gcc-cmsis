@@ -24,7 +24,7 @@
  */
 
 #include "em_device.h"
-#include "clock_efm32gg.h"
+#include "clock_efm32gg_ext.h"
 #include "uart.h"
 
 #define BIT(N) (1U<<(N))

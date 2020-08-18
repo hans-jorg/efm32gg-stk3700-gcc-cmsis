@@ -1,6 +1,7 @@
 # Directories
 gcc/
-html
+html/
+utils/
 
 # Prerequisites
 *.d
