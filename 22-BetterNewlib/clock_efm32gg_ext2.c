@@ -195,6 +195,9 @@ ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     uint32_t band;
     uint32_t divcode;
 
+    /* Call registered functions for attached peripherals */
+    ClockProcessPreChange(CLOCK_CHANGED_HFCLK|CLOCK_CHANGED_HFCORECLK);
+    
     // Put hclkdiv in valid range
     if ( hclkdiv > 8 ) hclkdiv = 8;
     if ( hclkdiv < 1 ) hclkdiv = 1;
@@ -337,7 +340,7 @@ ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     }
 
     /*
-     * Set HFCLK divisor to give value
+     * Set HFCLK divisor to given value
      */
 
     // HFCLK divisor encoded into a 0 to 7 range
@@ -371,12 +374,48 @@ ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
      */
     ClockConfigureSystemForClockFrequency(SystemCoreClock);
 
-    /*
-     *
-     */
+    /* Call registered functions for attached peripherals */
+    ClockProcessPostChange(CLOCK_CHANGED_HFCLK|CLOCK_CHANGED_HFCORECLK);
+    
     return hclkfreq/(1<<divcode);
 }
 
+/*
+ * @brief   Set the HF Clock divisor considering the limits
+ *          to
+ * @note    It configure first to the HFXO and then to the desired
+ *          frequency
+ *
+ */
+ 
+uint32_t
+ClockSetHFClockDivisor(uint32_t div) {
+
+    /* Call registered functions for attached peripherals */
+    ClockProcessPreChange(CLOCK_CHANGED_HFCLK);
+    
+    // Put div in valid range
+    if ( div > 8 ) div = 8;
+    if ( div < 1 ) div = 1;
+
+    // Configure for worst case
+    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
+
+    /* Set HFCLK divisor to give value */
+    div--;
+    CMU->CTRL      = (CMU->CTRL&~(_CMU_CTRL_HFCLKDIV_MASK))| (div<<_CMU_CTRL_HFCLKDIV_SHIFT);
+
+    // Update global SystemCoreClock variable
+    SystemCoreClockUpdate();
+
+    // Optime for set clock frequency
+    ClockConfigureSystemForClockFrequency(SystemCoreClock);
+
+    /* Call registered functions for attached peripherals */
+    ClockProcessPostChange(CLOCK_CHANGED_HFCLK);
+    
+    return SystemCoreClock;
+}
 
 
 /**
@@ -526,37 +565,6 @@ uint32_t newctrl;
     return freq;
 }
 
-
-/*
- * @brief   Set the HF Clock divisor considering the limits
- *          to
- * @note    It configure first to the HFXO and then to the desired
- *          frequency
- *
- */
- 
-uint32_t
-ClockSetHFClockDivisor(uint32_t div) {
-
-    // Put div in valid range
-    if ( div > 8 ) div = 8;
-    if ( div < 1 ) div = 1;
-
-    // Configure for worst case
-    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
-
-    /* Set HFCLK divisor to give value */
-    div--;
-    CMU->CTRL      = (CMU->CTRL&~(_CMU_CTRL_HFCLKDIV_MASK))| (div<<_CMU_CTRL_HFCLKDIV_SHIFT);
-
-    // Update global SystemCoreClock variable
-    SystemCoreClockUpdate();
-
-    // Optime for set clock frequency
-    ClockConfigureSystemForClockFrequency(SystemCoreClock);
-
-    return SystemCoreClock;
-}
 
 /**
  * @brief       Change prescalers for Core and Peripheral Clock
