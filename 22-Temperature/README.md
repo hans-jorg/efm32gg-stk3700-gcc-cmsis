@@ -134,6 +134,37 @@ During reset, the values for 1V25 are automatically written in ADC0_CAL register
 #Implementation
 
 
+#Note on clock management
+
+There is a violation of encapsulation rules when changing clock frequencies. After changing clock frequency, the UART_Init routine must be called to reconfigure the UART. But the main purpose of the newlib module is to hidden the implementation details.
+
+In order to avoid this nasty hack
+
+1 - a callback mechanism is implemented in the clock routines. Whenever a clock changed, a registered routine is called and does the reconfiguration. There are two callbacks, one is called before the change (it permits to turn off any transmition or processing) and other after (it does the actual reconfiguration).
+
+2 - the uart routines are modified to register a callback to reconfigure the baud rate according the new clock frequency.
+
+There is a clock tree in the EFM32GG.
+
+~~~
+                                            |
+                                            |------>|Prescaler|-------->HFPERCLK
+                                            |
+                                            |
+                                            |HCLK
+    Clock source-------->|Prescaler|------->|
+                                            |
+                                            |------>|Prescaler|-------->HFCORECLK
+                                            |
+
+    Clock source-------->|Prescaler|----------------------------------->LFACLK
+
+    Clock source-------->|Prescaler|----------------------------------->LFBCLK
+
+~~~
+
+
+
 #References
 
 [EMF32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)

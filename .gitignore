@@ -2,6 +2,7 @@
 gcc/
 html/
 utils/
+tmp/
 
 # Prerequisites
 *.d

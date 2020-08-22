@@ -14,7 +14,7 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
-#include "clock_efm32gg_ext.h"
+#include "clock_efm32gg_ext2.h"
 
 /**
  * @note            If Symbol for Crystal frequency not defined, define it.
@@ -99,7 +99,7 @@ uint32_t err2;
  */
 
 uint32_t
-SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
+ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     uint32_t basefreq;
     uint32_t hclkfreq;
     uint8_t  tuning;
@@ -110,8 +110,8 @@ SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     if ( hclkdiv > 8 ) hclkdiv = 8;
     if ( hclkdiv < 1 ) hclkdiv = 1;
 
-    // Prepare for worst case
-    ClockConfigureForFrequency(EFM32_HFXO_FREQ);
+    // Prepare system for worst case
+    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
 
     // Set HFCLK divisor to 1
     CMU->CTRL      = (CMU->CTRL&~(_CMU_CTRL_HFCLKDIV_MASK));
@@ -280,7 +280,7 @@ SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     /*
      * Optimize configuration (Flash wait states, etc) for set clock frequency
      */
-    ClockConfigureForFrequency(SystemCoreClock);
+    ClockConfigureSystemForClockFrequency(SystemCoreClock);
 
     /*
      *
@@ -401,7 +401,7 @@ uint32_t perfreq,perdiv;
  */
 
 uint32_t
-ClockConfigureForFrequency(uint32_t freq) {
+ClockConfigureSystemForClockFrequency(uint32_t freq) {
 uint32_t newreadctrl;
 uint32_t newctrl;
 
@@ -452,7 +452,7 @@ ClockSetHFClockDivisor(uint32_t div) {
     if ( div < 1 ) div = 1;
 
     // Configure for worst case
-    ClockConfigureForFrequency(EFM32_HFXO_FREQ);
+    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
 
     /* Set HFCLK divisor to give value */
     div--;
@@ -462,7 +462,7 @@ ClockSetHFClockDivisor(uint32_t div) {
     SystemCoreClockUpdate();
 
     // Optime for set clock frequency
-    ClockConfigureForFrequency(SystemCoreClock);
+    ClockConfigureSystemForClockFrequency(SystemCoreClock);
 
     return SystemCoreClock;
 }
@@ -485,7 +485,7 @@ const uint32_t COREDIVMASK = _CMU_HFCORECLKDIV_HFCORECLKDIV_MASK;
 const uint32_t PERDIVMASK  = _CMU_HFPERCLKDIV_HFPERCLKDIV_MASK;
 
     // Configure for worst case
-    ClockConfigureForFrequency(EFM32_HFXO_FREQ);
+    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
 
     if( corediv == 0 ) corediv = 1;
     if( perdiv  == 0 ) perdiv  = 1;
@@ -506,8 +506,8 @@ const uint32_t PERDIVMASK  = _CMU_HFPERCLKDIV_HFPERCLKDIV_MASK;
     // Update global SystemCoreClock variable
     SystemCoreClockUpdate();
 
-    // Optime for set clock frequency
-    ClockConfigureForFrequency(SystemCoreClock);
+    // Optimize for set clock frequency
+    ClockConfigureSystemForClockFrequency(SystemCoreClock);
 
     return SystemCoreClock;
 }
@@ -666,6 +666,7 @@ ClockConfiguration_t clockconf;
 
 }
 
+
 /*
  * @brief   Returns the Core Clock frequency
  *
@@ -680,4 +681,83 @@ ClockConfiguration_t clockconf;
 
     return clockconf.corefreq;
 
+}
+
+#ifndef CALLBACKS_MAX
+#define CALLBACKS_MAX 10
+#endif
+
+typedef struct {
+    uint32_t    clockchanged;
+    void (*pre)(uint32_t);
+    void (*post)(uint32_t);
+} callbacks_t;
+
+static callbacks_t callbacks[CALLBACKS_MAX] = {0};
+
+/*
+ * @brief   Register callback routines.
+ *
+ * @note    The pre functions is called before the frequency change
+ *          and post, after the change. The clock parameter
+ */
+
+int ClockRegisterCallback( uint32_t clockchanged, void (*pre)(uint32_t), void (*post)(uint32_t)) {
+int i;
+
+    for(i=0;(i<CALLBACKS_MAX)&&(callbacks[i].clockchanged);i++) {}
+
+    if(i>=CALLBACKS_MAX)
+        return -1;
+
+    // Propagate clock changes along the clock tree
+
+    if(clockchanged&CLOCK_CHANGED_HFCLK) {
+        clockchanged |= CLOCK_CHANGED_HFCORECLK|CLOCK_CHANGED_HFPERCLK|CLOCK_CHANGED_HFCORECLKLE;
+    }
+    if(clockchanged&CLOCK_CHANGED_HFCORECLK) {
+        clockchanged |= CLOCK_CHANGED_HFCORECLKLE;
+    }
+    callbacks[i].clockchanged = clockchanged;
+    callbacks[i].pre          = pre;
+    callbacks[i].post         = post;
+    return i;
+}
+
+
+/*
+ * @brief   Call callback routines BEFORE frequency change
+ *
+ * @note    
+ */
+
+int ClockProcessPreChange(uint32_t clockchanged) {
+int i;
+
+    for(i=0;i<CALLBACKS_MAX;i++) {
+        if( callbacks[i].clockchanged&clockchanged
+            && callbacks[i].pre  ) {
+            callbacks[i].pre(clockchanged);
+        }
+    }
+    return 0;
+}
+
+
+/*
+ * @brief   Call callback routines AFTER frequency change
+ *
+ * @note    
+ */
+
+int ClockProcessPostChange(uint32_t clockchanged) {
+int i;
+
+    for(i=0;i<CALLBACKS_MAX;i++) {
+        if( callbacks[i].clockchanged&clockchanged
+                && callbacks[i].post ) {
+            callbacks[i].post(clockchanged);
+        }
+    }
+    return 0;
 }

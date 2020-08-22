@@ -31,6 +31,13 @@ typedef enum {  CLOCK_NONE=0,
              }  ClockSource_t;
 
 
+#define CLOCK_CHANGED_HFCLK         0x00001
+#define CLOCK_CHANGED_HFCORECLK     0x00002
+#define CLOCK_CHANGED_HFPERCLK      0x00004
+#define CLOCK_CHANGED_HFCORECLKLE   0x00008
+#define CLOCK_CHANGED_LFCLKA        0x00010
+#define CLOCK_CHANGED_LFCLKB        0x00020
+
 /**
  * @brief       Clock Configuration Structure
  *
@@ -44,6 +51,7 @@ typedef struct {
                 uint32_t        basefreq;         ///< Base frequency of clock source
                 uint32_t        hclkdiv;          ///< Divisor of base frequency to generate HFCLK
                 uint32_t        corediv;          ///< Divisor of HFCLK to generate Core Clock
+                uint32_t        coredivcode;      ///< Encoding of HFCLK divisor
                 uint32_t        perdiv;           ///< Divisor of HFCLK to generate Peripheral Clock
                 ///@}
                 ///@{
@@ -55,16 +63,29 @@ typedef struct {
 } ClockConfiguration_t;
 
 
-/* CMSIS Like */
-uint32_t SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv);
+uint32_t ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv);
 
+int      ClockRegisterCallback( uint32_t clock, void (*pre)(uint32_t), void (*post)(uint32_t));
+int      ClockUpdatePeripherals(void);
 
 uint32_t ClockGetConfiguration(ClockConfiguration_t *p);
-uint32_t ClockConfigureForFrequency(uint32_t freq);
+uint32_t ClockConfigureSystemForClockFrequency(uint32_t freq);
 uint32_t ClockSetHFClockDivisor(uint32_t div);
 uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
 
 uint32_t ClockGetPeripheralClockFrequency(void);
 uint32_t ClockGetCoreClockFrequency(void);
+
+
+/** @brief Aliases using names used in Reference Manual */
+//{
+#define ClockSetHFCORECLK ClockSetCoreClock
+#define ClockGetHFCORECLK ClockGetCoreClockFrequency
+#define ClockGetHFPERCLK  ClockGetPeripheralClockFrequency
+//}
+
+/** @brief Alias for compatibility with older version of this module */
+#define SystemCoreClockSet ClockSetCoreClock
+
 
 #endif //SYSTEM_EFM32GG_EXT_H

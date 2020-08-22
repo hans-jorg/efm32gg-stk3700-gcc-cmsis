@@ -18,29 +18,50 @@
 #include "led.h"
 #include "lcd.h"
 #include "temperature.h"
-
-#define DELAYVAL 100
+#include "clock_efm32gg_ext2.h"
 
 /*****************************************************************************
- * @brief  Quick and dirty delay function
- *****************************************************************************/
+ * @brief  SysTick interrupt handler
+ *
+ * @note   Called every 1/DIVIDER seconds (1 ms)
+ */
 
-void Delay(uint32_t delay) {
-volatile uint32_t counter;
-int i;
+//{
+#define SYSTICKDIVIDER 1000
+#define SOFTDIVIDER 1000
 
-    for(i=0;i<delay;i++) {
-        counter = 10000;
-        while( counter ) counter--;
+
+static uint64_t ticks = 0;
+
+void SysTick_Handler(void) {
+static int counter = 0;             // must be static
+
+    ticks++;
+    
+    if( counter != 0 ) {
+        counter--;
+    } else {
+        counter = SOFTDIVIDER-1;
+        LED_Toggle(LED1);
     }
 }
 
-void WriteMultiple(uint8_t ch) {
-int pos;
+//}
 
-    for(pos=1;pos<=11;pos++)
-        LCD_WriteChar(ch,pos);
+
+/*****************************************************************************
+ * @brief  Delay function based on SysTick
+ *****************************************************************************/
+
+
+void
+Delay(uint32_t v) {
+uint64_t lim = ticks+v;       // Missing processing of overflow here
+
+    while ( ticks < lim ) {}
+
 }
+
 
 /*****************************************************************************
  * @brief  Main function
@@ -50,12 +71,33 @@ int pos;
  *         HFCORECLK = HFCLK
  *         HFPERCLK  = HFCLK
  */
-int main(void) {
-uint32_t v;
 
-    /* Configure Pins in GPIOE */
+#include "uart2.h"
+
+#define DELAYVAL 2
+
+int main(void) {
+char line[100];
+int tryn = 0;
+
+    /* Configure LEDs */
     LED_Init(LED1|LED2);
 
+    // Set clock source to external crystal: 48 MHz
+    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
+    /* Turn on LEDs */
+    LED_Write(0,LED1|LED2);
+
+    /* Configure SysTick */
+    SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
+
+    /* Configure UART */
+    UART_Init();
+
+    // Message
+    printf("Starting......");
+    
     /* Configure LCD */
     LCD_Init();
 
@@ -65,17 +107,73 @@ uint32_t v;
     LCD_Clear();
     Delay(DELAYVAL);
 
+    LCD_WriteString("hello");
+
+
+    // Configure ADC for temperature measurement 
+Temperature_Init(500000);
+
+    
+    // Enable IRQs
+    __enable_irq();
+
+    printf("Hello\n");
+    while (1) {
+        LED_Toggle(LED2);
+        printf("Try %d\n",tryn++);
+        printf("\nYour name: ");
+        fgets(line,99,stdin);
+        printf("Hello %s\n",line);
+        Delay(100);
+    }
+
+}
+
+ #if 0
+int main(void) {
+//uint32_t v;
+const uint32_t DELAYVAL = 2;
+
+    /* Configure Pins in GPIOE */
+    LED_Init(LED1|LED2);
+
+    LED_On(LED1|LED2);
+
+    // Set clock source to external crystal: 48 MHz
+    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
+    /* Configure SysTick */
+    SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
+
+    // Message
+    printf("Starting......");
+    
+    /* Configure LCD */
+    LCD_Init();
+
+    LCD_SetAll();
+    Delay(DELAYVAL);
+
+    LCD_Clear();
+    Delay(DELAYVAL);
+
+    LCD_WriteString("hello");
+
+    // Configure ADC for temperature measurement 
     Temperature_Init(500000);
     
     /* Blink loop */
+    __enable_irq();
+    
     while (1) {
 
-        v = Temperature_GetRawValue();
+       // v = Temperature_GetRawValue();
 
-        printf("t=%u\n",(unsigned) v);
+        //printf("t=%u\n",(unsigned) v);
         
         Delay(DELAYVAL);
         LED_Toggle(LED1);                                // Toggle LED1 
 
     }
 }
+#endif

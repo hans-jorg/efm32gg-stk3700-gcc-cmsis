@@ -24,8 +24,8 @@
  */
 
 #include "em_device.h"
-#include "clock_efm32gg_ext.h"
-#include "uart.h"
+#include "clock_efm32gg_ext2.h"
+#include "uart2.h"
 #include "buffer.h"
 
 /**

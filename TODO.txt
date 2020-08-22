@@ -1,3 +1,13 @@
+Tasks
+=====
+
+1 - Encapsulate reconfiguration for UART in clock routines.
+    Use a register and callback mechanism
+
+
+
+
+
 Project Status
 ==============
 
@@ -23,8 +33,8 @@ Project Status
 | 18-FreeRTOS            | OK                     |
 | 19-ucos2               | OK                     |
 | 20-ucos3               | OK                     |
-| 21-LCD                 | OK                     |
-| 22-Temperature         | OK                     |
+| 21-LCD                 | Missing 1 above.       |
+| 22-Temperature         | Missing 1 above.       |
 
 Notes
 -----

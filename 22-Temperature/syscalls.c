@@ -56,12 +56,13 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
  *
  */
 //@{
-#include "uart.h"
+#include "uart2.h"
 
-void SerialInit(int chn)           { UART_Init();                }
-void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
-int  SerialRead(int chn)           { return UART_GetChar();      }
-int  SerialStatus(int chn)         { return UART_GetStatus();    }
+static inline void SerialInit(int chn)           { UART_Init();                }
+static inline void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
+static inline int  SerialRead(int chn)           { return UART_GetChar();      }
+static inline int  SerialStatus(int chn)         { return UART_GetStatus();    }
+static inline int  SerialFlush(int chn)          { return UART_Flush();        }
 //@}
 
 
@@ -132,13 +133,15 @@ int cnt;
 int ch;
 
     cnt = 0;
+    SerialFlush(chn);
     while ( ((ch=SerialRead(chn)) != '\n') && (ch!='\r') ) {
         if( ch == TTY_BS ) {
-            if( cnt > 0 )
+            if( cnt > 0 ) {
                 cnt--;
-            SerialWrite(chn,'\b');
-            SerialWrite(chn,' ');
-            SerialWrite(chn,'\b');
+                SerialWrite(chn,'\b');
+                SerialWrite(chn,' ');
+                SerialWrite(chn,'\b');
+            }
         } else {
             if( ttyconfig&TTY_IECHO )
                 SerialWrite(chn,ch);
