@@ -28,11 +28,14 @@ There is a clock tree in the EFM32GG.
     Clock source-------->|Prescaler|------->|
                                             |
                                             |------>|Prescaler|-------->HFCORECLK
-                                            |
-
-    Clock source-------->|Prescaler|----------------------------------->LFACLK
-
-    Clock source-------->|Prescaler|----------------------------------->LFBCLK
+                                            |                               |
+                                                                            |
+ ----------------------------HFCORECLKLE-------------------------------------
+ |
+ |
+ |\-> Clock source-------->|Prescaler|----------------------------------->LFACLK
+ |
+  \-> Clock source-------->|Prescaler|----------------------------------->LFBCLK
 
 ~~~
 

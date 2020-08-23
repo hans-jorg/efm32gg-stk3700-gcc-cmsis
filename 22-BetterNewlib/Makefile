@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=adc-temp
+PROGNAME=Newnewlib
 
 #
 # Defines the part (device) that this project uses

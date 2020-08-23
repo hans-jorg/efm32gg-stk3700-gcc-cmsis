@@ -114,12 +114,16 @@ int i;
 
     // Propagate clock changes along the clock tree
 
-    if(clockchanged&CLOCK_CHANGED_HFCLK) {
-        clockchanged |= CLOCK_CHANGED_HFCORECLK|CLOCK_CHANGED_HFPERCLK|CLOCK_CHANGED_HFCORECLKLE;
-    }
     if(clockchanged&CLOCK_CHANGED_HFCORECLK) {
-        clockchanged |= CLOCK_CHANGED_HFCORECLKLE;
+        clockchanged |= CLOCK_CHANGED_HFCLK;
     }
+    if(clockchanged&CLOCK_CHANGED_HFPERCLK) {
+        clockchanged |= CLOCK_CHANGED_HFCLK;
+    }
+    if(clockchanged&CLOCK_CHANGED_HFCORECLKLE) {
+        clockchanged |= CLOCK_CHANGED_HFCLK|CLOCK_CHANGED_HFCORECLK;
+    }
+
     callbacks[i].clockchanged = clockchanged;
     callbacks[i].pre          = pre;
     callbacks[i].post         = post;
@@ -776,5 +780,6 @@ ClockConfiguration_t clockconf;
     return clockconf.hfcoreclkfreq;
 
 }
+
 
 

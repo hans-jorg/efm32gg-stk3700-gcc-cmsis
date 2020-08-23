@@ -12,6 +12,10 @@
  *
  *          In Windows, it appears as COMx. In Linux, as /dev/ttyACMx.
  *
+ * @note
+ *          Device      RX                      TX
+ *          UART0       PF7|PE1|PA4         PF6|PE0|PA3
+ *          UART1       PF11|PB10|PE3       PF10|PB9|PE2
  *
  *****************************************************************************/
 
@@ -28,6 +32,8 @@
 #include "uart2.h"
 #include "buffer.h"
 
+/// Define this (uncomment) to use UART1
+//#define USE_UART1 1
 /**
  * @brief   Macros to enhance portability
  */
@@ -62,10 +68,16 @@ static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
  */
 
 ///@{
-DECLARE_BUFFER_AREA(inputbufferarea,INPUTBUFFERSIZE);
-DECLARE_BUFFER_AREA(outputbufferarea,OUTPUTBUFFERSIZE);
-buffer inputbuffer = 0;
-buffer outputbuffer = 0;
+DECLARE_BUFFER_AREA(inputbufferarea0,INPUTBUFFERSIZE);
+DECLARE_BUFFER_AREA(outputbufferarea0,OUTPUTBUFFERSIZE);
+buffer inputbuffer0 = 0;
+buffer outputbuffer0 = 0;
+#ifdef USE_UART1
+DECLARE_BUFFER_AREA(inputbufferarea1,INPUTBUFFERSIZE);
+DECLARE_BUFFER_AREA(outputbufferarea1,OUTPUTBUFFERSIZE);
+buffer inputbuffer1 = 0;
+buffer outputbuffer1 = 0;
+#endif
 ///@}
 
 /**
@@ -74,32 +86,34 @@ buffer outputbuffer = 0;
  * @note    Configured for 16 times oversampling
  */
 
-void UART_SetBaudrate(uint32_t baud) {
+void UART_SetBaudrate(USART_TypeDef *uart, uint32_t baud) {
 uint32_t bauddiv;
 
     // Asynchronous with 16x oversampling
-    UART0->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
+    uart->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
 
     bauddiv = (ClockGetPeripheralClockFrequency()*4)/(16*baud)-4;
-    UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
+    uart->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
 
 }
 
-/**
- * @brief   Turn OFF all transmissions
- */
-static void UART0_TurnOff(void) {
 
-    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
+/**
+ * @brief   Turn OFF all transmissions for UART1
+ */
+static inline void UART_TurnOff(USART_TypeDef *uart) {
+
+    uart->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
 
 }
 
-/**
- * @brief   Turn ON all transmissions
- */
-static void UART0_TurnOn(void) {
 
-    UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
+/**
+ * @brief   Turn ON all transmissions for UART0
+ */
+static inline void UART_TurnOn(USART_TypeDef *uart) {
+
+    uart->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
 }
 
 
@@ -108,40 +122,74 @@ static void UART0_TurnOn(void) {
  */
 static void UART0_Prepare(uint32_t u) {
 
-    UART0_TurnOff();
+    UART_TurnOff(UART0);
 }
+
+
+/**
+ * @brief   Prepare clock reconfiguration
+ */
+#ifdef USE_UART1
+static void UART1_Prepare(uint32_t u) {
+
+    UART_TurnOff(UART1);
+}
+#endif
+
 
 /**
  * @brief   Reconfigures UART when clock changes
  */
 static void UART0_Reconfigure(uint32_t u) {
 
-    UART_SetBaudrate(BAUD);
-    UART0_TurnOn();
+    UART_SetBaudrate(UART0, BAUD);
+    UART_TurnOn(UART0);
 }
 
+
+/**
+ * @brief   Reconfigures UART when clock changes
+ */
+#ifdef USE_UART1
+static void UART1_Reconfigure(uint32_t u) {
+
+    UART_SetBaudrate(UART1, BAUD);
+    UART_TurnOn(UART1);
+}
+#endif
 /**
  * @brief   Resets UART
  */
 
-static void UART0_Reset(void) {
+static void UART_Reset(USART_TypeDef *uart) {
 
     /* Make sure disabled first, before resetting other registers */
-    UART0->CMD = UART_CMD_RXDIS | UART_CMD_TXDIS | UART_CMD_MASTERDIS
+    uart->CMD = UART_CMD_RXDIS | UART_CMD_TXDIS | UART_CMD_MASTERDIS
                 | UART_CMD_RXBLOCKDIS | UART_CMD_TXTRIDIS | UART_CMD_CLEARTX
                 | UART_CMD_CLEARRX;
-    UART0->CTRL      = _UART_CTRL_RESETVALUE;
-    UART0->FRAME     = _UART_FRAME_RESETVALUE;
-    UART0->TRIGCTRL  = _UART_TRIGCTRL_RESETVALUE;
-    UART0->CLKDIV    = _UART_CLKDIV_RESETVALUE;
-    UART0->IEN       = _UART_IEN_RESETVALUE;
-    UART0->IFC       = _UART_IFC_MASK;
-    UART0->ROUTE     = _UART_ROUTE_RESETVALUE;
-    UART0->IRCTRL    = _UART_IRCTRL_RESETVALUE;
-    UART0->INPUT     = _UART_INPUT_RESETVALUE;
 
-    buffer_deinit(inputbuffer);
-    buffer_deinit(outputbuffer);
+    uart->CTRL      = _UART_CTRL_RESETVALUE;
+    uart->FRAME     = _UART_FRAME_RESETVALUE;
+    uart->TRIGCTRL  = _UART_TRIGCTRL_RESETVALUE;
+    uart->CLKDIV    = _UART_CLKDIV_RESETVALUE;
+    uart->IEN       = _UART_IEN_RESETVALUE;
+    uart->IFC       = _UART_IFC_MASK;
+    uart->ROUTE     = _UART_ROUTE_RESETVALUE;
+    uart->IRCTRL    = _UART_IRCTRL_RESETVALUE;
+    uart->INPUT     = _UART_INPUT_RESETVALUE;
+
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        buffer_deinit(inputbuffer0);
+        buffer_deinit(outputbuffer0);
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        buffer_deinit(inputbuffer1);
+        buffer_deinit(outputbuffer1);
+#endif
+        break;
+    }
 
 }
 
@@ -152,76 +200,132 @@ static void UART0_Reset(void) {
  * @note    Does not enable interrupts!!!!
  */
 
-void UART_Init(void) {
+void UART_Init(USART_TypeDef *uart) {
 
     /* Enable Clock for GPIO and UART */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCLK for GPIO
 
-
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
     // Configure PE0 (TX)
-    GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE0_MASK;          // Clear field
-    GPIOE->MODEL |= GPIO_P_MODEL_MODE0_PUSHPULL;        // Set field
-    GPIOE->DOUT  |= BIT(0);
+        GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE0_MASK;          // Clear field
+        GPIOE->MODEL |= GPIO_P_MODEL_MODE0_PUSHPULL;        // Set field
+        GPIOE->DOUT  |= BIT(0);
 
-    // Configure PE1 (RX)
-    GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE1_MASK;          // Clear field
-    GPIOE->MODEL |= GPIO_P_MODEL_MODE1_INPUT;           // Set field
-    GPIOE->DOUT  |= BIT(1);
+        // Configure PE1 (RX)
+        GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE1_MASK;          // Clear field
+        GPIOE->MODEL |= GPIO_P_MODEL_MODE1_INPUT;           // Set field
+        GPIOE->DOUT  |= BIT(1);
 
-    // Enable clock for UART0
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART0;          // Enable HFPERCLK for UART0
+        // Enable clock for UART0
+        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART0;          // Enable HFPERCLK for UART0
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+    // Configure PE2 (TX). It can be PF10 or PB9 too
+        GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE0_MASK;          // Clear field
+        GPIOE->MODEL |= GPIO_P_MODEL_MODE0_PUSHPULL;        // Set field
+        GPIOE->DOUT  |= BIT(2);
+
+        // Configure PE3 (RX). It can be PF11 or PB10 too
+        GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE1_MASK;          // Clear field
+        GPIOE->MODEL |= GPIO_P_MODEL_MODE1_INPUT;           // Set field
+        GPIOE->DOUT  |= BIT(3);
+
+        // Enable clock for UART01
+        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART1;          // Enable HFPERCLK for UART0
+#endif
+        break;
+    }
 
     /* Reset UART */
-    UART0_Reset();
+    UART_Reset(uart);
 
     // 8 bits, no parity, 1 stop bit
-    UART0->FRAME &= ~( _UART_FRAME_STOPBITS_MASK
+    uart->FRAME  &= ~( _UART_FRAME_STOPBITS_MASK
                       |_UART_FRAME_PARITY_MASK
                       |_UART_FRAME_DATABITS_MASK );                 // Clear field
 
-    UART0->FRAME |=   UART_FRAME_STOPBITS_ONE
+    uart->FRAME  |=   UART_FRAME_STOPBITS_ONE
                     | UART_FRAME_PARITY_NONE
                     | UART_FRAME_DATABITS_EIGHT;                    // Set field
 
     // Baud rate
-    UART_SetBaudrate(BAUD);
+    UART_SetBaudrate(uart,BAUD);
 
-    // Configure PF7 (Enable Transceiver)
-    GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
-    GPIOF->MODEL |= GPIO_P_MODEL_MODE7_PUSHPULL;        // Set field
-    GPIOF->DOUT  |= BIT(7);
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        // Configure PF7 (Enable Transceiver)
+        GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
+        GPIOF->MODEL |= GPIO_P_MODEL_MODE7_PUSHPULL;        // Set field
+        GPIOF->DOUT  |= BIT(7);
 
-    // Set which location to be used
-    UART0->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
+        // Set which location to be used
+        UART0->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
 
-    // Initializes buffers
-    inputbuffer  = buffer_init(inputbufferarea,INPUTBUFFERSIZE);
-    outputbuffer = buffer_init(outputbufferarea,OUTPUTBUFFERSIZE);
+        // Initializes buffers
+        inputbuffer0  = buffer_init(inputbufferarea0,INPUTBUFFERSIZE);
+        outputbuffer0 = buffer_init(outputbufferarea0,OUTPUTBUFFERSIZE);
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        // Only if it uses the same enable
+        // Configure PF7 (Enable Transceiver)
+        GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
+        GPIOF->MODEL |= GPIO_P_MODEL_MODE7_PUSHPULL;        // Set field
+        GPIOF->DOUT  |= BIT(7);
+
+        // Set which location to be used
+        UART1->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
+
+        // Initializes buffers
+        inputbuffer1  = buffer_init(inputbufferarea1,INPUTBUFFERSIZE);
+        outputbuffer1 = buffer_init(outputbufferarea1,OUTPUTBUFFERSIZE);
+#endif
+        break;
+    }
 
     // Enable interrupts on UART
-    UART0->IFC = (uint32_t) -1;
-    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+    uart->IFC = (uint32_t) -1;
+    uart->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
 
     // Enable interrupts on NVIC
-    NVIC_SetPriority(UART0_RX_IRQn,RXINTLEVEL);
-    NVIC_SetPriority(UART0_TX_IRQn,TXINTLEVEL);
-    NVIC_ClearPendingIRQ(UART0_RX_IRQn);
-    NVIC_ClearPendingIRQ(UART0_TX_IRQn);
-    NVIC_EnableIRQ(UART0_RX_IRQn);
-    NVIC_EnableIRQ(UART0_TX_IRQn);
-
-    // Disable and then enable RX and TX
-    UART0_TurnOff();
-    UART0_TurnOn();
-
-    // Register functions to reconfigure UART in case of clock change
-    ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART0_Prepare, UART0_Reconfigure);
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        NVIC_SetPriority(UART0_RX_IRQn,RXINTLEVEL);
+        NVIC_SetPriority(UART0_TX_IRQn,TXINTLEVEL);
+        NVIC_ClearPendingIRQ(UART0_RX_IRQn);
+        NVIC_ClearPendingIRQ(UART0_TX_IRQn);
+        NVIC_EnableIRQ(UART0_RX_IRQn);
+        NVIC_EnableIRQ(UART0_TX_IRQn);
+        // Disable and then enable RX and TX
+        UART_TurnOff(UART0);
+        UART_TurnOn(UART0);
+        // Register functions to reconfigure UART in case of clock change
+        ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART0_Prepare, UART0_Reconfigure);
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        NVIC_SetPriority(UART1_RX_IRQn,RXINTLEVEL);
+        NVIC_SetPriority(UART1_TX_IRQn,TXINTLEVEL);
+        NVIC_ClearPendingIRQ(UART1_RX_IRQn);
+        NVIC_ClearPendingIRQ(UART1_TX_IRQn);
+        NVIC_EnableIRQ(UART1_RX_IRQn);
+        NVIC_EnableIRQ(UART1_TX_IRQn);
+        // Disable and then enable RX and TX
+        UART_TurnOff(UART1);
+        UART_TurnOn(UART1);
+        // Register functions to reconfigure UART in case of clock change
+        ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART1_Prepare, UART1_Reconfigure);
+#endif
+        break;
+    }
 }
 
 
 /**
- * @brief   UART Interrupt routine for receiving data
+ * @brief   UART0 Interrupt routine for receiving data
  *
  * @note    Receives and put it in buffer
  */
@@ -233,16 +337,32 @@ uint8_t ch;
         // Put in input buffer
         ch = UART0->RXDATA;
 //        ENTER_ATOMIC();
-        (void) buffer_insert(inputbuffer,ch);
+        (void) buffer_insert(inputbuffer0,ch);
 //        EXIT_ATOMIC();
     }
-//  UART0->IFS |= UART_IFS_TXC;
-//  UART0->IFC = UART_IFC_RXFULL|UART_IFC_RXOF;
 }
 
 
 /**
- * @brief   UART Interrupt routine for transmitting data
+ * @brief   UART1 Interrupt routine for receiving data
+ *
+ * @note    Receives and put it in buffer
+ */
+#ifdef USE_UART1
+void UART1_RX_IRQHandler(void) {
+uint8_t ch;
+
+    if ( UART1->IF&(UART_IF_RXDATAV|UART_IF_RXFULL) ) {
+        // Put in input buffer
+        ch = UART1->RXDATA;
+//        ENTER_ATOMIC();
+        (void) buffer_insert(inputbuffer1,ch);
+//        EXIT_ATOMIC();
+    }
+}
+#endif
+/**
+ * @brief   UART0 Interrupt routine for transmitting data
  *
  * @note    If there is data to transmit, send it
  * @note    UART_SendChar generates this interrupt
@@ -254,9 +374,9 @@ uint8_t ch;
     // if data in output buffer and transmitter idle, send it
     if( UART0->IF&UART_IF_TXC ) {
         if( UART0->STATUS&UART_STATUS_TXBL ) {
-            if( !buffer_empty(outputbuffer) ) {
+            if( !buffer_empty(outputbuffer0) ) {
                 // Get from output buffer
-                ch = buffer_remove(outputbuffer);
+                ch = buffer_remove(outputbuffer0);
                 UART0->TXDATA = ch;
             }
         }
@@ -264,16 +384,41 @@ uint8_t ch;
     }
 }
 
+
+/**
+ * @brief   UART0 Interrupt routine for transmitting data
+ *
+ * @note    If there is data to transmit, send it
+ * @note    UART_SendChar generates this interrupt
+ */
+#ifdef USE_UART1
+void UART1_TX_IRQHandler(void) {
+uint8_t ch;
+
+    // if data in output buffer and transmitter idle, send it
+    if( UART1->IF&UART_IF_TXC ) {
+        if( UART1->STATUS&UART_STATUS_TXBL ) {
+            if( !buffer_empty(outputbuffer1) ) {
+                // Get from output buffer
+                ch = buffer_remove(outputbuffer1);
+                UART1->TXDATA = ch;
+            }
+        }
+       UART1->IFC = UART_IFC_TXC;
+    }
+}
+#endif
+
 /**
  * @brief   Get status of UART
  *
  * @note    Could be inline in uart.h
  */
 
-unsigned UART_GetStatus(void) {
+unsigned UART_GetStatus(USART_TypeDef *uart) {
 uint32_t w;
 
-    w = UART0->STATUS;
+    w = uart->STATUS;
     return w;
 }
 
@@ -283,14 +428,30 @@ uint32_t w;
  * @note    Generates an interrupt to send char
  */
 
-void UART_SendChar(char ch) {
-    if ( buffer_empty(outputbuffer) ) {
-        while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
-        UART0->TXDATA = ch;
-    } else {
-        ENTER_ATOMIC();
-        buffer_insert(outputbuffer,ch);
-        EXIT_ATOMIC();
+void UART_SendChar(USART_TypeDef *uart, char ch) {
+
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        if ( buffer_empty(outputbuffer0) ) {
+            while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+            UART0->TXDATA = ch;
+        } else {
+            ENTER_ATOMIC();
+            buffer_insert(outputbuffer0,ch);
+            EXIT_ATOMIC();
+        }
+    case UART1_BASE:
+#ifdef USE_UART1
+        if ( buffer_empty(outputbuffer1) ) {
+            while ( (UART1->STATUS&UART_STATUS_TXBL) == 0 ) {}
+            UART1->TXDATA = ch;
+        } else {
+            ENTER_ATOMIC();
+            buffer_insert(outputbuffer1,ch);
+            EXIT_ATOMIC();
+        }
+#endif
+        break;
     }
 }
 
@@ -300,9 +461,9 @@ void UART_SendChar(char ch) {
  * @note    Could be inline in uart.h
  */
 
-void UART_SendString(char *s) {
+void UART_SendString(USART_TypeDef *uart, char *s) {
 
-    while(*s) UART_SendChar(*s++);
+    while(*s) UART_SendChar(uart, *s++);
 
 }
 
@@ -312,15 +473,27 @@ void UART_SendString(char *s) {
  * @note    Does not block. Returns 0 when there is none
  */
 
-unsigned UART_GetCharNoWait(void) {
+unsigned UART_GetCharNoWait(USART_TypeDef *uart) {
 int ch;
 
-    if( buffer_empty(inputbuffer) )
-        return 0;
-
-    ENTER_ATOMIC();
-    ch = buffer_remove(inputbuffer);
-    EXIT_ATOMIC();
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        if( buffer_empty(inputbuffer0) )
+            return 0;
+        ENTER_ATOMIC();
+        ch = buffer_remove(inputbuffer0);
+        EXIT_ATOMIC();
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        if( buffer_empty(inputbuffer1) )
+            return 0;
+        ENTER_ATOMIC();
+        ch = buffer_remove(inputbuffer1);
+        EXIT_ATOMIC();
+#endif
+        break;
+    }
     return ch;
 }
 
@@ -330,14 +503,24 @@ int ch;
  * @note    Does block!!!!!
  */
 
-unsigned UART_GetChar(void) {
+unsigned UART_GetChar(USART_TypeDef *uart) {
 int ch;
 
-    while( buffer_empty(inputbuffer) ) {}
-
-    ENTER_ATOMIC();
-    ch = buffer_remove(inputbuffer);
-    EXIT_ATOMIC();
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        while( buffer_empty(inputbuffer0) ) {}
+        ENTER_ATOMIC();
+        ch = buffer_remove(inputbuffer0);
+        EXIT_ATOMIC();
+    case UART1_BASE:
+#ifdef USE_UART1
+        while( buffer_empty(inputbuffer1) ) {}
+        ENTER_ATOMIC();
+        ch = buffer_remove(inputbuffer1);
+        EXIT_ATOMIC();
+#endif
+        break;
+    }
     return ch;
 }
 
@@ -346,10 +529,10 @@ int ch;
  *
  */
 
-void UART_EnableInterrupts(uint32_t m) {
+void UART_EnableInterrupts(USART_TypeDef *uart, uint32_t m) {
 
-    if( m&UART_TXINT ) UART0->IEN |= UART_IEN_TXC;
-    if( m&UART_RXINT ) UART0->IEN |= UART_IEN_RXDATAV;
+    if( m&UART_TXINT ) uart->IEN |= UART_IEN_TXC;
+    if( m&UART_RXINT ) uart->IEN |= UART_IEN_RXDATAV;
 }
 
 /**
@@ -357,10 +540,10 @@ void UART_EnableInterrupts(uint32_t m) {
  *
  */
 
-void UART_DisableInterrupts(uint32_t m) {
+void UART_DisableInterrupts(USART_TypeDef *uart, uint32_t m) {
 
-    if( m&UART_TXINT ) UART0->IEN &= ~UART_IEN_TXC;
-    if( m&UART_RXINT ) UART0->IEN &= ~UART_IEN_RXDATAV;
+    if( m&UART_TXINT ) uart->IEN &= ~UART_IEN_TXC;
+    if( m&UART_RXINT ) uart->IEN &= ~UART_IEN_RXDATAV;
 }
 
 /**
@@ -370,10 +553,10 @@ void UART_DisableInterrupts(uint32_t m) {
  * @note    Trasmitter interrupts must be disabled
  */
 
-void UART_PutCharPolling(char ch) {
+void UART_PutCharPolling(USART_TypeDef *uart, char ch) {
 
-    while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
-    UART0->TXDATA = ch;
+    while ( (uart->STATUS&UART_STATUS_TXBL) == 0 ) {}
+    uart->TXDATA = ch;
 
 }
 
@@ -384,25 +567,51 @@ void UART_PutCharPolling(char ch) {
  * @note    Does block!!!!!
  */
 
-int UART_Flush(void) {
+int UART_Flush(USART_TypeDef *uart) {
 int cnt;
 int ch;
 
-    // Clear input buffer
-    buffer_clear(inputbuffer);
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        // Clear input buffer
+        buffer_clear(inputbuffer0);
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        // Clear input buffer
+        buffer_clear(inputbuffer1);
+#endif
+        break;
+    }
+
 
     // Clear output buffer
     cnt = 0;
     // Disable interrupts
-    UART0->IEN &= ~(UART_IEN_TXC|UART_IEN_RXDATAV);
-    while( ! buffer_empty(outputbuffer) ) {
-        // Wait until UART TX is free
-        ch = buffer_remove(outputbuffer);
-        UART_PutCharPolling(ch);
-        cnt++;
+    uart->IEN &= ~(UART_IEN_TXC|UART_IEN_RXDATAV);
+
+    switch( (uint32_t) uart) {
+    case UART0_BASE:
+        while( ! buffer_empty(outputbuffer0) ) {
+            // Wait until UART TX is free
+            ch = buffer_remove(outputbuffer0);
+            UART_PutCharPolling(UART0,ch);
+            cnt++;
+        }
+        break;
+    case UART1_BASE:
+#ifdef USE_UART1
+        while( ! buffer_empty(outputbuffer1) ) {
+            // Wait until UART TX is free
+            ch = buffer_remove(outputbuffer1);
+            UART_PutCharPolling(UART1,ch);
+            cnt++;
+        }
+#endif
+        break;
     }
     // Reenable interrupts
-    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+    uart->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
     return cnt;
 }
 
