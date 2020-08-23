@@ -14,7 +14,7 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
-#include "clock_efm32gg_ext2.h"
+#include "clock_efm32gg2.h"
 
 /**
  * @note            If Symbol for Crystal frequency not defined, define it.

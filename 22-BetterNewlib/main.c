@@ -15,9 +15,9 @@
 #include <stdio.h>
 
 #include "em_device.h"
+#include "clock_efm32gg2.h"
 #include "led.h"
 #include "lcd.h"
-#include "clock_efm32gg_ext2.h"
 
 /*****************************************************************************
  * @brief  SysTick interrupt handler
@@ -90,9 +90,6 @@ int tryn = 0;
 
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
-
-    /* Configure UART */
-    UART_Init();
 
     // Message
     printf("Starting......");

@@ -24,7 +24,7 @@
  */
 
 #include "em_device.h"
-#include "clock_efm32gg_ext2.h"
+#include "clock_efm32gg2.h"
 #include "uart2.h"
 #include "buffer.h"
 
@@ -47,7 +47,6 @@
 
 /// baudrate
 const uint32_t BAUD = 115200;
-const uint32_t OVERSAMPLING = 16;
 
 /// GPIO Port used for RX/TX
 static GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);    // GPIOE
@@ -62,17 +61,70 @@ static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
  * @note    To avoid use of malloc, it uses a macro to define area
  */
 
+///@{
 DECLARE_BUFFER_AREA(inputbufferarea,INPUTBUFFERSIZE);
 DECLARE_BUFFER_AREA(outputbufferarea,OUTPUTBUFFERSIZE);
 buffer inputbuffer = 0;
 buffer outputbuffer = 0;
+///@}
 
+/**
+ * @brief   Set baudrate UART
+ *
+ * @note    Configured for 16 times oversampling
+ */
+
+void UART_SetBaudrate(uint32_t baud) {
+uint32_t bauddiv;
+
+    // Asynchronous with 16x oversampling
+    UART0->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
+
+    bauddiv = (ClockGetPeripheralClockFrequency()*4)/(16*baud)-4;
+    UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
+
+}
+
+/**
+ * @brief   Turn OFF all transmissions
+ */
+static void UART0_TurnOff(void) {
+
+    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
+
+}
+
+/**
+ * @brief   Turn ON all transmissions
+ */
+static void UART0_TurnOn(void) {
+
+    UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
+}
+
+
+/**
+ * @brief   Prepare clock reconfiguration
+ */
+static void UART0_Prepare(uint32_t u) {
+
+    UART0_TurnOff();
+}
+
+/**
+ * @brief   Reconfigures UART when clock changes
+ */
+static void UART0_Reconfigure(uint32_t u) {
+
+    UART_SetBaudrate(BAUD);
+    UART0_TurnOn();
+}
 
 /**
  * @brief   Resets UART
  */
 
-void UART_Reset(void) {
+static void UART0_Reset(void) {
 
     /* Make sure disabled first, before resetting other registers */
     UART0->CMD = UART_CMD_RXDIS | UART_CMD_TXDIS | UART_CMD_MASTERDIS
@@ -101,7 +153,6 @@ void UART_Reset(void) {
  */
 
 void UART_Init(void) {
-uint32_t bauddiv;
 
     /* Enable Clock for GPIO and UART */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
@@ -122,7 +173,7 @@ uint32_t bauddiv;
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART0;          // Enable HFPERCLK for UART0
 
     /* Reset UART */
-    UART_Reset();
+    UART0_Reset();
 
     // 8 bits, no parity, 1 stop bit
     UART0->FRAME &= ~( _UART_FRAME_STOPBITS_MASK
@@ -133,13 +184,8 @@ uint32_t bauddiv;
                     | UART_FRAME_PARITY_NONE
                     | UART_FRAME_DATABITS_EIGHT;                    // Set field
 
-    // Asynchronous with 16x oversampling
-    UART0->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
-
     // Baud rate
-    bauddiv = (ClockGetPeripheralClockFrequency()*4)/(OVERSAMPLING*BAUD)-4;
-    UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
-
+    UART_SetBaudrate(BAUD);
 
     // Configure PF7 (Enable Transceiver)
     GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
@@ -166,8 +212,11 @@ uint32_t bauddiv;
     NVIC_EnableIRQ(UART0_TX_IRQn);
 
     // Disable and then enable RX and TX
-    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
-    UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
+    UART0_TurnOff();
+    UART0_TurnOn();
+
+    // Register functions to reconfigure UART in case of clock change
+    ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART0_Prepare, UART0_Reconfigure);
 }
 
 
