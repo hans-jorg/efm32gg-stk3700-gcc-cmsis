@@ -47,35 +47,47 @@ typedef enum {  CLOCK_NONE=0,
 typedef struct {
                 ///@{
                 /* Configuration info. Used by ClockSetConfiguration */
-                ClockSource_t   source;           ///< HFCLK clock source
-                uint32_t        basefreq;         ///< Base frequency of clock source
-                uint32_t        hclkdiv;          ///< Divisor of base frequency to generate HFCLK
-                uint32_t        corediv;          ///< Divisor of HFCLK to generate Core Clock
-                uint32_t        coredivcode;      ///< Encoding of Core Clock divisor
-                uint32_t        perdiv;           ///< Divisor of HFCLK to generate Peripheral Clock
-                uint32_t        perdivcode;       ///< Encoding of Peripheral Clock divisor
+                ClockSource_t   source;             ///< HFCLK clock source
+                uint32_t        basefreq;           ///< Base frequency of core clock source
+                uint32_t        hclkdiv;            ///< Divisor of base frequency to generate HFCLK
+                uint32_t        hfcoreclkdiv;       ///< Divisor of HFCLK to generate Core Clock
+                uint32_t        hfperclkdiv;        ///< Divisor of HFCLK to generate Peripheral Clock
+                uint32_t        hfperclkdivcode;    ///< Encoding of Peripheral Clock divisor
+                uint32_t        hfcoreclkdivcode;   ///< Encoding of Core Clock divisor
+                uint32_t        hfcoreclocklediv;   ///< Div = 2 or 4
                 ///@}
                 ///@{
-                /* For info only. Not used by ClockSetConfiguration  */
-                uint32_t        hclkfreq;       ///@<  =HFCLK/hclkdiv
-                uint32_t        corefreq;       ///@<  =HFCLK/hclkdiv/corediv
-                uint32_t        perfreq;        ///@<  =HFCLK/hclkdiv/perdiv
+                /* For info only. Not used by (future) ClockSetConfiguration  */
+                uint32_t        hclkfreq;           ///@<  =HFCLK/hclkdiv
+                uint32_t        hfcoreclkfreq;      ///@<  =HFCLK/hclkdiv/corediv
+                uint32_t        hfperclkfreq;       ///@<  =HFCLK/hclkdiv/perdiv
+                uint32_t        hfcoreclklefreq;    ///@<
                 ///@}
 } ClockConfiguration_t;
 
 
+// Set core clock frequency
 uint32_t ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv);
 
+// Register a function to be called when the clock changes
 int      ClockRegisterCallback( uint32_t clock, void (*pre)(uint32_t), void (*post)(uint32_t));
 
-
+// Configure System (*Wait states, etc) for a specified clock frequency
 uint32_t ClockConfigureSystemForClockFrequency(uint32_t freq);
-uint32_t ClockSetHFClockDivisor(uint32_t div);
-uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
 
+// Configure LFCLK{A,B}
+uint32_t ClockSetLFCLKA(ClockSource_t source);
+uint32_t ClockSetLFCLKB(ClockSource_t source);
+
+// Configure prescalers (0 value means do not change it))
+uint32_t ClockSetPrescalers(uint32_t hclkdiv, uint32_t corediv, uint32_t perdiv, uint32_t coreclklediv);
+
+// Get the clock configuration in a struct
 uint32_t ClockGetConfiguration(ClockConfiguration_t *p);
+
+// Get Peripheral and Core Clock frequency (GetCoreClockFrequency()==SystemCoreClock)
 uint32_t ClockGetPeripheralClockFrequency(void);
-uint32_t ClockGetCoreClockFrequency(void);
+uint32_t ClockGetCoreClockFrequency(void); // Should return the same as SystemCoreCLock
 
 
 /** @brief Aliases using names used in Reference Manual */

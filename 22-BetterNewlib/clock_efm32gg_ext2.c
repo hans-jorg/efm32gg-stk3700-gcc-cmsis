@@ -85,6 +85,7 @@ uint32_t err2;
         err2 = err1;
         if( w > n ) err1 = w - n;
         else        err1 = n - w;
+        
         if ( err2 < err1 )
             break;
        w <<= 1;
@@ -380,43 +381,6 @@ ClockSetCoreClock(ClockSource_t source, uint32_t hclkdiv, uint32_t corediv) {
     return hclkfreq/(1<<divcode);
 }
 
-/*
- * @brief   Set the HF Clock divisor considering the limits
- *          to
- * @note    It configure first to the HFXO and then to the desired
- *          frequency
- *
- */
- 
-uint32_t
-ClockSetHFClockDivisor(uint32_t div) {
-
-    /* Call registered functions for attached peripherals */
-    ClockProcessPreChange(CLOCK_CHANGED_HFCLK);
-    
-    // Put div in valid range
-    if ( div > 8 ) div = 8;
-    if ( div < 1 ) div = 1;
-
-    // Configure for worst case
-    ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
-
-    /* Set HFCLK divisor to give value */
-    div--;
-    CMU->CTRL      = (CMU->CTRL&~(_CMU_CTRL_HFCLKDIV_MASK))| (div<<_CMU_CTRL_HFCLKDIV_SHIFT);
-
-    // Update global SystemCoreClock variable
-    SystemCoreClockUpdate();
-
-    // Optime for set clock frequency
-    ClockConfigureSystemForClockFrequency(SystemCoreClock);
-
-    /* Call registered functions for attached peripherals */
-    ClockProcessPostChange(CLOCK_CHANGED_HFCLK);
-    
-    return SystemCoreClock;
-}
-
 
 /**
  * @brief   Get Clock Configuration in a ClockConfiguration_t structure
@@ -497,16 +461,16 @@ uint32_t perfreq,perdiv;
     perfreq  = hclkfreq/(1U<<perdiv);
 
     if( p ) {
-        p->source       = source;
-        p->basefreq     = basefreq;
-        p->hclkdiv      = hclkdiv+1;
-        p->hclkfreq     = hclkfreq;
-        p->corefreq     = corefreq;
-        p->corediv      = 1U<<corediv;
-        p->coredivcode  = corediv;
-        p->perfreq      = perfreq;
-        p->perdiv       = 1U<<perdiv;
-        p->perdivcode   = perdiv;
+        p->source            = source;
+        p->basefreq          = basefreq;
+        p->hclkdiv           = hclkdiv+1;
+        p->hclkfreq          = hclkfreq;
+        p->hfcoreclkfreq     = corefreq;
+        p->hfcoreclkdiv      = 1U<<corediv;
+        p->hfcoreclkdivcode  = corediv;
+        p->hfperclkfreq      = perfreq;
+        p->hfperclkdiv       = 1U<<perdiv;
+        p->hfperclkdivcode   = perdiv;
     }
 
     return basefreq;
@@ -578,8 +542,8 @@ uint32_t newctrl;
  */
  
 uint32_t
-ClockSetPrescalers(uint32_t corediv, uint32_t perdiv) {
-uint32_t c,p;
+ClockSetPrescalers(uint32_t hclkdiv, uint32_t corediv, uint32_t perdiv, uint32_t coreclklediv) {
+uint32_t c,p,div;
 const uint32_t COREDIVMASK = _CMU_HFCORECLKDIV_HFCORECLKDIV_MASK;
 const uint32_t PERDIVMASK  = _CMU_HFPERCLKDIV_HFPERCLKDIV_MASK;
 
@@ -589,21 +553,44 @@ const uint32_t PERDIVMASK  = _CMU_HFPERCLKDIV_HFPERCLKDIV_MASK;
     // Configure for worst case
     ClockConfigureSystemForClockFrequency(EFM32_HFXO_FREQ);
 
-    if( corediv == 0 ) corediv = 1;
-    if( perdiv  == 0 ) perdiv  = 1;
+    if( hclkdiv > 0 ) {
+        if( hclkdiv > 8 ) hclkdiv = 8;
+        div = hclkdiv - 1;
+    }
 
-    c = nearestpower2exp(corediv);
-    if( c == 0 ) c = 1;
-    if( c > 9  ) c = 9;
+    if( corediv > 0 ) {
+        c = nearestpower2exp(corediv);
+        if( c == 0 ) c = 1;
+        if( c > 9  ) c = 9;
+    }
 
-    p = nearestpower2exp(perdiv);
-    if( p == 0 ) p = 1;
-    if( p > 9  ) p = 9;
-
+    if( perdiv > 0 ) {
+        p = nearestpower2exp(perdiv);
+        if( p == 0 ) p = 1;
+        if( p > 9  ) p = 9;
+    }
+    
     // Configure for new frequency
 
-    CMU->HFCORECLKDIV = (CMU->HFCORECLKDIV&~COREDIVMASK)|(c<<_CMU_HFCORECLKDIV_HFCORECLKDIV_SHIFT);
-    CMU->HFPERCLKDIV  = (CMU->HFPERCLKDIV&~PERDIVMASK)|(p<<_CMU_HFPERCLKDIV_HFPERCLKDIV_SHIFT);
+    if( hclkdiv > 0 ) {
+        CMU->CTRL = (CMU->CTRL&~(_CMU_CTRL_HFCLKDIV_MASK))| (div<<_CMU_CTRL_HFCLKDIV_SHIFT);
+    }
+    if( corediv > 0 ) {
+        CMU->HFCORECLKDIV = (CMU->HFCORECLKDIV&~COREDIVMASK)
+                |(c<<_CMU_HFCORECLKDIV_HFCORECLKDIV_SHIFT);
+    }
+    if( perdiv > 0 ) {
+        CMU->HFPERCLKDIV  = (CMU->HFPERCLKDIV&~PERDIVMASK)
+                |(p<<_CMU_HFPERCLKDIV_HFPERCLKDIV_SHIFT);
+    }
+
+    if(coreclklediv > 0 ) {
+        if( coreclklediv == 2 ) {
+            CMU->HFCORECLKDIV &= ~CMU_HFCORECLKDIV_HFCORECLKLEDIV;
+        } else if ( coreclklediv == 2 ) {
+            CMU->HFCORECLKDIV &= CMU_HFCORECLKDIV_HFCORECLKLEDIV;
+        }
+    }
 
     // Update global SystemCoreClock variable
     SystemCoreClockUpdate();
@@ -769,7 +756,7 @@ ClockConfiguration_t clockconf;
 
     ClockGetConfiguration(&clockconf);
 
-    return clockconf.perfreq;
+    return clockconf.hfperclkfreq;
 
 }
 
@@ -786,7 +773,7 @@ ClockConfiguration_t clockconf;
 
     ClockGetConfiguration(&clockconf);
 
-    return clockconf.corefreq;
+    return clockconf.hfcoreclkfreq;
 
 }
 
