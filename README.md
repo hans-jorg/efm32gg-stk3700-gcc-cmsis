@@ -118,20 +118,21 @@ In all examples, a direct access to registers approach was used. It means that n
 -    05-SysTick: Using SysTick to implement delays
 -    06-ClockFrequency: Changing the core clock frequency
 -    07-StateMachine: Processing inside the SysTick Interrupt
--    *08-Timers: Timers
+-    08-Timers: Timers
 -    09-Button: Buttons
 -    10-Button: More about buttons
--    *11-Debounce: Debouncing
+-    11-Debounce: Debouncing
 -    12-UART: Serial Communication using polling
--    *13-UART: Serial Communication using interrupts
+-    13-UART: Serial Communication using interrupts
 -    14-Ministdio: Mini Standard I/O Package
 -    15-Newlib: Using Newlib
 -    16-TimeTriggered: Time Triggered Systems
 -    17-Protothreads: Using Protothreads
--    *18-FreeRTOS: Using FreeRTOS
+-    18-FreeRTOS: Using FreeRTOS
 -    19-ucos2: Using uC/OS-II
--    *20-ucos3: Using uC/OS-III
+-    20-ucos3: Using uC/OS-III
 -    21-LCD: Using the LCD display
--    *22-Temperature: Getting the CPU temperature
+-    22-Better newlib support
+-   *23-Temperature: Getting the CPU temperature
 
 **Those marked with an asterisk are unfinished!!!**
