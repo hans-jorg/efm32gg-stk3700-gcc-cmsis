@@ -1,7 +1,7 @@
 22 Better Newlib
 ===============
 
-#Problems in the implementation
+# Problems in the implementation
 
 There is a violation of encapsulation rules when the clock frequency is changed. After the changing of clock frequency, many devices need to be reconfigured. This is the case of the UARTs. 
 
@@ -19,25 +19,7 @@ In order to avoid this problem.
 
 There is a clock tree in the EFM32GG.
 
-~~~
-                                            |
-                                            |------>|Prescaler|-------->HFPERCLK
-                                            |
-                                            |
-                                            |HCLK
-    Clock source-------->|Prescaler|------->|
-                                            |
-                                            |------>|Prescaler|-------->HFCORECLK
-                                            |                               |
-                                                                            |
- ----------------------------HFCORECLKLE-------------------------------------
- |
- |
- |\-> Clock source-------->|Prescaler|----------------------------------->LFACLK
- |
-  \-> Clock source-------->|Prescaler|----------------------------------->LFBCLK
-
-~~~
+![image0001](file:clock-tree.png)
 
 The following files were renamed in order to avoid confusion with files with the same names in other projects.
 
@@ -48,19 +30,27 @@ The following files were renamed in order to avoid confusion with files with the
 
 # Modification in the clock management routines
 
-The function *ClockRegisterCallback* was added. It registers two functions *pre* and *post*. The *pre* function is called before the clock change, for example, to stop all transmission and/or processing. The *post* function is called after the clock change. It is used to reconfigure the device according the new clock configuration. Both functions are only called when a clock change occurs as specified by the *clock* parameter.
+The function *ClockRegisterCallback* was added. It registers two functions *pre* and *post*. 
+The *pre* function is called before the clock change, for example, to stop all transmission and/or 
+processing. The *post* function is called after the clock change. It is used to reconfigure the 
+device according the new clock configuration. Both functions are only called when a clock change 
+occurs as specified by the *clock* parameter.
 
     ClockRegisterCallback( uint32_t clock, void (*pre)(uint32_t), void (*post)(uint32_t))
 
 Both functions have a parameter specifying which clock change occured.
 
-The clock is a OR of the following values: CLOCK_CHANGED_HFCLK, CLOCK_CHANGED_HFCORECLK, CLOCK_CHANGED_HFPERCLK, CLOCK_CHANGED_HFCORECLKLE, CLOCK_CHANGED_LFCLKA and CLOCK_CHANGED_LFCLKB.
+The clock is a OR of the following values: CLOCK_CHANGED_HFCLK, CLOCK_CHANGED_HFCORECLK, 
+CLOCK_CHANGED_HFPERCLK, CLOCK_CHANGED_HFCORECLKLE, CLOCK_CHANGED_LFCLKA and CLOCK_CHANGED_LFCLKB.
 
 There are other modifications:
 
-1 - SystemCoreClockSet function was renamed to ClockSetCoreClock. So all function names in the clock module start with Clock. An alias was added as a preprocessor symbol to clock_efm32gg_ext2.h to enable compatibility.
+1 - SystemCoreClockSet function was renamed to ClockSetCoreClock. So all function names in the 
+*clock* module start with Clock. An alias was added as a preprocessor symbol to 
+clock_efm32gg2.h to enable compatibility.
 
-2 - The following aliases were added to clock_efm32gg_ext2.h as preprocessor symbols. The clock acronyms used in the reference manual and datasheet
+2 - The following aliases were added to clock_efm32gg_ext2.h as preprocessor symbols. The clock 
+acronyms used in the reference manual and datasheet
 
     ClockSetHFCORECLK is an alias to ClockSetCoreClock
     ClockGetHFCORECLK is an alias to ClockGetCoreClockFrequency
@@ -70,7 +60,20 @@ There are other modifications:
 
 # Modification in the UART routines
 
-#References
+The main modification is the addition of callback routines. The *pre* routine just turn off the 
+receive and the transmition operations of the uart. The *post* routine reconfigures the baud rate 
+according the new clock configuration.
+
+Another modification is the possibily to use the same set of routines to control the two UARTS 
+on the microcontroller: UART0 and UART1. This is controlled by the preprocessor USE_UART1 
+parameter.
+
+# Modification in syscalls.c
+
+Only the mapping Serial* to UART* functions is modified, because UART* functions have a uart 
+parameter. For now, all operations are mapped to UART0.
+
+# References
 
 [EMF32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
 

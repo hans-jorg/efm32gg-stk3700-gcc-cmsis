@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include "adc.h"
 #include "em_device.h"
-#include "clock_efm32gg_ext2.h"
+#include "clock_efm32gg2.h"
 
 // Macros to access memory and registers
 #define GETREG32(ADDRESS)    *( (uint32_t *) ADDRESS )

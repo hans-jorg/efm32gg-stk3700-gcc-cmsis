@@ -18,7 +18,7 @@
 #include "led.h"
 #include "lcd.h"
 #include "temperature.h"
-#include "clock_efm32gg_ext2.h"
+#include "clock_efm32gg2.h"
 
 /*****************************************************************************
  * @brief  SysTick interrupt handler
@@ -80,6 +80,9 @@ int main(void) {
 char line[100];
 int tryn = 0;
 
+    // Message
+    printf("Starting......");
+    
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
@@ -88,16 +91,13 @@ int tryn = 0;
 
     /* Turn on LEDs */
     LED_Write(0,LED1|LED2);
-
+    
+    // Message
+    printf("\nHello!");
+    
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
 
-    /* Configure UART */
-    UART_Init();
-
-    // Message
-    printf("Starting......");
-    
     /* Configure LCD */
     LCD_Init();
 

@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=adc-temp
+PROGNAME=temperature
 
 #
 # Defines the part (device) that this project uses
