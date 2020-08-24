@@ -17,6 +17,8 @@
  *          UART0       PF7|PE1|PA4         PF6|PE0|PA3
  *          UART1       PF11|PB10|PE3       PF10|PB9|PE2
  *
+ * @note    PB9, PB10,PE0,PE1,PE2,PE3 are on the breakout pades
+ *
  *****************************************************************************/
 
 #include <stdint.h>
@@ -33,7 +35,9 @@
 #include "buffer.h"
 
 /// Define this (uncomment) to use UART1
-//#define USE_UART1 1
+#define USE_UART1 1
+
+
 /**
  * @brief   Macros to enhance portability
  */
@@ -68,15 +72,15 @@ static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
  */
 
 ///@{
-DECLARE_BUFFER_AREA(inputbufferarea0,INPUTBUFFERSIZE);
-DECLARE_BUFFER_AREA(outputbufferarea0,OUTPUTBUFFERSIZE);
-buffer inputbuffer0 = 0;
-buffer outputbuffer0 = 0;
+DECLARE_BUFFER_AREA(ibuffarea0,INPUTBUFFERSIZE);
+DECLARE_BUFFER_AREA(obuffarea0,OUTPUTBUFFERSIZE);
+buffer ibuff0 = 0;
+buffer obuff0 = 0;
 #ifdef USE_UART1
-DECLARE_BUFFER_AREA(inputbufferarea1,INPUTBUFFERSIZE);
-DECLARE_BUFFER_AREA(outputbufferarea1,OUTPUTBUFFERSIZE);
-buffer inputbuffer1 = 0;
-buffer outputbuffer1 = 0;
+DECLARE_BUFFER_AREA(ibuffarea1,INPUTBUFFERSIZE);
+DECLARE_BUFFER_AREA(obuffarea1,OUTPUTBUFFERSIZE);
+buffer ibuff1 = 0;
+buffer obuff1 = 0;
 #endif
 ///@}
 
@@ -178,19 +182,21 @@ static void UART_Reset(USART_TypeDef *uart) {
     uart->IRCTRL    = _UART_IRCTRL_RESETVALUE;
     uart->INPUT     = _UART_INPUT_RESETVALUE;
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
-        buffer_deinit(inputbuffer0);
-        buffer_deinit(outputbuffer0);
+#endif
+        buffer_deinit(ibuff0);
+        buffer_deinit(obuff0);
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
-        buffer_deinit(inputbuffer1);
-        buffer_deinit(outputbuffer1);
-#endif
+        buffer_deinit(ibuff1);
+        buffer_deinit(obuff1);
+
         break;
     }
-
+#endif
 }
 
 
@@ -206,8 +212,10 @@ void UART_Init(USART_TypeDef *uart) {
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCLK for GPIO
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
+#endif
     // Configure PE0 (TX)
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE0_MASK;          // Clear field
         GPIOE->MODEL |= GPIO_P_MODEL_MODE0_PUSHPULL;        // Set field
@@ -220,9 +228,9 @@ void UART_Init(USART_TypeDef *uart) {
 
         // Enable clock for UART0
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART0;          // Enable HFPERCLK for UART0
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
     // Configure PE2 (TX). It can be PF10 or PB9 too
         GPIOE->MODEL &= ~_GPIO_P_MODEL_MODE0_MASK;          // Clear field
         GPIOE->MODEL |= GPIO_P_MODEL_MODE0_PUSHPULL;        // Set field
@@ -235,10 +243,9 @@ void UART_Init(USART_TypeDef *uart) {
 
         // Enable clock for UART01
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_UART1;          // Enable HFPERCLK for UART0
-#endif
         break;
     }
-
+#endif
     /* Reset UART */
     UART_Reset(uart);
 
@@ -254,8 +261,10 @@ void UART_Init(USART_TypeDef *uart) {
     // Baud rate
     UART_SetBaudrate(uart,BAUD);
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
+#endif
         // Configure PF7 (Enable Transceiver)
         GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
         GPIOF->MODEL |= GPIO_P_MODEL_MODE7_PUSHPULL;        // Set field
@@ -265,11 +274,11 @@ void UART_Init(USART_TypeDef *uart) {
         UART0->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
 
         // Initializes buffers
-        inputbuffer0  = buffer_init(inputbufferarea0,INPUTBUFFERSIZE);
-        outputbuffer0 = buffer_init(outputbufferarea0,OUTPUTBUFFERSIZE);
+        ibuff0  = buffer_init(ibuffarea0,INPUTBUFFERSIZE);
+        obuff0 = buffer_init(obuffarea0,OUTPUTBUFFERSIZE);
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
         // Only if it uses the same enable
         // Configure PF7 (Enable Transceiver)
         GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
@@ -280,19 +289,19 @@ void UART_Init(USART_TypeDef *uart) {
         UART1->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
 
         // Initializes buffers
-        inputbuffer1  = buffer_init(inputbufferarea1,INPUTBUFFERSIZE);
-        outputbuffer1 = buffer_init(outputbufferarea1,OUTPUTBUFFERSIZE);
-#endif
+        ibuff1  = buffer_init(ibuffarea1,INPUTBUFFERSIZE);
         break;
     }
+#endif
 
     // Enable interrupts on UART
     uart->IFC = (uint32_t) -1;
     uart->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
-
+#ifdef USE_UART1
     // Enable interrupts on NVIC
     switch( (uint32_t) uart) {
     case UART0_BASE:
+#endif
         NVIC_SetPriority(UART0_RX_IRQn,RXINTLEVEL);
         NVIC_SetPriority(UART0_TX_IRQn,TXINTLEVEL);
         NVIC_ClearPendingIRQ(UART0_RX_IRQn);
@@ -304,9 +313,9 @@ void UART_Init(USART_TypeDef *uart) {
         UART_TurnOn(UART0);
         // Register functions to reconfigure UART in case of clock change
         ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART0_Prepare, UART0_Reconfigure);
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
         NVIC_SetPriority(UART1_RX_IRQn,RXINTLEVEL);
         NVIC_SetPriority(UART1_TX_IRQn,TXINTLEVEL);
         NVIC_ClearPendingIRQ(UART1_RX_IRQn);
@@ -318,9 +327,9 @@ void UART_Init(USART_TypeDef *uart) {
         UART_TurnOn(UART1);
         // Register functions to reconfigure UART in case of clock change
         ClockRegisterCallback(CLOCK_CHANGED_HFPERCLK, UART1_Prepare, UART1_Reconfigure);
-#endif
         break;
     }
+#endif
 }
 
 
@@ -337,7 +346,7 @@ uint8_t ch;
         // Put in input buffer
         ch = UART0->RXDATA;
 //        ENTER_ATOMIC();
-        (void) buffer_insert(inputbuffer0,ch);
+        (void) buffer_insert(ibuff0,ch);
 //        EXIT_ATOMIC();
     }
 }
@@ -356,7 +365,7 @@ uint8_t ch;
         // Put in input buffer
         ch = UART1->RXDATA;
 //        ENTER_ATOMIC();
-        (void) buffer_insert(inputbuffer1,ch);
+        (void) buffer_insert(ibuff1,ch);
 //        EXIT_ATOMIC();
     }
 }
@@ -374,9 +383,9 @@ uint8_t ch;
     // if data in output buffer and transmitter idle, send it
     if( UART0->IF&UART_IF_TXC ) {
         if( UART0->STATUS&UART_STATUS_TXBL ) {
-            if( !buffer_empty(outputbuffer0) ) {
+            if( !buffer_empty(obuff0) ) {
                 // Get from output buffer
-                ch = buffer_remove(outputbuffer0);
+                ch = buffer_remove(obuff0);
                 UART0->TXDATA = ch;
             }
         }
@@ -398,9 +407,9 @@ uint8_t ch;
     // if data in output buffer and transmitter idle, send it
     if( UART1->IF&UART_IF_TXC ) {
         if( UART1->STATUS&UART_STATUS_TXBL ) {
-            if( !buffer_empty(outputbuffer1) ) {
+            if( !buffer_empty(obuff1) ) {
                 // Get from output buffer
-                ch = buffer_remove(outputbuffer1);
+                ch = buffer_remove(obuff1);
                 UART1->TXDATA = ch;
             }
         }
@@ -430,29 +439,32 @@ uint32_t w;
 
 void UART_SendChar(USART_TypeDef *uart, char ch) {
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
-        if ( buffer_empty(outputbuffer0) ) {
+#endif
+        if ( buffer_empty(obuff0) ) {
             while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
             UART0->TXDATA = ch;
         } else {
             ENTER_ATOMIC();
-            buffer_insert(outputbuffer0,ch);
+            buffer_insert(obuff0,ch);
             EXIT_ATOMIC();
         }
-    case UART1_BASE:
 #ifdef USE_UART1
-        if ( buffer_empty(outputbuffer1) ) {
+        break;
+    case UART1_BASE:
+        if ( buffer_empty(obuff1) ) {
             while ( (UART1->STATUS&UART_STATUS_TXBL) == 0 ) {}
             UART1->TXDATA = ch;
         } else {
             ENTER_ATOMIC();
-            buffer_insert(outputbuffer1,ch);
+            buffer_insert(obuff1,ch);
             EXIT_ATOMIC();
         }
-#endif
         break;
     }
+#endif
 }
 
 /**
@@ -476,24 +488,26 @@ void UART_SendString(USART_TypeDef *uart, char *s) {
 unsigned UART_GetCharNoWait(USART_TypeDef *uart) {
 int ch;
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
-        if( buffer_empty(inputbuffer0) )
+#endif
+        if( buffer_empty(ibuff0) )
             return 0;
         ENTER_ATOMIC();
-        ch = buffer_remove(inputbuffer0);
+        ch = buffer_remove(ibuff0);
         EXIT_ATOMIC();
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
-        if( buffer_empty(inputbuffer1) )
+        if( buffer_empty(ibuff1) )
             return 0;
         ENTER_ATOMIC();
-        ch = buffer_remove(inputbuffer1);
+        ch = buffer_remove(ibuff1);
         EXIT_ATOMIC();
-#endif
         break;
     }
+#endif
     return ch;
 }
 
@@ -506,21 +520,24 @@ int ch;
 unsigned UART_GetChar(USART_TypeDef *uart) {
 int ch;
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
-        while( buffer_empty(inputbuffer0) ) {}
-        ENTER_ATOMIC();
-        ch = buffer_remove(inputbuffer0);
-        EXIT_ATOMIC();
-    case UART1_BASE:
-#ifdef USE_UART1
-        while( buffer_empty(inputbuffer1) ) {}
-        ENTER_ATOMIC();
-        ch = buffer_remove(inputbuffer1);
-        EXIT_ATOMIC();
 #endif
+        while( buffer_empty(ibuff0) ) {}
+        ENTER_ATOMIC();
+        ch = buffer_remove(ibuff0);
+        EXIT_ATOMIC();
+#ifdef USE_UART1
+        break;
+    case UART1_BASE:
+        while( buffer_empty(ibuff1) ) {}
+        ENTER_ATOMIC();
+        ch = buffer_remove(ibuff1);
+        EXIT_ATOMIC();
         break;
     }
+#endif
     return ch;
 }
 
@@ -571,45 +588,48 @@ int UART_Flush(USART_TypeDef *uart) {
 int cnt;
 int ch;
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
+#endif
         // Clear input buffer
-        buffer_clear(inputbuffer0);
+        buffer_clear(ibuff0);
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
         // Clear input buffer
-        buffer_clear(inputbuffer1);
-#endif
+        buffer_clear(ibuff1);
         break;
     }
-
+#endif
 
     // Clear output buffer
     cnt = 0;
     // Disable interrupts
     uart->IEN &= ~(UART_IEN_TXC|UART_IEN_RXDATAV);
 
+#ifdef USE_UART1
     switch( (uint32_t) uart) {
     case UART0_BASE:
-        while( ! buffer_empty(outputbuffer0) ) {
+#endif
+        while( ! buffer_empty(obuff0) ) {
             // Wait until UART TX is free
-            ch = buffer_remove(outputbuffer0);
+            ch = buffer_remove(obuff0);
             UART_PutCharPolling(UART0,ch);
             cnt++;
         }
+#ifdef USE_UART1
         break;
     case UART1_BASE:
-#ifdef USE_UART1
-        while( ! buffer_empty(outputbuffer1) ) {
+        while( ! buffer_empty(obuff1) ) {
             // Wait until UART TX is free
-            ch = buffer_remove(outputbuffer1);
+            ch = buffer_remove(obuff1);
             UART_PutCharPolling(UART1,ch);
             cnt++;
         }
-#endif
         break;
     }
+#endif
     // Reenable interrupts
     uart->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
     return cnt;
