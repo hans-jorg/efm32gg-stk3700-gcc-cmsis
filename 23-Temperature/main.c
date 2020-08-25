@@ -77,8 +77,8 @@ uint64_t lim = ticks+v;       // Missing processing of overflow here
 #define DELAYVAL 2
 
 int main(void) {
-char line[100];
-int tryn = 0;
+uint32_t v,t;
+char s[10];
 
     // Message
     printf("Starting......");
@@ -111,69 +111,23 @@ int tryn = 0;
 
 
     // Configure ADC for temperature measurement 
-Temperature_Init(500000);
+    Temperature_Init(500000);
 
     
     // Enable IRQs
     __enable_irq();
 
-    printf("Hello\n");
     while (1) {
         LED_Toggle(LED2);
-        printf("Try %d\n",tryn++);
-        printf("\nYour name: ");
-        fgets(line,99,stdin);
-        printf("Hello %s\n",line);
-        Delay(100);
+        v = Temperature_GetRawValue();
+        printf("T=%u  ",(unsigned) v);
+        t = Temperature_GetCalibratedValue();
+        printf("%u  \n",(unsigned) t);
+        sprintf(s,"%5d",(unsigned) t);
+        LCD_WriteString(s);
+        Delay(1000);
     }
 
 }
 
- #if 0
-int main(void) {
-//uint32_t v;
-const uint32_t DELAYVAL = 2;
 
-    /* Configure Pins in GPIOE */
-    LED_Init(LED1|LED2);
-
-    LED_On(LED1|LED2);
-
-    // Set clock source to external crystal: 48 MHz
-    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
-
-    /* Configure SysTick */
-    SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
-
-    // Message
-    printf("Starting......");
-    
-    /* Configure LCD */
-    LCD_Init();
-
-    LCD_SetAll();
-    Delay(DELAYVAL);
-
-    LCD_Clear();
-    Delay(DELAYVAL);
-
-    LCD_WriteString("hello");
-
-    // Configure ADC for temperature measurement 
-    Temperature_Init(500000);
-    
-    /* Blink loop */
-    __enable_irq();
-    
-    while (1) {
-
-       // v = Temperature_GetRawValue();
-
-        //printf("t=%u\n",(unsigned) v);
-        
-        Delay(DELAYVAL);
-        LED_Toggle(LED1);                                // Toggle LED1 
-
-    }
-}
-#endif

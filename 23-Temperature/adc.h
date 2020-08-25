@@ -47,7 +47,7 @@
 #define ADC_WARMUP_NORMAL   ADC_BIT(3)
 #define ADC_WARMUP_ALWAYS   ADC_BIT(4)
 
-uint32_t ADC_Init(uint32_t pre, uint32_t config);
+uint32_t ADC_Init(uint32_t freq, uint32_t config);
 
 uint32_t ADC_Read(uint32_t ch);
 
