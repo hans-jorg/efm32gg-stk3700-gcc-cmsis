@@ -38,6 +38,7 @@
  *
  * @note    Only single sample (for now)
  *
+ * @note    Only polling
  *
  *  @author Hans
  *  @date   30/5/2020
@@ -45,43 +46,44 @@
  */
 
 #include <stdint.h>
-#include "adc.h"
 #include "em_device.h"
 #include "clock_efm32gg2.h"
+#include "adc.h"
 
 // Macros to access memory and registers
 #define GETREG32(ADDRESS)    *( (uint32_t *) ADDRESS )
 #define GETREG16(ADDRESS)    *( (uint16_t *) ADDRESS )
-#define GETREG8(ADDRESS)    *( (uint8_t *) ADDRESS )
+#define GETREG8(ADDRESS)     *( (uint8_t *) ADDRESS )
 
 // ADC uses pins of GPIO Port D
-
 #define ADC_GPIO    (&(GPIO->P[3]))
 
 // Acquisition and conversion time in ADCCLK cycles
 // Tconv = (Tacquisitio+N)*OSR (See RM 28.3.3)
 // For VDD/3 the acquisition time is 2 us (See RM 28.3.4 and DS 3.10 Table 3.14)
-#define ADC_TACQUISITION      1
-#define ADC_TCONVERSION6      7
-#define ADC_TCONVERSION8     11
-#define ADC_TCONVERSION12    13
 
 /**
  *  Default values for SINGLECTRL register
+ *
+ *  CH      Channel number
+ *  CY      Acquisition time
  */
 
+#define CYEXT     2
+#define CYINT     2
+
 // Default for external single ended channels (PD0:7)
-#define ADC_EXTERNAL_SINGLE_DEFAULT(CH,CY)      ((CH)<<8)||((CY)<<20)           \
+#define ADC_EXTERNAL_SINGLE_DEFAULT(CH,CY)           ((CH)<<8)||((CY)<<20)      \
                                                     |ADC_SINGLECTRL_REF_VDD     \
                                                     |ADC_SINGLECTRL_RES_12BIT
 
 // Default for external differential channels (Pairs PD0:1, PD2:3. PD4:5, PD6:7)
-#define ADC_EXTERNAL_DIFF_DEFAULT(CH,CY)        ((CH)<<8)|((CY)<<20)            \
+#define ADC_EXTERNAL_DIFF_DEFAULT(CH,CY)             ((CH)<<8)|((CY)<<20)       \
                                                     |ADC_SINGLECTRL_REF_5VDIFF  \
                                                     |ADC_SINGLECTRL_DIFF        \
                                                     |ADC_SINGLECTRL_RES_12BIT
 // Default for internal single ended channels
-#define ADC_INTERNAL_SINGLE_DEFAULT(CH,CY)      ((CH)<<8)|((CY)<<20)            \
+#define ADC_INTERNAL_SINGLE_DEFAULT(CH,CY)           ((CH)<<8)|((CY)<<20)       \
                                                     |ADC_SINGLECTRL_REF_1V25    \
                                                     |ADC_SINGLECTRL_RES_12BIT
 
@@ -89,35 +91,36 @@
 static const uint32_t default_singlectrl[SINGLECTRL_REGTABSIZE] = {
 /* Single-ended signals DIFF=0 */
     /* External signals */
-    /* Single Ch 0      */      ADC_EXTERNAL_SINGLE_DEFAULT(0,1),            //  0: ADC_CH0
-    /* Single Ch 1      */      ADC_EXTERNAL_SINGLE_DEFAULT(1,1),           //  1:  ADC_CH1
-    /* Single Ch 2      */      ADC_EXTERNAL_SINGLE_DEFAULT(2,1),           //  2:  ADC_CH2
-    /* Single Ch 3      */      ADC_EXTERNAL_SINGLE_DEFAULT(3,1),           //  3:  ADC_CH3
-    /* Single Ch 4      */      ADC_EXTERNAL_SINGLE_DEFAULT(4,1),           //  4:  ADC_CH4
-    /* Single Ch 5      */      ADC_EXTERNAL_SINGLE_DEFAULT(5,1),           //  5:  ADC_CH5
-    /* Single Ch 6      */      ADC_EXTERNAL_SINGLE_DEFAULT(6,1),           //  6:  ADC_CH6
-    /* Single Ch 7      */      ADC_EXTERNAL_SINGLE_DEFAULT(7,1),           //  7:  ADC_CH7
+    /* Single Ch 0      */      ADC_EXTERNAL_SINGLE_DEFAULT(0,CYEXT),      //  0: ADC_CH0
+    /* Single Ch 1      */      ADC_EXTERNAL_SINGLE_DEFAULT(1,CYEXT),      //  1:  ADC_CH1
+    /* Single Ch 2      */      ADC_EXTERNAL_SINGLE_DEFAULT(2,CYEXT),      //  2:  ADC_CH2
+    /* Single Ch 3      */      ADC_EXTERNAL_SINGLE_DEFAULT(3,CYEXT),      //  3:  ADC_CH3
+    /* Single Ch 4      */      ADC_EXTERNAL_SINGLE_DEFAULT(4,CYEXT),      //  4:  ADC_CH4
+    /* Single Ch 5      */      ADC_EXTERNAL_SINGLE_DEFAULT(5,CYEXT),      //  5:  ADC_CH5
+    /* Single Ch 6      */      ADC_EXTERNAL_SINGLE_DEFAULT(6,CYEXT),      //  6:  ADC_CH6
+    /* Single Ch 7      */      ADC_EXTERNAL_SINGLE_DEFAULT(7,CYEXT),      //  7:  ADC_CH7
     /* Internal signals */
-    /* Single Temp      */      ADC_INTERNAL_SINGLE_DEFAULT(8,2),           //  8:  ADC_TEMP
-    /* Single VDD/3     */      ADC_INTERNAL_SINGLE_DEFAULT(9,2),           //  9:  ADC_VDD_3
-    /* Single VDD/2     */      ADC_INTERNAL_SINGLE_DEFAULT(10,2),          // 10:  ADC_VDD_2
-    /* Single VSS       */      ADC_INTERNAL_SINGLE_DEFAULT(11,2),          // 11:  ADC_VSS
-    /* Single VREF/2    */      ADC_INTERNAL_SINGLE_DEFAULT(12,2),          // 12:  ADC_VREF_2
-    /* Single DAC_CH0   */      ADC_INTERNAL_SINGLE_DEFAULT(13,2),          // 13:  ADC_DAC0
-    /* Single DAC_CH1   */      ADC_INTERNAL_SINGLE_DEFAULT(14,2),          // 14:  ADC_DAC1
-    /* Filler           */      0x00000000,                                 // 15: Filler
+    /* Single Temp      */      ADC_INTERNAL_SINGLE_DEFAULT(8,CYINT),      //  8:  ADC_TEMP
+    /* Single VDD/3     */      ADC_INTERNAL_SINGLE_DEFAULT(9,CYINT),      //  9:  ADC_VDD_3
+    /* Single VDD/2     */      ADC_INTERNAL_SINGLE_DEFAULT(10,CYINT),     // 10:  ADC_VDD_2
+    /* Single VSS       */      ADC_INTERNAL_SINGLE_DEFAULT(11,CYINT),     // 11:  ADC_VSS
+    /* Single VREF/2    */      ADC_INTERNAL_SINGLE_DEFAULT(12,CYINT),     // 12:  ADC_VREF_2
+    /* Single DAC_CH0   */      ADC_INTERNAL_SINGLE_DEFAULT(13,CYINT),     // 13:  ADC_DAC0
+    /* Single DAC_CH1   */      ADC_INTERNAL_SINGLE_DEFAULT(14,CYINT),     // 14:  ADC_DAC1
+    /* Filler           */      0x00000000,                                // 15: Filler
 /* Differential signals DIFF=1 */
-    /* Diff Ch 0-1      */      ADC_EXTERNAL_DIFF_DEFAULT(0,1),             // 16:  ADC_DIFF_CH01
-    /* Diff Ch 2-3      */      ADC_EXTERNAL_DIFF_DEFAULT(1,1),             // 17:  ADC_DIFF_CH23
-    /* Diff Ch 4-5      */      ADC_EXTERNAL_DIFF_DEFAULT(2,1),             // 18:  ADC_DIFF_CH45
-    /* Diff Ch 6-7      */      ADC_EXTERNAL_DIFF_DEFAULT(3,1),             // 19:  ADC_DIFF_CH67
-    /* Diff 0           */      ADC_EXTERNAL_DIFF_DEFAULT(4,1)              // 20:  ADC_DIFF_0
+    /* Diff Ch 0-1      */      ADC_EXTERNAL_DIFF_DEFAULT(0,CYEXT),        // 16:  ADC_DIFF_CH01
+    /* Diff Ch 2-3      */      ADC_EXTERNAL_DIFF_DEFAULT(1,CYEXT),        // 17:  ADC_DIFF_CH23
+    /* Diff Ch 4-5      */      ADC_EXTERNAL_DIFF_DEFAULT(2,CYEXT),        // 18:  ADC_DIFF_CH45
+    /* Diff Ch 6-7      */      ADC_EXTERNAL_DIFF_DEFAULT(3,CYEXT),        // 19:  ADC_DIFF_CH67
+    /* Diff 0           */      ADC_EXTERNAL_DIFF_DEFAULT(4,1)             // 20:  ADC_DIFF_0
 };
 //}
 
 /**
  *  Values of SINGLECTRL register for each channel
- *
+ * Indices 0 to 15 single ended signal
+ * Indices 16 to 21 differential signal
  */
 static uint32_t singlectrl[SINGLECTRL_REGTABSIZE];
 
@@ -170,10 +173,8 @@ uint32_t v;
 /**
  * ADC Interrupt Routine
  *
- *
+ * @note Not used in this implementation
  */
-
-
 void
 ADC0_IRQHandler(void) {
 
@@ -182,11 +183,11 @@ ADC0_IRQHandler(void) {
 
 
 /**
- * ADC Initialization
+ * @brief   Set prescaler and configure unit according parameter
  *
- * Set prescaler and configure unit according parameter
+ * @param   adcfreq frequency to be used on ADC
  */
-uint32_t ADC_Init(uint32_t adcfreq, uint32_t config) {
+uint32_t ADC_Init(uint32_t adcfreq) {
 const uint32_t adcwarmfreq = 1000000; // 1 MHz for 1 us period
 uint32_t presc;
 
@@ -250,7 +251,44 @@ uint32_t presc;
 }
 
 /**
+ * @ brief
  *
+ * @note ADC_Config uses the same codification of the CMSIS compatible library
+ *       See efm32gg_adc.h
+ *
+ * @note Field INPUTSEL is set by the ADC_Config routine
+ * @note Fields PRSSEL and PRSEN not used
+ *
+ * @note Coding used
+ * ADC_SINGLECTRL_REP
+ *          0 = Single conversion mode is deactivated after one conversion
+ *          1 = Single conversion mode is converting continuously until SINGLESTOP is written
+ * ADC_SINGLECTRL_ADJ
+ *          0 = Results are right adjusted
+ *          1 = Results are left adjusted
+ * _ADC_SINGLECTRL_RES (Mask = _ADC_SINGLECTRL_RES_MASK)
+ *          0 = 12 bits (ADC_SINGLECTRL_RES_12BIT)
+ *          1 = 8 bits  (ADC_SINGLECTRL_RES_8BIT)
+ *          2 = 6 bits  (ADC_SINGLECTRL_RES_6BIT)
+ *          3 = Oversampling enabled  (ADC_SINGLECTRL_RES_OVS)
+ * ADC_SINGLECTRL_REF (Mask = _ADC_SINGLECTRL_REF_MASK)
+ *          0 = Internal 1.25 V reference (ADC_SINGLECTRL_REF_1V25)
+ *          1 = 2V5 Internal 2.5 V reference (ADC_SINGLECTRL_REF_2V5
+ *          2 = VDD Buffered VDD (ADC_SINGLECTRL_REF_VDD)
+ *          3 = 5VDIFF Internal differential 5 V reference (ADC_SINGLECTRL_REF_5VDIFF)
+ *          4 = EXTSINGLE Single ended external reference (ADC_SINGLECTRL_REF_EXTSINGLE)
+ *          5 = 2XEXTDIFF Differential external reference (ADC_SINGLECTRL_REF_2XEXTDIFF)
+ *          6 = 2XVDD Unbuffered 2xVDD (ADC_SINGLECTRL_REF_2XVDD)
+ * ADC_SINGLECTRL_AT (Mask = _ADC_SINGLECTRL_AT_MASK)
+ *          0 = 1 cycle acquisition time (ADC_SINGLECTRL_AT_1CYCLE)
+ *          1 = 2 cycles acquisition time (ADC_SINGLECTRL_AT_2CYCLES)
+ *          2 = 4 cycles acquisition time (ADC_SINGLECTRL_AT_4CYCLES)
+ *          3 = 8 cycles acquisition time (ADC_SINGLECTRL_AT_8CYCLES)
+ *          4 = 16 cycles acquisition time (ADC_SINGLECTRL_AT_16CYCLES)
+ *          5 = 32 cycles acquisition time(ADC_SINGLECTRL_AT_32CYCLES)
+ *          6 = 64 cycles acquisition time(ADC_SINGLECTRL_AT_64CYCLES)
+ *          7 = 128 cycles acquisition time(ADC_SINGLECTRL_AT_128CYCLES)
+ *          8 = 256 cycles acquisition time(ADC_SINGLECTRL_AT_256CYCLES)
  */
 uint32_t ADC_ConfigChannel(uint32_t ch, uint32_t config) {
 uint32_t shift;
@@ -263,11 +301,10 @@ uint32_t shift;
         ADC_GPIO->MODEL &= ~(0xF<<shift);
 
     } else if ( ch > 15 ) { // External differential signals
-        shift = (ch-0x10)*4;
+        shift = (ch-0x10)*8;
         CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
         ADC_GPIO->MODEL &= ~(0xFF<<shift);
-
     }
 
     // Adjust inputsel field according ch parameter
@@ -284,11 +321,21 @@ uint32_t shift;
     return 0;
 }
 
+/**
+ * @brief Start a conversion AND wait completion to return reading
+ *
+ * @note  Uses the configuration set
+ */
 uint32_t ADC_Read(uint32_t ch) {
     (void) ADC_StartReading(ch);
     return ADC_GetReading(ch);
 }
 
+/**
+ * @brief Start a conversion but do not wait completion
+ *
+ * @note  Uses the configuration set
+ */
 uint32_t ADC_StartReading(uint32_t ch) {
 
     // If ADC running, stop it
@@ -310,7 +357,11 @@ uint32_t ADC_StartReading(uint32_t ch) {
     return 0;
 }
 
-
+/**
+ * @brief Wait completion of the conversion process and return reading
+ *
+ * @note  It blocks
+ */
 uint32_t ADC_GetReading(uint32_t ch) {
 
     // Wait conversion

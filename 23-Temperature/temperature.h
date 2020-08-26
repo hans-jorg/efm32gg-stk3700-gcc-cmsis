@@ -11,8 +11,9 @@
 #include <stdint.h>
 
 uint32_t Temperature_Init(uint32_t freq);
-uint32_t Temperature_GetRawValue(void);
-uint32_t Temperature_GetCalibratedValue(void);
+uint32_t Temperature_GetRawReading(void);
+int32_t  Temperature_GetCalibratedValue(void);
+int32_t  Temperature_GetUncalibratedValue(void);
 
 
 #endif // TEMPERATURE_H

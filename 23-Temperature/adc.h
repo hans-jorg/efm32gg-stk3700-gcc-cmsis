@@ -47,12 +47,47 @@
 #define ADC_WARMUP_NORMAL   ADC_BIT(3)
 #define ADC_WARMUP_ALWAYS   ADC_BIT(4)
 
-uint32_t ADC_Init(uint32_t freq, uint32_t config);
+uint32_t ADC_Init(uint32_t freq);
 
 uint32_t ADC_Read(uint32_t ch);
-
 uint32_t ADC_StartReading(uint32_t ch);
 uint32_t ADC_GetReading(uint32_t ch);
-
+uint32_t ADC_ConfigChannel(uint32_t ch, uint32_t config);
+///
+// ADC_Config uses the same codification of the CMSIS compatible library
+// See efm32gg_adc.h
+// OBS: Field INPUTSEL is set by the ADC_Config routine
+//      Fields PRSSEL and PRSEN not used
+//
+// ADC_SINGLECTRL_REP
+//          0 = Single conversion mode is deactivated after one conversion
+//          1 = Single conversion mode is converting continuously until SINGLESTOP is written
+// ADC_SINGLECTRL_ADJ
+//          0 = Results are right adjusted
+//          1 = Results are left adjusted
+// _ADC_SINGLECTRL_RES (Mask = _ADC_SINGLECTRL_RES_MASK)
+//          0 = 12 bits (ADC_SINGLECTRL_RES_12BIT)
+//          1 = 8 bits  (ADC_SINGLECTRL_RES_8BIT)
+//          2 = 6 bits  (ADC_SINGLECTRL_RES_6BIT)
+//          3 = Oversampling enabled  (ADC_SINGLECTRL_RES_OVS)
+// ADC_SINGLECTRL_REF (Mask = _ADC_SINGLECTRL_REF_MASK)
+//          0 = Internal 1.25 V reference (ADC_SINGLECTRL_REF_1V25)
+//          1 = 2V5 Internal 2.5 V reference (ADC_SINGLECTRL_REF_2V5
+//          2 = VDD Buffered VDD (ADC_SINGLECTRL_REF_VDD)
+//          3 = 5VDIFF Internal differential 5 V reference (ADC_SINGLECTRL_REF_5VDIFF)
+//          4 = EXTSINGLE Single ended external reference (ADC_SINGLECTRL_REF_EXTSINGLE)
+//          5 = 2XEXTDIFF Differential external reference (ADC_SINGLECTRL_REF_2XEXTDIFF)
+//          6 = 2XVDD Unbuffered 2xVDD (ADC_SINGLECTRL_REF_2XVDD)
+// ADC_SINGLECTRL_AT (Mask = _ADC_SINGLECTRL_AT_MASK)
+//          0 = 1 cycle acquisition time (ADC_SINGLECTRL_AT_1CYCLE)
+//          1 = 2 cycles acquisition time (ADC_SINGLECTRL_AT_2CYCLES)
+//          2 = 4 cycles acquisition time (ADC_SINGLECTRL_AT_4CYCLES)
+//          3 = 8 cycles acquisition time (ADC_SINGLECTRL_AT_8CYCLES)
+//          4 = 16 cycles acquisition time (ADC_SINGLECTRL_AT_16CYCLES)
+//          5 = 32 cycles acquisition time(ADC_SINGLECTRL_AT_32CYCLES)
+//          6 = 64 cycles acquisition time(ADC_SINGLECTRL_AT_64CYCLES)
+//          7 = 128 cycles acquisition time(ADC_SINGLECTRL_AT_128CYCLES)
+//          8 = 256 cycles acquisition time(ADC_SINGLECTRL_AT_256CYCLES)
+//
 #endif // ADC_H
 
