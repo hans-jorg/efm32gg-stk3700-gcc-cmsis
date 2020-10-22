@@ -379,7 +379,7 @@ uint32_t *pTable __attribute__((unused));
 #endif /* __STARTUP_CLEAR_BSS_MULTIPLE || __STARTUP_CLEAR_BSS */
 
 #ifdef __SYSTEM_INIT_AFTER_INIT
-/* SystemInit runs with itialized data */
+/* SystemInit runs with initialized data */
   SystemInit();
 
 #endif

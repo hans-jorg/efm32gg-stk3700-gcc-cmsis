@@ -19,7 +19,7 @@ void LED_Init(uint32_t leds) {
     GPIO_Init(GPIOE,0,leds);
 
     // Turn Off LEDs
-    GPIO_WritePins(GPIOE,0,leds);
+    GPIO_WritePins(GPIOE,leds,0);
 
 }
 

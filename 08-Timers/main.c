@@ -31,7 +31,7 @@ static int counter = 0;             // must be static
     if( counter != 0 ) {
         counter--;
     } else {
-        Timers_dispatch();      // Every 1 second
+        Timers_dispatch();          // Every 1 second
         counter = SOFTDIVIDER-1;
     }
 }

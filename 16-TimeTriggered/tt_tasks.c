@@ -114,7 +114,7 @@ int i;
 }
 
 /**
- * @details updates counters e set fun variable
+ * @details updates counters e set function variable
  */
 
 void Task_Dispatch(void) {
