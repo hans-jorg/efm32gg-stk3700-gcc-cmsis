@@ -4,10 +4,6 @@
  * @version 1.0
 ******************************************************************************/
 
-#include <stdint.h>
-
-#include "tt_tasks.h"
-
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -21,7 +17,17 @@
 
 #define DIVIDER 1000
 
-/*****************************************************************************
+/** **************************************************************************
+ * @brief  Context for Protothreads Blinker1 and Blinker2
+ *
+ */
+struct pt pt1;
+uint32_t threshold1,period1=2000;
+
+struct pt pt2;
+uint32_t threshold2,period2=1700;
+
+/** **************************************************************************
  * @brief  SysTick interrupt handler
  *
  * @note   Just calls Task_Update
@@ -29,6 +35,7 @@
  */
 
 uint32_t timer_counter = 0;
+
 void SysTick_Handler(void) {
     timer_counter++;
 }
@@ -38,28 +45,17 @@ void SysTick_Handler(void) {
  *
  */
 
-struct pt pt;
-uint32_t threshold;
-
-#define PT_DELAY(T) threshold = timer_counter+(T); PT_WAIT_UNTIL(pt,timer_counter>=threshold);
-
-PT_THREAD(Blinker(struct pt *pt)) {
+PT_THREAD(Blinker1(struct pt *pt)) {
 
     PT_BEGIN(pt);
 
-    LED_Write(LED2,LED2);
+    LED_Write(0,LED1);
 
     while(1) {
         // Processing
-        LED_Toggle(LED1|LED2);
-        PT_DELAY(1000);
-
-        LED_Toggle(LED1|LED2);
-        PT_DELAY(1000);
-
-//        LED_Write(0,LED1|LED2);
-//        PT_DELAY(1000);
-
+        LED_Toggle(LED1);
+        threshold1 = timer_counter+period1;
+        PT_WAIT_UNTIL(pt,timer_counter>=threshold1);
     }
 
     (void) PT_YIELD_FLAG; // to silence compiler warning
@@ -67,6 +63,26 @@ PT_THREAD(Blinker(struct pt *pt)) {
     PT_END(pt);
 
 }
+
+PT_THREAD(Blinker2(struct pt *pt)) {
+
+    PT_BEGIN(pt);
+
+    LED_Write(0,LED2);
+
+    while(1) {
+        // Processing
+        LED_Toggle(LED2);
+        threshold2 = timer_counter+period2;
+        PT_WAIT_UNTIL(pt,timer_counter>=threshold2);
+    }
+
+    (void) PT_YIELD_FLAG; // to silence compiler warning
+
+    PT_END(pt);
+
+}
+
 
 /*****************************************************************************
  * @brief  Main function
@@ -87,14 +103,13 @@ int main(void) {
     SysTick_Config(SystemCoreClock/DIVIDER);
 
     /* Initialize Protothreads */
-    PT_INIT(&pt);
-
-    /* Enable Interrupts */
-    __enable_irq();
+    PT_INIT(&pt1);
+    PT_INIT(&pt2);
 
     /* Blink loop */
     while (1) {
-        Blinker(&pt);
+        Blinker1(&pt1);
+        Blinker2(&pt2);
     }
 
 }

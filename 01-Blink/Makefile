@@ -266,12 +266,13 @@ CFLAGS=-mthumb                                  \
        $(SPECFLAGS)
 
 
+
 #
 # The flags passed to the linker.
 #
 # For now only one parameter when using gcc to link
 #
-LDFLAGS=--gc-sections
+LDFLAGS=  -gc-sections
 
 
 ###############################################################################

@@ -1,8 +1,12 @@
+# Files
+TODO.md
+
 # Directories
 gcc/
 html/
 utils/
 tmp/
+01-Blink-NO/
 
 # Prerequisites
 *.d

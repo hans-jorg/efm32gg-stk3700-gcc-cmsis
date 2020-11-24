@@ -122,7 +122,7 @@ int i;
 
     for( i=0; i<TASK_N; i++ ) {
         if( tasks[i].run ) {
-            tasks[i].run--;
+            tasks[i].run--;         // Read/Modify/Write  = Hazard run++ in Task_Update
             tasks[i].function();
             if( tasks[i].period == 0 ) {// Run once tasks
                 Task_Delete(i);

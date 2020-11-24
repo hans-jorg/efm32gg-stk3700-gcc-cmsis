@@ -29,7 +29,7 @@
 #
 # Program name
 #
-PROGNAME=led-ucos2
+PROGNAME=quadrature
 
 #
 # Defines the part (device) that this project uses
@@ -40,8 +40,9 @@ PARTCLASSCMSIS=EFM32GG
 #
 # Source files
 #
-SRCFILES=$(wildcard *.c)
+SRCFILES=$(wildcard *.c) led.c adc.c uart2.c
 #SRCFILES= main.c
+VPATH=peripherals
 
 #
 # Include the common make definitions.
@@ -57,40 +58,8 @@ GECKOSDKDIR=../../Gecko_SDK
 # CMSIS Dir
 #
 # Use CMSIS inside Gecko SDK
-#CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
-#CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
-CMSISDIR=../../CMSIS
+CMSISDIR=$(GECKOSDKDIR)/platform/CMSIS
 CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
-
-
-#
-# UCOS Configuration
-#
-
-# UCOS Dir
-UCOS_DIR=../../../Micrium/Software/uCOS-II/
-#UCOS_DIR=uCOS-II
-UCOS_SRCDIR=$(UCOS_DIR)/Source
-# Ports Dir for uCOS-II
-#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/GNU
-UCOS_PORTDIR=uCOS-II/Ports/ARM-Cortex-M/GNU
-
-
-# Virtual path
-VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR)
-
-# UCOS Include Path
-UCOS_INCLUDEPATH=$(UCOS_SRCDIR)  $(UCOS_PORTDIR)
-
-# UCOS Source Files
-UCOS_FILES=        os_mbox.c     os_mutex.c  os_sem.c    os_time.c os_core.c \
-                   os_flag.c     os_mem.c      os_q.c      os_task.c   os_tmr.c
-UCOS_PORTCFILES=   os_cpu_c.c    os_dbg.c
-UCOS_PORTASMFILES= os_cpu_a.S
-
-UCOS_SRCFILES= $(addprefix $(UCOS_SRCDIR)/,$(UCOS_FILES) )  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTCFILES))  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTASMFILES)  )
-
-UCOS_OBJFILES= $(addprefix ${OBJDIR}/, $(notdir $(UCOS_FILES:.c=.o) $(UCOS_PORTCFILES:.c=.o) $(UCOS_PORTASMFILES:.S=.o)))
 
 #
 # Main target
@@ -227,7 +196,7 @@ OBJDIR=gcc
 #
 # Object files
 #
-OBJFILES=$(addprefix ${OBJDIR}/,$(notdir $(SRCFILES:.c=.o))) $(UCOS_OBJFILES)
+OBJFILES=$(addprefix ${OBJDIR}/,$(SRCFILES:.c=.o))
 
 #
 # Set the compiler CPU/FPU options.
@@ -265,7 +234,7 @@ CPUFLAGS=-mcpu=cortex-m3
 # This parameter is only recognized by gcc.
 # Linking must be done by a gcc call instead of ld
 #
-SPECFLAGS= --specs=nano.specs
+#SPECFLAGS= --specs=nano.specs
 
 
 ###############################################################################
@@ -315,7 +284,7 @@ LDFLAGS=--gc-sections
 # Include path
 #
 CMSISINCDIR=${CMSISDIR}/Include
-INCLUDEPATH= . $(UCOS_INCLUDEPATH) ${CMSISDEVINCDIR} ${CMSISINCDIR}
+INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} peripherals .
 
 
 ###############################################################################
@@ -445,7 +414,7 @@ PROJNAME=$(shell basename $(CURDIR))
 # Serial terminal communication
 #
 TTYTERM=/dev/ttyACM0
-TTYBAUD=155200
+TTYBAUD=115200
 
 #
 # Serial terminal emulator
@@ -518,7 +487,7 @@ ENTRY=Reset_Handler
 #
 ${OBJDIR}/%.o: %.c
 	@echo "  Compiling           ${<}";
-	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
+	@${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
@@ -537,7 +506,7 @@ ${OBJDIR}/%.a:
 #
 # The rule for linking the application.
 #
-${OBJDIR}/%.axf:
+${OBJDIR}/%.axf:  $(OBJFILES)
 	@echo "  Linking             ${@} ";
 	${LD}   -T '${LINKERSCRIPT}' \
 	        --entry '${ENTRY}' \
@@ -570,28 +539,11 @@ usage:
 	@echo "make openocd      start an openocd proxy"
 	@echo "make docs         generates docs using doxygen"
 
-
 #
 # The default rule, which causes the $(PROGNAME) example to be built.
 #
 all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 	@echo "Done"
-
-
-
-listvars:
-	@echo "====== Common files ======"
-	@echo $(UCOS_FILES)
-	@echo "====== Port files ======"
-	@echo $(UCOS_PORTCFILES)
-	@echo $(UCOS_PORTASMFILES)
-	@echo "======= All source files ======="
-	@echo $(UCOS_SRCFILES)
-	@echo "======== Object files ========"
-	@echo $(OBJFILES)
-	@echo "======== VPATH ========"
-	@echo $(VPATH)
-
 
 #
 # Clean out all the generated files
@@ -646,14 +598,8 @@ disassembly: $(OBJDIR)/$(PROGNAME).axf
 dump: $(OBJDIR)/$(PROGNAME).axf
 	@echo "  Dumping ${^} and storing output in $(OBJDIR)/$(PROGNAME).dump"
 	$(OBJDUMP) $(ODDUMPFLAGS) $^ > $(OBJDIR)/$(PROGNAME).dump
-
 imagedump: $(OBJDIR)/$(PROGNAME).bin
-	@echo "  Hex dumping ${^} stored in $(OBJDIR)/$(PROGNAME).hexdump"
 	od -x $^ > $(OBJDIR)/$(PROGNAME).hexdump
-
-list: $(OBJDIR)/$(PROGNAME).axf
-	@echo "  List file of ${^} stored in $(OBJDIR)/$(PROGNAME).list"
-	$(OBJDUMP) -S  $^ > $(OBJDIR)/$(PROGNAME).list
 
 #
 # List size

@@ -19,7 +19,7 @@
 
 #define DIVIDER 1000
 
-/*****************************************************************************
+/** ***************************************************************************
  * @brief  SysTick interrupt handler
  *
  * @note   Just calls Task_Update
@@ -30,30 +30,22 @@ void SysTick_Handler(void) {
     Task_Update();
 }
 
-/*****************************************************************************
+/** ***************************************************************************
  * @brief  Blinker processing routine
  *
  * @note   Called every 1 second
  */
 
-void Blinker(void) {
-static int8_t state = 0;            // must be static
+void Blinker1(void) {
 
-    switch(state) {
-    case 0:
         LED_Toggle(LED1);
-        state = 1;
-        break;
-    case 1:
-        LED_Toggle(LED2);
-        state = 2;
-        break;
-    case 2:
-        LED_Write(0,LED1|LED2);
-        state = 0;
-        break;
-    }
 }
+
+void Blinker2(void) {
+
+        LED_Toggle(LED2);
+}
+
 
 /*****************************************************************************
  * @brief  Main function
@@ -71,13 +63,11 @@ int main(void) {
 
     /* Initialize Task Kernel */
     Task_Init();
-    Task_Add(Blinker,1000,0);
+    Task_Add(Blinker1,2000,0);
+    Task_Add(Blinker2,1700,0);
 
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/DIVIDER);
-
-    /* Enable Interrupts */
-    __enable_irq();
 
     /* Blink loop */
     while (1) {
