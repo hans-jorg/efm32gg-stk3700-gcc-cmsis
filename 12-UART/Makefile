@@ -235,6 +235,11 @@ CPUFLAGS=-mcpu=cortex-m3
 #
 SPECFLAGS= --specs=nano.specs
 
+#
+#
+#
+STACKUSAGEFLAGS= -fstack-usage -fdump-ipa-cgraph
+#STACKUSAGEFLAGS= -fstack-usage -fdump-rtl-dfinish
 
 ###############################################################################
 # Compilation parameters                                                      #
@@ -254,6 +259,7 @@ AFLAGS=-mthumb                                  \
 # The flags passed to the compiler.
 #
 CFLAGS=-mthumb                                  \
+       $(STACKUSAGEFLAGS)                       \
        -Wall                                    \
        ${CPUFLAGS}                              \
        ${FPUFLAGS}                              \
@@ -271,7 +277,7 @@ CFLAGS=-mthumb                                  \
 #
 # For now only one parameter when using gcc to link
 #
-LDFLAGS=--gc-sections
+LDFLAGS=--gc-sections 
 
 
 ###############################################################################
@@ -508,6 +514,7 @@ ${OBJDIR}/%.a:
 ${OBJDIR}/%.axf:  $(OBJFILES)
 	@echo "  Linking             ${@} ";
 	${LD}   -T '${LINKERSCRIPT}' \
+            -Wl,--print-memory-usage \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \

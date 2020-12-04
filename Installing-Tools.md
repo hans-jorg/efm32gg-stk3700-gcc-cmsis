@@ -423,4 +423,69 @@ The software [Simplicity Commander](https://www.silabs.com/documents/public/soft
 
 The software [Ozone](https://www.segger.com/downloads/jlink/#Ozone) provides a GUI for the JLink system.
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+
+# Annex I - Determining stack usage
+
+First, use the -fstack-usage option for compiling. It makes the compiler generate a .su file for each .c file. Each line of it, contains the function name and the size of stack.
+
+    led.c:21:6:LED_Init	16	static
+    led.c:42:6:LED_On	16	static
+    led.c:51:6:LED_Off	16	static
+    led.c:60:6:LED_Toggle	16	static
+    led.c:69:6:LED_Write	16	static
+
+This is not enough, because on must know who call who (callgraph) to determine the stack usage.
+
+To get the call graph, there are many options to generate the needed information:
+
+* Use -fdump-rtl-dfinish option
+* Use -fdump-ipa-cgraph
+* Use cflow to generate the 
+
+And the use a tool, to combine the information of callgraph and stack usage.
+
+An important note is that function called thru function pointer and interrupts are not considered.
+
+
+
+A list of these tools:
+
+* [Worst case stack](https://github.com/PeterMcKinnis/WorstCaseStack)
+
+* [Stack Usage](https://github.com/sharkfox/stack-usage)
+
+* [Avstack](https://dlbeer.co.nz/oss/avstack.html)
+
+## Worst case stack
+
+Needs the fdump-rtl-dfinish option during compilation.
+
+It needs all input files (with suffixes .o, .su, and .c) in the same directory.
+So copy all .c files to gcc folder and then run
+
+    python3 wcs.py
+
+Additional information can be added thru .msu files.
+
+## Stack Usage
+
+Needs the -fdump-ipa-cgraph option during compilation.
+
+
+First all files (.su and .cgraph) must be combined.
+
+    find . -name "*.cgraph" | grep -v stack-usage-log | xargs cat > stack-usage-log.cgraph
+    find . -name "*.su" | grep -v stack-usage-log | xargs cat > stack-usage-log.su
+
+And then generates the report using
+
+    python3 stack-usage.py --csv stack-usage.csv --json stack-usage.json
+
+## Avstack
+
+It uses a Perl script to read .su files and disassemble the object .o files.
+
+
+
+
+

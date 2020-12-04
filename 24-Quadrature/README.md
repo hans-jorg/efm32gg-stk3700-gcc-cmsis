@@ -243,9 +243,41 @@ PCNT1_S1IN |**PC5**| PB4 |     |     | Pulse Counter PCNT1 input number 1
 PCNT2_S0IN |**PD0**| PE8 |     |     | Pulse Counter PCNT2 input number 0
 PCNT2_S1IN |**PD1**| PE9 |     |     | Pulse Counter PCNT2 input number 1
 
+# Using already decoded outputs
+
+There are encoder, that have builtin circuits, that decode the quadrature signals and 
+generate pulse and direction pulses. In this case, it is easy to get the position by 
+detecting a change in the pulse signal and then, by observing the direction pulse, 
+increment or decrement the position counter.
+
+This can be done by:
+
+* Using GPIO interrupts
+
+* Using PCNT module
+
+## Using GPIO interrupts
+
+In the EFM32GG microcontrollers, all GPIO pins with a certain number *n* is connected 
+to a single line EXTn. The EXTIPSEL register enables which port can trigger the
+corresponding interrupt.
+
+One can choose to trigger interrupts at rising edge, falling edge or both, setting the
+EXTIRISE and EXTIFALL registers. The interrutps are set and cleared by writing 1 to 
+the IFSn and IFCn bits. 
+
+Finally, the interrupts are enabled by setting the IENn bit.
 
 
-#References
+
+
+## Using PCNT module
+
+Each PCNT module has two inputs: S0IN and S1IN. S0IN must be connected to the clock 
+signal and S1IN to the direction signal. At every positive edge of S0IN, the counter 
+is incremented or decremented according S1IN.
+
+# References
 
 [EMF32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
 

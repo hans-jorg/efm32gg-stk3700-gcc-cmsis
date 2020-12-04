@@ -110,7 +110,13 @@ To use it in polling mode:
 1.  To transmit: test *TXC* in *UART0_STATUS*. If set, write data to *UART0_TXDATA*.
 2.  Yo receive: test *RXDATAV* in *UART0_STATUS*. If set, get data from *UART0_RXDATA*.
 
-##More information
+
+## ITM Serial interface
+
+
+## Semihosting
+
+## More information
 
 [EFM32 STK Virtual COM port](https://www.silabs.com/community/mcu/32-bit/knowledge-base.entry.html/2015/07/06/efm32_stk_virtualco-aT2m)[15]
 

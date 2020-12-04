@@ -40,9 +40,13 @@ PARTCLASSCMSIS=EFM32GG
 #
 # Source files
 #
-SRCFILES=$(wildcard *.c) led.c adc.c uart2.c
+SUBDIRS=peripherals newlib
+SUBSRCFILES=$(foreach d,$(SUBDIRS),$(wildcard $d/*.c))
+#SRCFILES=$(wildcard *.c) $(wildcard peripherals/*.c) $(wildcard newlib/*.c)
+SRCFILES=$(wildcard *.c) $(SUBSRCFILES)
 #SRCFILES= main.c
-VPATH=peripherals
+
+#VPATH=$(SUBDIRS)
 
 #
 # Include the common make definitions.
@@ -71,7 +75,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -284,7 +288,7 @@ LDFLAGS=--gc-sections
 # Include path
 #
 CMSISINCDIR=${CMSISDIR}/Include
-INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} peripherals .
+INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} $(SUBDIRS) .
 
 
 ###############################################################################
@@ -463,7 +467,7 @@ CFLAGS+= -Wuninitialized -Werror
 #
 # Controlling dependencies on header files
 #
-DEPFLAGS=-MT $@  -MMD -MP -MF ${OBJDIR}/$*.d
+DEPFLAGS=-MT $(notdir $@)  -MMD -MP -MF ${OBJDIR}/$*.d
 
 #
 # Linker script
@@ -618,6 +622,7 @@ nm: $(OBJDIR)/$(PROGNAME).axf
 #
 ${OBJDIR}:
 	mkdir -p ${OBJDIR}
+	for subdir in $(SUBDIRS); do mkdir -p ${OBJDIR}/$$subdir ; done
 
 #
 # Rules for building the $(PROGNAME) example.
