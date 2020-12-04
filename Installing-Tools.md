@@ -456,6 +456,8 @@ A list of these tools:
 
 * [Avstack](https://dlbeer.co.nz/oss/avstack.html)
 
+* TBD
+
 ## Worst case stack
 
 Needs the fdump-rtl-dfinish option during compilation.
@@ -486,6 +488,11 @@ And then generates the report using
 It uses a Perl script to read .su files and disassemble the object .o files.
 
 
+## cflow
+
+It is possble to generate the callgraph using cflow
+
+    (cflow -l  -b --omit-arguments -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
 
 
 

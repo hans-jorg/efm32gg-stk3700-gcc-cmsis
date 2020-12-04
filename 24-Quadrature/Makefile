@@ -75,7 +75,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-#.SILENT:
+.SILENT:
 
 #
 # For gcc-arm-embedded

@@ -70,7 +70,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -253,7 +253,7 @@ STACKUSAGEFLAGS= -fstack-usage -fdump-ipa-cgraph
 AFLAGS=-mthumb                                  \
        ${CPUFLAGS}                              \
        ${FPUFLAGS}                              \
-       $(admdprefix -I ,${INCLUDEPATH})         \
+       $(addprefix -I ,${INCLUDEPATH})         \
 
 #
 # The flags passed to the compiler.
@@ -708,15 +708,24 @@ $(DOXYGENCFG):
 	sed -i -f $(SEDSCRIPT) $(DOXYGENCFG)
 	rm  -f  $(SEDSCRIPT)
 
-
+#
+# Clean the generated documentation (latex and html)
+#
 
 docs-clean:
 	rm -rf html latex
 	echo Done.
 
+#
+# generates a call graph
+#
+CFLOWFLAGS=-l  -b --omit-arguments 
+cflow:
+	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
+
 # These symbols are not files (or directories)
 .PHONY: default all clean flash burn deploy disassembly dump size
-.PHONY: nm edit debug terminal term doxygen docs
+.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 
 #
 # Dependencies
