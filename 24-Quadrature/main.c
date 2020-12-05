@@ -115,7 +115,7 @@ uint32_t qread;
         }
         break;
     case Q3:
-        if( ab == AB_10 ) {
+        if( ab == AB_00 ) {
             state = Q0;
             qcounter++;
         } else if ( ab == AB_11 ) {
@@ -234,7 +234,7 @@ static int qinterval = 0;
 #if 1
     if( qinterval <= 0 ) {
         Quadrature_Process();
-        qinterval = 10;
+        qinterval = 1;
      } else {
         qinterval--;
      }
@@ -278,7 +278,8 @@ uint32_t lim = ticks+v;       // Missing processing of overflow here
 
 int main(void) {
 char s[10];
-int counter = 0;
+int c = 0;
+
 
     // Message
     printf("Starting......");
@@ -304,7 +305,7 @@ int counter = 0;
     LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_Clear();
+    LCD_ClearAll();
     Delay(DELAYVAL);
 
     LCD_WriteString("hello");
@@ -328,6 +329,8 @@ int counter = 0;
 
     Quadrature_Init();
 
+    LCD_ClearAll();
+
     // Enable IRQs
     __enable_irq();
     int cnt=0;
@@ -337,10 +340,17 @@ int counter = 0;
         if( Quadrature_GetButtonStatus() )
             qcounter = 0;
         if( cnt == 0 ) {
-            printf("%lX\n",qnow);
-            counter = Quadrature_GetPosition();
-            itoa(counter,s);
+            c = Quadrature_GetPosition();
+            if ( c < 0 ) {
+                c = -c;
+                LCD_WriteSpecial(LCD_MINUS,1);
+            } else {
+                LCD_WriteSpecial(LCD_MINUS,0);
+            }
+            itoa(c,s);
             LCD_WriteString(s);
+
+            printf("%lX\n",qnow);
             cnt = 100;
         } else {
             cnt--;

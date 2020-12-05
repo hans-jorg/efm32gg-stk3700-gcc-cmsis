@@ -587,7 +587,7 @@ static const uint16_t tablcdspecial[] = {
 
 
 /**
- * @brief  Table for clear a position before writing a new character onto it
+ * @brief  Table for clearing a position before writing a new character onto it
  * @note   Indexed by position and common
  * @note   Returns controller segments info
  * @note   Position 1 to 7:  alphanumeric (14 segment) displays
@@ -1321,7 +1321,7 @@ int pos;
  *  @brief  Turns off all segments
  *
  */
-void LCD_Clear(void) {
+void LCD_ClearAll(void) {
 int comn;
     LCD_FREEZE;
     for(comn=0;comn<8;comn++) {
