@@ -83,7 +83,7 @@ typedef enum {
 uint32_t LCD_Init(void);
 uint32_t LCD_Config(uint32_t presc, uint32_t div);
 
-void LCD_Clear(void);
+void LCD_ClearAll(void);
 void LCD_SetAll(void);
 void LCD_WriteChar(uint8_t c, uint8_t pos);
 void LCD_WriteString(char *s);

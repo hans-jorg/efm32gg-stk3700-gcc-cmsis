@@ -1297,7 +1297,7 @@ int pos;
 
 /**
  *  @brief  Write a string to positions 1 to 12 (with 14 segments displays in position 1 to 7)
- *          and 7 segments display in position 8 to 12)
+ *          and 7 segments display in position 8 to 11)
  *
  *  @param  s: string to be written
  *
@@ -1307,7 +1307,7 @@ int pos;
 void LCD_WriteString(char *s) {
 int pos;
 
-    for(pos=1;pos<=12;pos++) {
+    for(pos=1;pos<=11;pos++) {
         if( *s ) {
             LCD_WriteChar(*s++,pos);
         } else {

@@ -7,6 +7,8 @@ This implements an HAL (hardware abstraction Layer) for the LCD on the STK3700 b
 
 The layout of the LCD display is shown below.
 
+![LCD Layout](lcd.png)
+
 The pins used are shown below.
 
 Pin	| MCU Signal   |  LCD Signal
@@ -88,7 +90,7 @@ Position is a number between 1 and 14.</dd>
 <dt>void LCD_WriteString(char \*s)</dt><dd>Writes the string *s* into display.
 The first 7 characters go into alphanumerical field (positions 1 to 7) and the next 4 character
  into the numerical field (position 8 to 11). The remaining characters are ignored.</dd>
-<dt>void LCD_Clear(void)</dt><dd>Clear all segments.</dd>
+<dt>void LCD_ClearAll(void)</dt><dd>Clear all segments.</dd>
 <dt>void LCD_SetAll(void)</dt><dd>Lit all segments.</dd>
 <dt>void LCD_WriteAlphanumericField(char \*s)</dt><dd>Writes the ASCII coded character in c
 into position 1 to 7 (14-segments displays).</dd>

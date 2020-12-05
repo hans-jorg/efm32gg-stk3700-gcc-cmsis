@@ -587,7 +587,7 @@ static const uint16_t tablcdspecial[] = {
 
 
 /**
- * @brief  Table for clear a position before writing a new character onto it
+ * @brief  Table for clearing a position before writing a new character onto it
  * @note   Indexed by position and common
  * @note   Returns controller segments info
  * @note   Position 1 to 7:  alphanumeric (14 segment) displays
@@ -1297,7 +1297,7 @@ int pos;
 
 /**
  *  @brief  Write a string to positions 1 to 12 (with 14 segments displays in position 1 to 7)
- *          and 7 segments display in position 8 to 12)
+ *          and 7 segments display in position 8 to 11)
  *
  *  @param  s: string to be written
  *
@@ -1307,7 +1307,7 @@ int pos;
 void LCD_WriteString(char *s) {
 int pos;
 
-    for(pos=1;pos<=12;pos++) {
+    for(pos=1;pos<=11;pos++) {
         if( *s ) {
             LCD_WriteChar(*s++,pos);
         } else {
@@ -1321,7 +1321,7 @@ int pos;
  *  @brief  Turns off all segments
  *
  */
-void LCD_Clear(void) {
+void LCD_ClearAll(void) {
 int comn;
     LCD_FREEZE;
     for(comn=0;comn<8;comn++) {
