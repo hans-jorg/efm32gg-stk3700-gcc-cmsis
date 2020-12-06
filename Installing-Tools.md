@@ -440,7 +440,7 @@ To get the call graph, there are many options to generate the needed information
 
 * Use -fdump-rtl-dfinish option
 * Use -fdump-ipa-cgraph
-* Use cflow to generate the 
+* Use cflow to generate the call graph
 
 And the use a tool, to combine the information of callgraph and stack usage.
 
@@ -456,7 +456,7 @@ A list of these tools:
 
 * [Avstack](https://dlbeer.co.nz/oss/avstack.html)
 
-* TBD
+* [Cflow.py](https://blog.soutade.fr/post/2019/04/max-stack-usage-for-c-program.html)
 
 ## Worst case stack
 
@@ -490,9 +490,11 @@ It uses a Perl script to read .su files and disassemble the object .o files.
 
 ## cflow
 
-It is possble to generate the callgraph using cflow
+It is possible to generate the callgraph using cflow
 
     (cflow -l  -b --omit-arguments -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
+
+And the use the cflow.py to generate the report.
 
 
 
