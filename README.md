@@ -112,6 +112,7 @@ Examples for the EFM32GG-STK3700 Development Board
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
 -    01-Blink: Blick LEDs with direct access to registers
+*    01-Blink-NO: How to not do it
 -    02-Blink: Blick LEDs with a HAL for GPIO
 -    03-Blink: Blink LEDs with a LED HAL above the GPIO HAL
 -    04-Blink: Blink LEDs with a LED HAL above hardware
@@ -133,6 +134,13 @@ In all examples, a direct access to registers approach was used. It means that n
 -    20-ucos3: Using uC/OS-III
 -    21-LCD: Using the LCD display
 -    22-Better newlib support
--   *23-Temperature: Getting the CPU temperature
+-    23-Temperature: Getting the CPU temperature
+-    24-Quadrature: a software based decoding
+-   \*25-Quadrature-v2: a hardware based decoding.
+
+OBS:
+
+-    The hardware decoding in 25-Quadrature-v2 is not working well. Probably
+     the encoder is too noisy. I will try with a better one.
 
 **Those marked with an asterisk are unfinished!!!**
