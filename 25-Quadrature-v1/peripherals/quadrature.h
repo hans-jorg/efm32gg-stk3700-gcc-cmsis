@@ -10,6 +10,8 @@
 void    Quadrature_Init(void);
 int     Quadrature_GetPosition(void);
 int     Quadrature_GetButtonStatus(void);
+void    Quadrature_Reset(void);
+void    Quadrature_Load(int v);
 void    Quadrature_Process(void);
 
 #endif // LCD_H

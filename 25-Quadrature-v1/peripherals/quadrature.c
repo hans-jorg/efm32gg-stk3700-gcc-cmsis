@@ -27,8 +27,8 @@
 
 
 
-//#define USING_PULSE_DIR_SIGNALS
-#define USING_A_B_SIGNALS
+#define USING_PULSE_DIR_SIGNALS
+//#define USING_A_B_SIGNALS
 
 
 // Default
@@ -80,6 +80,13 @@ static int      qi = 0;                             /**@< buffer pointer    */
 void Quadrature_Init(void) {
 
     GPIO_Init(QUADRATURE_GPIO,QUADRATURE_M|QUADRATURE_BUTTON,0);
+// Pullup for button
+    GPIO_ConfigPins(QUADRATURE_GPIO,QUADRATURE_BUTTON,GPIO_MODE_INPUTPULLFILTER);
+    GPIO_WritePins(QUADRATURE_GPIO,0,QUADRATURE_BUTTON);
+
+// Pullup for quadrature inputs
+    GPIO_ConfigPins(QUADRATURE_GPIO,QUADRATURE_M,GPIO_MODE_INPUTPULLFILTER);
+    GPIO_WritePins(QUADRATURE_GPIO,0,QUADRATURE_M);
 
 }
 
@@ -88,10 +95,21 @@ int Quadrature_GetPosition(void) {
     return qcounter;
 }
 
+void Quadrature_Load(int v) {
+
+    qcounter = v;
+
+}
+
+void Quadrature_Reset(void) {
+
+    qcounter = 0;
+}
+
 
 int Quadrature_GetButtonStatus(void) {
 
-    return qnow&QUADRATURE_BUTTON;
+    return (~qnow)&QUADRATURE_BUTTON;
 }
 
 
@@ -205,7 +223,7 @@ static uint32_t qant = 0;
 uint32_t qand, qor;
 uint32_t qread;
 
-    qread = GPIO_ReadPins(QUADRATURE_GPIO)&QUADRATURE_M;
+    qread = GPIO_ReadPins(QUADRATURE_GPIO);
 
     qlast[qi++] = qread;
     if( qi >= QUADRATURE_DEBOUNCE_N ) qi = 0;
@@ -218,20 +236,20 @@ uint32_t qread;
     qnow |= qand;           // set bit if they are are all 1 in this position
     qnow &= qor;            // clear bit if there are all 0 in this position
 
-        if( (qnow^qant)&QUADRATURE_PULSE ) {
-            if( qnow&QUADRATURE_PULSE ) {
-            #if 1
-                if( qnow&QUADRATURE_DIR ) {
-                    qcounter++;
-                } else {
-                    qcounter--;
-                }
-            #else
+    if( (qnow^qant)&QUADRATURE_PULSE ) {
+        if( qnow&QUADRATURE_PULSE ) {
+        #if 1
+            if( qnow&QUADRATURE_DIR ) {
                 qcounter++;
-            #endif
+            } else {
+                qcounter--;
             }
+        #else
+            qcounter++;
+        #endif
         }
-        qant = qnow;
+    }
+    qant = qnow;
 }
 #endif
 

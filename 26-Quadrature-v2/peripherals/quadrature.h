@@ -10,5 +10,5 @@
 void    Quadrature_Init(void);
 int     Quadrature_GetPosition(void);
 int     Quadrature_GetButtonStatus(void);
-
+void     Quadrature_Reset(void);
 #endif // LCD_H

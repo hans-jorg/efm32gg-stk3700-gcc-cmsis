@@ -101,7 +101,7 @@ int c = 0;
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
     /* Turn on LEDs */
-    LED_Write(0,LED1|LED2);
+    LED_Write(0,LED1);
     
     // Message
     printf("\nHello!");
@@ -171,6 +171,10 @@ int c = 0;
             cant = c;
         }
         printf("%d %d '%c' \n",c,ich,ch[ich]);
+        if( Quadrature_GetButtonStatus() ) {
+            Quadrature_Reset();
+            LED_Toggle(LED2);
+        }
         Delay(300);
     }
 }

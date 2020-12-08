@@ -25,6 +25,8 @@
 #include "conv.h"
 #include "quadrature.h"
 
+#define QUADRATURE_POLLING 1
+
 
 /*****************************************************************************
  * @brief  SysTick interrupt handler
@@ -53,7 +55,7 @@ static int qinterval = 0;
 #if 1
     if( qinterval <= 0 ) {
         Quadrature_Process();
-        qinterval = 1;
+        qinterval = QUADRATURE_POLLING;
      } else {
         qinterval--;
      }
@@ -109,7 +111,7 @@ int c = 0;
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
     /* Turn on LEDs */
-    LED_Write(0,LED1|LED2);
+    LED_Write(LED2,LED1);
     
     // Message
     printf("\nHello!");
@@ -180,5 +182,9 @@ int c = 0;
         }
         printf("%d %d '%c' \n",c,ich,ch[ich]);
         Delay(300);
+        if( Quadrature_GetButtonStatus() ) {
+           Quadrature_Reset();
+           LED_Toggle(LED2);
+           }
     }
 }
