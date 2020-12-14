@@ -18,9 +18,7 @@
 #include  <stdint.h>
 
 
-#ifndef LCD_EMULATION
 #include "em_device.h"
-#endif
 
 #include "gpio.h"
 #include "quadrature.h"
@@ -114,7 +112,7 @@ int Quadrature_GetButtonStatus(void) {
     return ~(QUADRATURE_GPIO->DIN)&QUADRATURE_BUTTON;
 }
 
-
+void QuadratureProcess(void) {}
 
 
 

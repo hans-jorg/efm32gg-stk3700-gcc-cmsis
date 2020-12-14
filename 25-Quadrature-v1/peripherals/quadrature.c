@@ -17,10 +17,7 @@
 
 #include  <stdint.h>
 
-
-#ifndef LCD_EMULATION
 #include "em_device.h"
-#endif
 
 #include "gpio.h"
 #include "quadrature.h"
@@ -238,15 +235,11 @@ uint32_t qread;
 
     if( (qnow^qant)&QUADRATURE_PULSE ) {
         if( qnow&QUADRATURE_PULSE ) {
-        #if 1
             if( qnow&QUADRATURE_DIR ) {
                 qcounter++;
             } else {
                 qcounter--;
             }
-        #else
-            qcounter++;
-        #endif
         }
     }
     qant = qnow;
