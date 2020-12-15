@@ -85,6 +85,27 @@
 
 #define TIMER_CC_CTRL_PRSSEL_PRSCH_PRSSCH(N) CONCAT(TIMER_CC_CTRL_PRSSEL_PRSCH,N)
 
+/**
+ * @brief   Interpolation table
+ */
+unsigned interpolated[] = {
+/*0000  0000000*/   0x00,
+/*0001  0000001*/   0x01,
+/*0010  0000100*/   0x04,
+/*0011  0000010*/   0x02,
+/*0100  0010000*/   0x10,
+/*0101  0000100*/   0x04,
+/*0110  0001000*/   0x08,
+/*0111  0000100*/   0x01,
+/*1000  1000000*/   0x80,
+/*1001  0001000*/   0x10,
+/*1010  0100000*/   0x40,
+/*1011  0000100*/   0x04,
+/*1100  0010000*/   0x10,
+/*1101  0100000*/   0x20,
+/*1110  0010000*/   0x10,
+/*1111  0001000*/   0x08,
+};
 
 /**
  * @brief Prototypes
@@ -317,5 +338,51 @@ uint32_t v = 0;
 
     v = measurements[ch] < measurements_max[ch]*THRESHOLD_NUM/THRESHOLD_DEN;
     return v;
+}
+
+/**
+ * @brief   Return center of touch
+ *
+ * @note    Returns -1 when there is no touch
+ */
+int
+Touch_GetCenterOfTouch(unsigned v) {
+int i;
+unsigned p,m,sum;
+int n1;
+
+    sum = 0;
+    p = 1;
+    m = 1;
+    n1 = 0;
+    for(i=0;i<TOUCH_N;i++) {
+        if( v&m ) {
+            sum += p;
+            n1++;
+        }
+        p = p+2;
+        m <<= 1;
+    }
+    if( n1 )
+        return (sum+n1-1)/n1;
+    else
+        return -1;
+}
+
+/**
+ * @brief   Return interpolated touch
+ *
+ * @note    Returns 0 when there is no touch and 1 bit of 2*TOUCH_N
+ *          indicating center of touch
+ */
+unsigned
+Touch_Interpolate(unsigned v) {
+int k;
+
+    k = Touch_GetCenterOfTouch(v);
+
+    if( k < 0 ) return 0;
+
+    return 1<<(k-1);
 }
 
