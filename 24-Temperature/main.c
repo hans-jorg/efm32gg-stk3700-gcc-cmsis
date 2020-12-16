@@ -105,7 +105,7 @@ int t;
     LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_Clear();
+    LCD_ClearAll();
     Delay(DELAYVAL);
 
     LCD_WriteString("hello");

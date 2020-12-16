@@ -100,7 +100,7 @@ int tryn = 0;
     LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_Clear();
+    LCD_ClearAll();
     Delay(DELAYVAL);
 
     LCD_WriteString("hello");
@@ -146,7 +146,7 @@ const uint32_t DELAYVAL = 2;
     LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_Clear();
+    LCD_Clear_All();
     Delay(DELAYVAL);
 
     LCD_WriteString("hello");

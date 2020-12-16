@@ -13,8 +13,17 @@
 #  @param all      generate image file
 #  @param flash    write image file into microcontroller
 #  @param edit     open source files for editing
-#  @param debug    starts a debug section
-#  @param openocd  start opencd for debugging
+#  @param debug    creates debug session with gdb
+#  @param debug    creates debug session (default: gdb)
+#  @param   gdb        creates debug session with gdb (same as debug)
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
+#  @param   gdb        creates debug session with gdb (same as debug)
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
+#  @param openocd  start openocd for debugging
 #  @param size     show code size
 #  @param nm       list symbols
 #  @param dump     show object code in assembly format
@@ -30,6 +39,25 @@
 # Program name
 #
 PROGNAME=uart-cdc
+
+#
+# Compatibility Windows/Linux
+#
+ifeq ($(OS),Windows_NT)
+HOSTOS :=Windows
+else
+HOSTOS :=$(shell uname -s)
+endif
+
+
+#
+# Compatibility Windows/Linux
+#
+ifeq ($(OS),Windows_NT)
+HOSTOS :=Windows
+else
+HOSTOS :=$(shell uname -s)
+endif
 
 #
 # Defines the part (device) that this project uses
@@ -70,7 +98,7 @@ default: all
 # Verbose output for Make (Coment to have verbose output)
 #
 #MAKEFLAGS+= --silent --no-print-directory
-#.SILENT:
+.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -160,7 +188,7 @@ default: all
 #| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
 #| Cortex-R5  |                                            | /thumb       |
 #| Cortex-R7  |                                            |              |
-#| Cortex-R8  |						  |		 |
+#| Cortex-R8  |                                            |              |
 #| (No FP)    |                                            |              |
 #|------------|--------------------------------------------|--------------|
 #| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
@@ -220,11 +248,11 @@ CPUFLAGS=-mcpu=cortex-m3
 #
 # To use no FPU, do not define FPUFLAGS
 # Use hardware FPU
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -DENABLE_FPU
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -DENABLE_FPU
 # Use software for Floating Point
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
 # Use hardware (when available?) but with an interface similar to the used by software
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp  -DENABLE_FPU
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp  -DENABLE_FPU
 
 
 #
@@ -234,6 +262,16 @@ CPUFLAGS=-mcpu=cortex-m3
 # Linking must be done by a gcc call instead of ld
 #
 SPECFLAGS= --specs=nano.specs
+
+#
+# default debugger
+#
+debug: gdb
+#debug: tui
+#debug: ddd
+#debug: nemiver
+
+
 
 #
 #
@@ -251,25 +289,25 @@ STACKUSAGEFLAGS= -fstack-usage -fdump-ipa-cgraph
 # The flags passed to the assembler.
 #
 AFLAGS=-mthumb                                  \
-       ${CPUFLAGS}                              \
-       ${FPUFLAGS}                              \
-       $(addprefix -I ,${INCLUDEPATH})         \
+      ${CPUFLAGS}                              \
+      ${FPUFLAGS}                              \
+      $(addprefix -I ,${INCLUDEPATH})         \
 
 #
 # The flags passed to the compiler.
 #
 CFLAGS=-mthumb                                  \
-       $(STACKUSAGEFLAGS)                       \
-       -Wall                                    \
-       ${CPUFLAGS}                              \
-       ${FPUFLAGS}                              \
-       $(addprefix -I ,${INCLUDEPATH})          \
-       -D${PART}                                \
-       -ffunction-sections                      \
-       -fdata-sections                          \
-       -std=c11                                 \
-       -pedantic                                \
-       $(SPECFLAGS)
+      $(STACKUSAGEFLAGS)                       \
+      -Wall                                    \
+      ${CPUFLAGS}                              \
+      ${FPUFLAGS}                              \
+      $(addprefix -I ,${INCLUDEPATH})          \
+      -D${PART}                                \
+      -ffunction-sections                      \
+      -fdata-sections                          \
+      -std=c11                                 \
+      -pedantic                                \
+      $(SPECFLAGS)
 
 
 #
@@ -277,8 +315,19 @@ CFLAGS=-mthumb                                  \
 #
 # For now only one parameter when using gcc to link
 #
-LDFLAGS=--gc-sections 
+LDFLAGS=--gc-sections
 
+###############################################################################
+# Options for debugger                                                        #
+###############################################################################
+
+#
+# default debugger
+#
+debug: gdb
+#debug: tui
+#debug: ddd
+#debug: nemiver
 
 ###############################################################################
 # Generally it is not needed to modify the lines bellow                       #
@@ -326,6 +375,24 @@ AR=${PREFIX}-ar
 LD=${PREFIX}-gcc $(CFLAGS) -nostartfiles -Wl,-Map,$(OBJDIR)/$(PROGNAME).map -Wl,$(LDFLAGS)
 #LD=${PREFIX}-ld -Map $(OBJDIR)/$(PROGNAME).map $(LDFLAGS)
 
+#
+# Debuggerss
+#
+## nemiver
+NEMIVER=nemiver
+NEMIVERFLAGS=
+
+## ddd
+DDD=ddd
+DDDFLAGS=
+
+## cdbg
+CDBG=cdbg
+CDBGFLAGS=
+
+## kdbg
+KDBG=kdbg
+KDBGFLAGS=
 
 #
 # The command for extracting images from the linked executables.
@@ -348,9 +415,28 @@ OBJSIZE=${PREFIX}-size
 OBJNM=${PREFIX}-nm
 
 #
-# Debugger
+# Debuggers
 #
+
+## GDB with and without TUI
 GDB=$(PREFIX)-gdb
+
+## nemiver
+NEMIVER=nemiver
+NEMIVERFLAGS=
+
+## ddd
+DDD=ddd
+DDDFLAGS=
+
+## cdbg
+CDBG=cdbg
+CDBGFLAGS=
+
+## kdbg
+KDBG=kdbg
+KDBGFLAGS=
+
 
 #
 # GUI Editor
@@ -365,6 +451,7 @@ DOXYGEN=doxygen
 
 #
 # Options for flash and debug
+# Must be yes or not set
 #
 
 USE_JLINK=yes
@@ -376,7 +463,7 @@ USE_JLINK=yes
 ###############################################################################
 
 
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 #
 # JLink
 #
@@ -387,7 +474,7 @@ JLINKFLASHSCRIPT=${OBJDIR}/flash.jlink
 endif
 
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 #
 # OpenOCD
 #
@@ -395,7 +482,7 @@ OPENOCD=openocd
 GPDBPROXY=openocd
 OPENOCDSCRIPTDIR=/usr/share/openocd/scripts
 OPENOCDFLAGS=  -f $(OPENOCDSCRIPTDIR)/interface/stlink-v2.cfg \
-               -f $(OPENOCDSCRIPTDIR)/target/efm32_stlink.cfg
+              -f $(OPENOCDSCRIPTDIR)/target/efm32_stlink.cfg
 endif
 
 
@@ -426,19 +513,19 @@ TTYBAUD=155200
 #
 # Use one of configuration below
 # cu
-    #TTYPROG=cu
-    #TTYPARMS=-l $(TTYTERM) -s $(TTYBAUD)
+   #TTYPROG=cu
+   #TTYPARMS=-l $(TTYTERM) -s $(TTYBAUD)
 # screen
-    #TTYPROG=screen
-    #TTYPARMS= $(TTYTERM) $(TTYBAUD)
+   #TTYPROG=screen
+   #TTYPARMS= $(TTYTERM) $(TTYBAUD)
 # minicom
-    TTYPROG=minicom
-    TTYPARMS=-D $(TTYTERM) -b $(TTYBAUD)
+   TTYPROG=minicom
+   TTYPARMS=-D $(TTYTERM) -b $(TTYBAUD)
 # putty
-    #TTYPROG=putty
+   #TTYPROG=putty
 # tip
-    #TTYPROG=tip
-    #TTYPARMS=-$(TTYBAUD) $(TTYTERM)
+   #TTYPROG=tip
+   #TTYPARMS=-$(TTYBAUD) $(TTYTERM)
 
 
 #
@@ -514,8 +601,8 @@ ${OBJDIR}/%.a:
 ${OBJDIR}/%.axf:  $(OBJFILES)
 	@echo "  Linking             ${@} ";
 	${LD}   -T '${LINKERSCRIPT}' \
-            -Wl,--print-memory-usage \
-	        --entry '${ENTRY}' \
+	         -Wl,--print-memory-usage \
+	           --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \
 	         -lm -lc -lgcc
@@ -537,12 +624,22 @@ usage:
 	@echo "make all          generate image file in $(OBJDIR)"
 	@echo "make flash        write to flash using $(FLASHER)"
 	@echo "make clean        delete all generated files"
+	@echo "make debug        creates debug session with gdb"
+	@echo "make   gdb        creates debug session with gdb (same as debug)"
+	@echo "make   tui        creates debug session with gdb text user interface"
+	@echo "make   ddd        creates debug session with ddd"
+	@echo "make   nemiver    creates debug session with nemiver"
+	@echo "make debug        creates debug session with gdb"
+	@echo "make   gdb        creates debug session with gdb (same as debug)"
+	@echo "make   tui        creates debug session with gdb text user interface"
+	@echo "make   ddd        creates debug session with ddd"
+	@echo "make   nemiver    creates debug session with nemiver"
 	@echo "make dis          disassemble output file into $(OBJDIR)/$(PROGNAME).S"
 	@echo "make dump         generate a hexadecimal dump file into $(OBJDIR)/$(PROGNAME).dump"
 	@echo "make nm           list symbol table in standard output"
 	@echo "make size         list size of output file"
 	@echo "make term         open a terminal for serial communication to board"
-	@echo "make openocd      start an openocd proxy"
+	@echo "make openocd      start an openocd proxy (not tested!)"
 	@echo "make docs         generates docs using doxygen"
 
 #
@@ -550,6 +647,7 @@ usage:
 #
 all: ${OBJDIR} ${OBJDIR}/$(PROGNAME).bin
 	@echo "Done"
+
 
 #
 # Clean out all the generated files
@@ -562,7 +660,7 @@ clean:
 #
 flash: deploy
 burn: deploy
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 deploy: ${OBJDIR}/$(PROGNAME).bin $(JLINKFLASHSCRIPT)
 	echo ${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
 	${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
@@ -579,7 +677,7 @@ FORCE:
 endif
 
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 deploy: ${OBJDIR}/$(PROGNAME).bin $(OPENOCDFLASHSCRIPT)
 	sudo ${OPENOCD} -f $(OPENOCDBOARD) -f $(OPENOCDFLASHSCRIPT)
 
@@ -622,8 +720,27 @@ nm: $(OBJDIR)/$(PROGNAME).axf
 #
 # The rule to create the target directory.
 #
+ifeq ($(HOSTOS),Windows)
 ${OBJDIR}:
+ifeq ($(HOSTOS),Windows)
+$(OBJDIR):
+	mkdir ${OBJDIR}
+else
+$(OBJDIR):
 	mkdir -p ${OBJDIR}
+endif
+	mkdir ${OBJDIR}
+else
+${OBJDIR}:
+ifeq ($(HOSTOS),Windows)
+$(OBJDIR):
+	mkdir ${OBJDIR}
+else
+$(OBJDIR):
+	mkdir -p ${OBJDIR}
+endif
+	mkdir -p ${OBJDIR}
+endif
 
 #
 # Rules for building the $(PROGNAME) example.
@@ -638,15 +755,41 @@ edit:
 	$(GUIEDITOR) Makefile *.c *.h *.ld &
 
 #
-# Debug command
+# Debug using gdb
 #
-debug: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+gdb: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
 	$(GDB) $(GDBFLAGS) $(OBJDIR)/$(PROGNAME).axf
+
+#
+# Debug using gdb with tui (text user interface)
+#
+tui: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(GDB) --tui $(GDBFLAGS) $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using ddd
+#
+ddd: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(DDD) $(DDDFLAGS) --debugger "$(GDB) $(GDBFLAGS)" $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using nemiver
+#
+nemiver: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(NEMIVER) $(NEMIVERFLAGS) --remote=localhost:2331  --gdb-binary=`which $(GDB)`     $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using cgdb GUI
+#
+cgdb: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT)
+	$(CGDB) -d `which $(GDB)`  -x $(OBJDIR)/gdbinit $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using kdbg GUI
+#
+kdbg: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT)
+	$(KDBG)  -r localhost:2331 $(OBJDIR)/$(PROGNAME).axf
 
 #
 # Start GDB proxy
 #
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
@@ -664,7 +807,7 @@ $(GDBINIT): FORCE
 	echo "continue" >> $(GDBINIT)
 endif
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 gdbproxy:
 	if [ -c $(TTYTERM) ] ; then echo "Starting OpenOCD"; \
 	$(TERMAPP) -- $(GDBPROXY) -f $(OPENOCDBOARD)  ; \
@@ -709,9 +852,8 @@ $(DOXYGENCFG):
 	rm  -f  $(SEDSCRIPT)
 
 #
-# Clean the generated documentation (latex and html)
+# Clean the generated documentation
 #
-
 docs-clean:
 	rm -rf html latex
 	echo Done.
@@ -719,13 +861,15 @@ docs-clean:
 #
 # generates a call graph
 #
-CFLOWFLAGS=-l  -b --omit-arguments 
+CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
 	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
 
+
 # These symbols are not files (or directories)
-.PHONY: default all clean flash burn deploy disassembly dump size
 .PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
+.PHONY: default all clean flash burn deploy disassembly dump size
+.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow docs-clean cflow
 
 #
 # Dependencies

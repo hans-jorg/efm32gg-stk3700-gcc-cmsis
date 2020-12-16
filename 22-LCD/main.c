@@ -63,7 +63,7 @@ char *n = numstring;
     LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_Clear();
+    LCD_ClearAll();
     Delay(DELAYVAL);
 
     /* Blink loop */

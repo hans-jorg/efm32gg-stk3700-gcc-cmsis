@@ -13,8 +13,12 @@
 #  @param all      generate image file
 #  @param flash    write image file into microcontroller
 #  @param edit     open source files for editing
-#  @param debug    starts a debug section
-#  @param openocd  start opencd for debugging
+#  @param debug    creates debug session (default: gdb)
+#  @param   gdb        creates debug session with gdb (same as debug)
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
+#  @param openocd  start openocd for debugging
 #  @param size     show code size
 #  @param nm       list symbols
 #  @param dump     show object code in assembly format
@@ -30,6 +34,16 @@
 # Program name
 #
 PROGNAME=quadrature
+
+#
+# Compatibility Windows/Linux
+#
+ifeq ($(OS),Windows_NT)
+HOSTOS :=Windows
+else
+HOSTOS :=$(shell uname -s)
+endif
+
 
 #
 # Defines the part (device) that this project uses
@@ -225,11 +239,11 @@ CPUFLAGS=-mcpu=cortex-m3
 #
 # To use no FPU, do not define FPUFLAGS
 # Use hardware FPU
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -DENABLE_FPU
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -DENABLE_FPU
 # Use software for Floating Point
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
 # Use hardware (when available?) but with an interface similar to the used by software
-     #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp  -DENABLE_FPU
+    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp  -DENABLE_FPU
 
 
 #
@@ -251,24 +265,24 @@ CPUFLAGS=-mcpu=cortex-m3
 # The flags passed to the assembler.
 #
 AFLAGS=-mthumb                                  \
-       ${CPUFLAGS}                              \
-       ${FPUFLAGS}                              \
-       $(admdprefix -I ,${INCLUDEPATH})         \
+      ${CPUFLAGS}                              \
+      ${FPUFLAGS}                              \
+      $(addprefix -I ,${INCLUDEPATH})         \
 
 #
 # The flags passed to the compiler.
 #
 CFLAGS=-mthumb                                  \
-       -Wall                                    \
-       ${CPUFLAGS}                              \
-       ${FPUFLAGS}                              \
-       $(addprefix -I ,${INCLUDEPATH})          \
-       -D${PART}                                \
-       -ffunction-sections                      \
-       -fdata-sections                          \
-       -std=c11                                 \
-       -pedantic                                \
-       $(SPECFLAGS)
+      -Wall                                    \
+      ${CPUFLAGS}                              \
+      ${FPUFLAGS}                              \
+      $(addprefix -I ,${INCLUDEPATH})          \
+      -D${PART}                                \
+      -ffunction-sections                      \
+      -fdata-sections                          \
+      -std=c11                                 \
+      -pedantic                                \
+      $(SPECFLAGS)
 
 
 #
@@ -347,9 +361,28 @@ OBJSIZE=${PREFIX}-size
 OBJNM=${PREFIX}-nm
 
 #
-# Debugger
+# Debuggers
 #
+
+## GDB with and without TUI
 GDB=$(PREFIX)-gdb
+
+## nemiver
+NEMIVER=nemiver
+NEMIVERFLAGS=
+
+## ddd
+DDD=ddd
+DDDFLAGS=
+
+## cdbg
+CDBG=cdbg
+CDBGFLAGS=
+
+## kdbg
+KDBG=kdbg
+KDBGFLAGS=
+
 
 #
 # GUI Editor
@@ -375,7 +408,7 @@ USE_JLINK=yes
 ###############################################################################
 
 
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 #
 # JLink
 #
@@ -386,7 +419,7 @@ JLINKFLASHSCRIPT=${OBJDIR}/flash.jlink
 endif
 
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 #
 # OpenOCD
 #
@@ -394,7 +427,7 @@ OPENOCD=openocd
 GPDBPROXY=openocd
 OPENOCDSCRIPTDIR=/usr/share/openocd/scripts
 OPENOCDFLAGS=  -f $(OPENOCDSCRIPTDIR)/interface/stlink-v2.cfg \
-               -f $(OPENOCDSCRIPTDIR)/target/efm32_stlink.cfg
+              -f $(OPENOCDSCRIPTDIR)/target/efm32_stlink.cfg
 endif
 
 
@@ -425,19 +458,19 @@ TTYBAUD=115200
 #
 # Use one of configuration below
 # cu
-    #TTYPROG=cu
-    #TTYPARMS=-l $(TTYTERM) -s $(TTYBAUD)
+   #TTYPROG=cu
+   #TTYPARMS=-l $(TTYTERM) -s $(TTYBAUD)
 # screen
-    #TTYPROG=screen
-    #TTYPARMS= $(TTYTERM) $(TTYBAUD)
+   #TTYPROG=screen
+   #TTYPARMS= $(TTYTERM) $(TTYBAUD)
 # minicom
-    TTYPROG=minicom
-    TTYPARMS=-D $(TTYTERM) -b $(TTYBAUD)
+   TTYPROG=minicom
+   TTYPARMS=-D $(TTYTERM) -b $(TTYBAUD)
 # putty
-    #TTYPROG=putty
+   #TTYPROG=putty
 # tip
-    #TTYPROG=tip
-    #TTYPARMS=-$(TTYBAUD) $(TTYTERM)
+   #TTYPROG=tip
+   #TTYPARMS=-$(TTYBAUD) $(TTYTERM)
 
 
 #
@@ -513,6 +546,7 @@ ${OBJDIR}/%.a:
 ${OBJDIR}/%.axf:  $(OBJFILES)
 	@echo "  Linking             ${@} ";
 	${LD}   -T '${LINKERSCRIPT}' \
+	        -Wl,--print-memory-usage \
 	        --entry '${ENTRY}' \
 	        -o ${@} \
 	         $(OBJFILES) \
@@ -535,6 +569,11 @@ usage:
 	@echo "make all          generate image file in $(OBJDIR)"
 	@echo "make flash        write to flash using $(FLASHER)"
 	@echo "make clean        delete all generated files"
+	@echo "make debug        creates debug session with gdb"
+	@echo "make   gdb        creates debug session with gdb (same as debug)"
+	@echo "make   tui        creates debug session with gdb text user interface"
+	@echo "make   ddd        creates debug session with ddd"
+	@echo "make   nemiver    creates debug session with nemiver"
 	@echo "make dis          disassemble output file into $(OBJDIR)/$(PROGNAME).S"
 	@echo "make dump         generate a hexadecimal dump file into $(OBJDIR)/$(PROGNAME).dump"
 	@echo "make nm           list symbol table in standard output"
@@ -560,7 +599,7 @@ clean:
 #
 flash: deploy
 burn: deploy
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 deploy: ${OBJDIR}/$(PROGNAME).bin $(JLINKFLASHSCRIPT)
 	echo ${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
 	${JLINK} $(JLINKPARMS) -CommanderScript $(JLINKFLASHSCRIPT)
@@ -577,7 +616,7 @@ FORCE:
 endif
 
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 deploy: ${OBJDIR}/$(PROGNAME).bin $(OPENOCDFLASHSCRIPT)
 	sudo ${OPENOCD} -f $(OPENOCDBOARD) -f $(OPENOCDFLASHSCRIPT)
 
@@ -621,6 +660,13 @@ nm: $(OBJDIR)/$(PROGNAME).axf
 # The rule to create the target directory.
 #
 ${OBJDIR}:
+ifeq ($(HOSTOS),Windows)
+$(OBJDIR):
+	mkdir ${OBJDIR}
+else
+$(OBJDIR):
+	mkdir -p ${OBJDIR}
+endif
 	mkdir -p ${OBJDIR}
 	for subdir in $(SUBDIRS); do mkdir -p ${OBJDIR}/$$subdir ; done
 
@@ -637,15 +683,42 @@ edit:
 	$(GUIEDITOR) Makefile *.c *.h *.ld &
 
 #
-# Debug command
+# Debug with  gdb
 #
-debug: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+gdb: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
 	$(GDB) $(GDBFLAGS) $(OBJDIR)/$(PROGNAME).axf
+
+#
+# Debug using gdb with tui (text user interface)
+#
+tui: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(GDB) --tui $(GDBFLAGS) $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using ddd
+#
+ddd: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(DDD) $(DDDFLAGS) --debugger "$(GDB) $(GDBFLAGS)" $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using nemiver
+#
+nemiver: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT) gdbproxy
+	$(NEMIVER) $(NEMIVERFLAGS) --remote=localhost:2331  --gdb-binary=`which $(GDB)`     $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using cgdb GUI
+#
+cgdb: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT)
+	$(CGDB) -d `which $(GDB)`  -x $(OBJDIR)/gdbinit $(OBJDIR)/$(PROGNAME).axf
+#
+# Debug using kdbg GUI
+#
+kdbg: $(OBJDIR)/$(PROGNAME).bin $(GDBINIT)
+	$(KDBG)  -r localhost:2331 $(OBJDIR)/$(PROGNAME).axf
+
 
 #
 # Start GDB proxy
 #
-ifneq ($(USE_JLINK),)
+ifeq ($(USE_JLINK),yes)
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo "sh -c \" $(GDBPROXY) $(JLINKPARMS) \" " ; \
@@ -663,7 +736,7 @@ $(GDBINIT): FORCE
 	echo "continue" >> $(GDBINIT)
 endif
 
-ifneq ($(USE_OPENOCD),)
+ifeq ($(USE_OPENOCD),yes)
 gdbproxy:
 	if [ -c $(TTYTERM) ] ; then echo "Starting OpenOCD"; \
 	$(TERMAPP) -- $(GDBPROXY) -f $(OPENOCDBOARD)  ; \
@@ -709,13 +782,22 @@ $(DOXYGENCFG):
 
 
 
+## Clean the generated documentation#
 docs-clean:
 	rm -rf html latex
 	echo Done.
 
+#
+# generates a call graph
+#
+CFLOWFLAGS=-l  -b --omit-arguments
+cflow:
+	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
+
 # These symbols are not files (or directories)
+.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 .PHONY: default all clean flash burn deploy disassembly dump size
-.PHONY: nm edit debug terminal term doxygen docs
+.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 
 #
 # Dependencies
