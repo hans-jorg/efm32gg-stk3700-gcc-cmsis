@@ -49,76 +49,72 @@
 #define PI(NUMBER)                  GPIOPIN(8,NUMBER)
 #define PJ(NUMBER)                  GPIOPIN(9,NUMBER)
 
-#define TC(T,N)                     ((T<<5)|(N))
 /* Structure to store info about pin configuration  */
-#define LGP(L,GP)                   (((L)<<8)|(GP))
+#define TCL(T,C,L)                  (((T)<<8)|((C)<<3)|((L)<<0))
 
-#if 0
 typedef struct {
-    int16_t     timer_channel;
-    uint16_t    loc_gpio_pin;
+    int16_t     timer_channel_loc;
+    uint16_t    gpio_pin;
 } TimerPin;
 
 static const TimerPin timerpins[] = {
-    {   TC(0,0),  LGP(0,PA(0))  },
-    {   TC(0,0),  LGP(1,PA(0))  },
-    {   TC(0,0),  LGP(2,PF(6))  },
-    {   TC(0,0),  LGP(3,PD(1))  },
-    {   TC(0,0),  LGP(4,PA(0))  },
-    {   TC(0,0),  LGP(5,PF(0))  },
+    {   TCL(0,0,0),     PA(0)  },
+    {   TCL(0,0,1),     PA(0)  },
+    {   TCL(0,0,2),     PF(6)  },
+    {   TCL(0,0,3),     PD(1)  },
+    {   TCL(0,0,4),     PA(0)  },
+    {   TCL(0,0,5),     PF(0)  },
 
-    {   TC(0,1),  LGP(0,PA(1))  },
-    {   TC(0,1),  LGP(1,PA(1))  },
-    {   TC(0,1),  LGP(2,PF(7))  },
-    {   TC(0,1),  LGP(3,PD(2))  },
-    {   TC(0,1),  LGP(4,PC(0))  },
-    {   TC(0,1),  LGP(5,PF(1))  },
+    {   TCL(0,1,0),     PA(1)  },
+    {   TCL(0,1,1),     PA(1)  },
+    {   TCL(0,1,2),     PF(7)  },
+    {   TCL(0,1,3),     PD(2)  },
+    {   TCL(0,1,4),     PC(0)  },
+    {   TCL(0,1,5),     PF(1)  },
 
-    {   TC(0,2),  LGP(0,PA(2))  },
-    {   TC(0,2),  LGP(1,PA(2))  },
-    {   TC(0,2),  LGP(2,PF(8))  },
-    {   TC(0,2),  LGP(3,PD(3))  },
-    {   TC(0,2),  LGP(4,PC(1))  },
-    {   TC(0,2),  LGP(5,PF(2))  },
+    {   TCL(0,2,0),     PA(2)  },
+    {   TCL(0,2,1),     PA(2)  },
+    {   TCL(0,2,2),     PF(8)  },
+    {   TCL(0,2,3),     PD(3)  },
+    {   TCL(0,2,4),     PC(1)  },
+    {   TCL(0,2,5),     PF(2)  },
 
-    {   TC(1,0),  LGP(1,PE(10)) },
-    {   TC(1,0),  LGP(2,PB(0))  },
-    {   TC(1,0),  LGP(3,PB(7))  },
-    {   TC(1,0),  LGP(4,PD(6))  },
+    {   TCL(1,0,1),     PE(10) },
+    {   TCL(1,0,2),     PB(0)  },
+    {   TCL(1,0,3),     PB(7)  },
+    {   TCL(1,0,4),     PD(6)  },
 
-    {   TC(1,1),  LGP(1,PE(11)) },
-    {   TC(1,1),  LGP(2,PB(1))  },
-    {   TC(1,1),  LGP(3,PB(8))  },
-    {   TC(1,1),  LGP(4,PD(7)) },
+    {   TCL(1,1,1),     PE(11) },
+    {   TCL(1,1,2),     PB(1)  },
+    {   TCL(1,1,3),     PB(8)  },
+    {   TCL(1,1,4),     PD(7) },
 
-    {   TC(1,2),  LGP(1,PE(12)) },
-    {   TC(1,2),  LGP(2,PB(2))  },
-    {   TC(1,2),  LGP(3,PB(11)) },
+    {   TCL(1,2,1),     PE(12) },
+    {   TCL(1,2,2),     PB(2)  },
+    {   TCL(1,2,3),     PB(11) },
 
-    {   TC(2,0),  LGP(0,PA(8))  },
-    {   TC(2,0),  LGP(1,PA(12)) },
-    {   TC(2,0),  LGP(2,PC(8))  },
+    {   TCL(2,0,0),     PA(8)  },
+    {   TCL(2,0,1),     PA(12) },
+    {   TCL(2,0,2),     PC(8)  },
 
-    {   TC(2,1),  LGP(0,PA(9))  },
-    {   TC(2,1),  LGP(1,PA(13)) },
-    {   TC(2,1),  LGP(2,PC(9))  },
+    {   TCL(2,1,0),     PA(9)  },
+    {   TCL(2,1,1),     PA(13) },
+    {   TCL(2,1,2),     PC(9)  },
 
-    {   TC(2,2),  LGP(0,PA(10)) },
-    {   TC(2,2),  LGP(1,PA(14)) },
-    {   TC(2,2),  LGP(2,PC(10)) },
+    {   TCL(2,2,0),     PA(10) },
+    {   TCL(2,2,1),     PA(14) },
+    {   TCL(2,2,2),     PC(10) },
 
-    {   TC(3,0),  LGP(0,PE(14)) },
-    {   TC(3,0),  LGP(1,PE(0))  },
+    {   TCL(3,0,0),     PE(14) },
+    {   TCL(3,0,1),     PE(0)  },
 
-    {   TC(3,1),  LGP(0,PE(15)) },
-    {   TC(3,1),  LGP(1,PE(1))  },
+    {   TCL(3,1,0),     PE(15) },
+    {   TCL(3,1,1),     PE(1)  },
 
-    {   TC(3,2),  LGP(0,PA(15)) },
-    {   TC(3,2),  LGP(1,PE(2))  },
-    {        -1,             0  }
+    {   TCL(3,2,0),     PA(15) },
+    {   TCL(3,2,1),     PE(2)  },
+    {         -1,      0      }
 };
-
-#endif
 
 /**
  * @brief   PWM_Start
@@ -159,16 +155,58 @@ static int Timer_ClockEnable(TIMER_TypeDef* timer) {
 
 
 static int PWM_ConfigureOutputPin(TIMER_TypeDef* timer, unsigned channel, int loc) {
+unsigned t;
+int16_t k;
+TimerPin const *ptimerpin;
+GPIO_P_TypeDef *gpio;
+unsigned g,p;
 
     if( loc == PWM_LOC_UNUSED )
         return 0;
 
+    if( timer == TIMER0 ) {
+        t = 0;
+    } else if ( timer == TIMER1 ) {
+        t = 1;
+    } else if ( timer == TIMER2 ) {
+        t = 2;
+    } else if ( timer == TIMER3 ) {
+        t = 3;
+    } else {
+        return -1;
+    }
 
     timer->ROUTE = (timer->ROUTE
                         &~(_TIMER_ROUTE_LOCATION_MASK)
                           )
                     | (loc<<_TIMER_ROUTE_LOCATION_SHIFT)
                     | (1<<(_TIMER_ROUTE_CC0PEN_SHIFT+channel));
+
+    // Configure GPIO pin
+    k = TCL(t,channel,loc);
+    ptimerpin = timerpins;
+    // linear search!!!
+    while( (ptimerpin->timer_channel_loc >= 0) && (ptimerpin->timer_channel_loc == k) ) {
+        ptimerpin++;
+    }
+    if( ptimerpin->timer_channel_loc != k )
+        return -2;
+
+    g = ptimerpin->gpio_pin>>8;
+    p = ptimerpin->gpio_pin&0xFF;
+
+    gpio = &(GPIO->P[g]);
+
+#define PINMODE    4
+
+
+    // Configure pin as output, push-pull, fast
+    if( p < 8 ) {       // pins 7-0
+        gpio->MODEL = (gpio->MODEL&~(0xF<<p))|(PINMODE<<p);
+    } else {            // pins 15-8
+        p -= 8;
+        gpio->MODEH = (gpio->MODEH&~(0xF<<p))|(PINMODE<<p);
+    }
 
     return 0;
 }
@@ -243,7 +281,7 @@ unsigned m;
 
 
 /**
- * @brief   Find prescaler encoding
+ * @brief   Find prescaler encoding (actually ln2(div))
  *
  *      |   div    | coding  |
  *      |----------|- -------|
@@ -252,7 +290,7 @@ unsigned m;
  *      |     4    |     2   |
  *      |     5    |     3   |
  *      | ....     | .....   |
- *      |  1024    |  10     |
+ *      |  1024    |    10   |
  *
  * @note    It is ln2(div)
  *

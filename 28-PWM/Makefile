@@ -33,7 +33,7 @@
 #
 # Program name
 #
-PROGNAME=temperature
+PROGNAME=pwm
 
 #
 # Compatibility Windows/Linux
