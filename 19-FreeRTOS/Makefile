@@ -33,7 +33,7 @@
 #
 # Program name
 #
-PROGNAME=uart-cdc
+PROGNAME=blink-freertos
 
 #
 # Compatibility Windows/Linux
@@ -89,22 +89,22 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #     heap_5.c    Can use multiple memory pools
 #
 # FreeRTOS Dir
-FREERTOSDIR=../../../FreeRTOSv10
+FREERTOSDIR=../../../FreeRTOSv202012.00
 
 # Virtual path
 VPATH=      $(FREERTOSDIR)/FreeRTOS/Source:\
-           $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3:\
-           $(FREERTOSDIR)/FreeRTOS/Source/portable/MemMang
+            $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3:\
+            $(FREERTOSDIR)/FreeRTOS/Source/portable/MemMang
 
 # FreeRTOS Include Path
 FREERTOSINCPATH=    $(FREERTOSDIR)/FreeRTOS/Source/include \
-                   $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3/
+                    $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3/
 
 # FreeRTOS Source Files
 # Some files can be ommited if their funcionalities are not used
 #
 FREERTOSFILES=  tasks.c event_groups.c list.c queue.c stream_buffer.c timers.c croutine.c \
-               portable/GCC/ARM_CM3/port.c portable/MemMang/heap_2.c
+                portable/GCC/ARM_CM3/port.c portable/MemMang/heap_2.c
 
 FREERTOSSRCFILES= $(addprefix $(FREERTOSDIR)/FreeRTOS/Source/,$(FREERTOSFILES))
 
@@ -821,7 +821,9 @@ $(DOXYGENCFG):
 
 
 
-## Clean the generated documentation#
+#
+# Clean the generated documentation
+#
 docs-clean:
 	rm -rf html latex
 	echo Done.
@@ -832,7 +834,8 @@ docs-clean:
 CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
 	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
-
+
+
 # These symbols are not files (or directories)
 .PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 .PHONY: default all clean flash burn deploy disassembly dump size

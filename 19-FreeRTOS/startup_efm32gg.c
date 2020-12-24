@@ -43,6 +43,7 @@
  */
 
 #include <stdint.h>
+#include "em_device.h"
 
 /*****************************************************************************
  * CONFIGURATION
@@ -417,6 +418,11 @@ void _main(void) {
 /*----------------------------------------------------------------------------
   Default Handler for Exceptions / Interrupts
  *----------------------------------------------------------------------------*/
+uint32_t FaultInfo = 0;
+uint8_t  VecActive = 0;
 void Default_Handler(void) {
+
+    FaultInfo = SCB->ICSR;
+    VecActive = FaultInfo&0xFF;
     __STOP();
 }

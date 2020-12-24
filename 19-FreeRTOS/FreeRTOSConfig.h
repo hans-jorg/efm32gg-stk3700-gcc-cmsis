@@ -47,7 +47,7 @@
 #define configCPU_CLOCK_HZ			( ( unsigned long ) 48000000 )
 #define configTICK_RATE_HZ			( ( TickType_t ) 1000 )
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 100 )
-#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 1500 ) )
+//#define configTOTAL_HEAP_SIZE		( ( size_t ) ( 1500 ) )
 #define configMAX_TASK_NAME_LEN		( 3 )
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
@@ -56,6 +56,10 @@
 
 #define configMAX_PRIORITIES		( 2 )
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
+
+
+//#define configAPPLICATION_ALLOCATED_HEAP    1
+#define configTOTAL_HEAP_SIZE               (10000*sizeof(uint32_t))
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
@@ -71,10 +75,15 @@ to exclude the API function. */
 #define configKERNEL_INTERRUPT_PRIORITY 		255
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	191 /* equivalent to 0xa0, or priority 5. */
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	63 /* equivalent to 0xa0, or priority 5. */
 
 #define vPortSVCHandler                     SVC_Handler
 #define xPortPendSVHandler                  PendSV_Handler
 #define xPortSysTickHandler                 SysTick_Handler
+
+/* Normal assert() semantics without relying on the provision of an assert.h
+header file. */
+#define configASSERT( x ) if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); }
+
 
 #endif /* FREERTOS_CONFIG_H */

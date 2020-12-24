@@ -50,9 +50,10 @@ void  OS_CPU_TickInit (CPU_INT32U  tick_rate)
 
 
 static OS_STK TaskStartStack[APP_CFG_STARTUP_TASK_STK_SIZE];
+#if 1
 static OS_STK Task0Stack[TASK0_STACKSIZE];
 static OS_STK Task1Stack[TASK1_STACKSIZE];
-
+#endif
 //}
 
 /**
@@ -100,14 +101,14 @@ void TaskStart(void *param) {
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-//    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);         // Initialize the Tick interrupt (CMSIS way)
+    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);         // Initialize the Tick interrupt (CMSIS way)
 
     OS_CPU_TickInit(OS_TICKS_PER_SEC);                          // Initialize the Tick interrupt (uCOS way)
 
 #if (OS_TASK_STAT_EN > 0)
     OSStatInit();                               // Determine CPU capacity
 #endif
-                  
+#if 1                  
     // Create a task to blink LED 0
     OSTaskCreate(   Task0,                                      // Pointer to task
                     (void *) 0,                                 // Parameter
@@ -120,9 +121,8 @@ void TaskStart(void *param) {
                     (void *) &Task1Stack[TASK1_STACKSIZE-1],    // Initial value of SP
                     TASK1_PRIO);                                // Task Priority/ID
 
-    // Effectively starting uC/OS
-    __enable_irq();
-    
+#endif
+
 //    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
 }
 
@@ -144,9 +144,12 @@ int main(void) {
     // Create a task to start the other tasks
     OSTaskCreate(   TaskStart,                                          // Pointer to function
                     (void *) 0,                                         // Parameter for task
-                    (void *) &TaskStartStack[APP_CFG_STARTUP_TASK_STK_SIZE-4],    // Initial value of SP
+                    (void *) &TaskStartStack[APP_CFG_STARTUP_TASK_STK_SIZE-1],    // Initial value of SP
                     APP_CFG_STARTUP_TASK_PRIO);                                    // Task Priority/ID
 
+    // Effectively starting uC/OS
+    __enable_irq();
+    
     // Enter uc/os and never returns
     OSStart();
 

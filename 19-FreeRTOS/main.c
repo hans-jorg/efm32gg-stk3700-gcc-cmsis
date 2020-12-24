@@ -13,6 +13,9 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
+#include "em_chip.h"
+#include "em_system.h"
+
 #include "clock_efm32gg.h"
 
 #include "FreeRTOS.h"
@@ -43,7 +46,7 @@ uint32_t semiperiodmax  = 5000;
 uint32_t semiperiodmin  = 100;
 uint32_t semiperiodstep = 100;
 
-uint32_t semiperiod0    = 250;         // 1 sec
+uint32_t semiperiod0    = 1250;         // 1 sec
 uint32_t semiperiod1    = 1000;        // 1.5 sec
 
 
@@ -114,7 +117,7 @@ void Task_Button(void *pvParameters) {
         if( (Button_Read()&BUTTON1) != 0 ) {
             blinking = ! blinking;
             vTaskDelay(DEBOUNCE_TIME);
-            while( (Button_Read()&BUTTON1) == 0 ) {
+            while( (Button_Read()&BUTTON1) != 0 ) {
                 vTaskDelay(DEBOUNCE_TIME);
             }
         }
@@ -123,6 +126,8 @@ void Task_Button(void *pvParameters) {
 }
 //@}
 
+
+static void STOP(void) { while(1) {} }
 
 /**************************************************************************//**
  * @brief  Main function
@@ -134,7 +139,11 @@ void Task_Button(void *pvParameters) {
  */
 
 int main(void) {
+BaseType_t rc;
 
+    // Apply erratas
+    CHIP_Init();
+    
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
@@ -144,13 +153,21 @@ int main(void) {
 
 
     Button_Init(BUTTON0|BUTTON1);
-    LED_Init(LED1|LED2);
+    LED_Write(0,LED1|LED2);
 
  //   SysTick_Config(SystemCoreClock/1000);   /* 1 ms */
 
-    xTaskCreate(Task_BlinkLED1,"0", 1000,0,2,0);
-    xTaskCreate(Task_BlinkLED2,"1", 1000,0,1,0);
-    xTaskCreate(Task_Button,"Button", 10,0,3,0);
+    rc = xTaskCreate(Task_BlinkLED1,"0", 1000,0,2,0);
+    if( rc != pdPASS )
+        STOP();
+
+    rc = xTaskCreate(Task_BlinkLED2,"1", 1000,0,1,0);
+    if( rc != pdPASS )
+        STOP();
+
+    rc = xTaskCreate(Task_Button,"Button", 1000,0,3,0);
+    if( rc != pdPASS )
+        STOP();
 
     vTaskStartScheduler();
 
