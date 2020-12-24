@@ -1,31 +1,34 @@
 /*
 *********************************************************************************************************
-*                                                uC/OS-II
-*                                          The Real-Time Kernel
-*                                  uC/OS-II Configuration File for V2.8x
+*                                              uC/OS-II
+*                                        The Real-Time Kernel
 *
-*                               (c) Copyright 2005-2009, Micrium, Weston, FL
-*                                          All Rights Reserved
+*                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
 *
+*                                 SPDX-License-Identifier: APACHE-2.0
 *
-* File    : OS_CFG.H
-* By      : Jean J. Labrosse
-* Version : V2.92.11
+*               This software is subject to an open source license and is distributed by
+*                Silicon Laboratories Inc. pursuant to the terms of the Apache License,
+*                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 *
-* LICENSING TERMS:
-* ---------------
-*   uC/OS-II is provided in source form for FREE evaluation, for educational use or for peaceful research.
-* If you plan on using  uC/OS-II  in a commercial product you need to contact Micrium to properly license
-* its use in your product. We provide ALL the source code for your convenience and to help you experience
-* uC/OS-II.   The fact that the  source is provided does  NOT  mean that you can use it without  paying a
-* licensing fee.
+*********************************************************************************************************
+*/
+
+
+/*
+*********************************************************************************************************
+*
+*                                 uC/OS-II Configuration File for V2.9x
+*
+* Filename : os_cfg.h
+* Version  : V2.93.00
 *********************************************************************************************************
 */
 
 #ifndef OS_CFG_H
 #define OS_CFG_H
 
-#include "em_device.h"
+
                                        /* ---------------------- MISCELLANEOUS ----------------------- */
 #define OS_APP_HOOKS_EN           1u   /* Application-defined hooks are called from the uC/OS-II hooks */
 #define OS_ARG_CHK_EN             1u   /* Enable (1) or Disable (0) argument checking                  */
@@ -142,12 +145,10 @@
 #define OS_TMR_CFG_WHEEL_SIZE     7u   /*     Size of timer wheel (#Spokes)                            */
 #define OS_TMR_CFG_TICKS_PER_SEC 10u   /*     Rate at which timer management task runs (Hz)            */
 
-/*
- * In CMSIS
- * BSP_CPU_ClkFreq = SystemCoreClock
- */
 
-//#define BSP_CPU_ClkFreq()       SystemCoreClock
+                                       /* ---------------------- TRACE RECORDER ---------------------- */
+#define OS_TRACE_EN               0u   /* Enable (1) or Disable (0) uC/OS-II Trace instrumentation     */
+#define OS_TRACE_API_ENTER_EN     0u   /* Enable (1) or Disable (0) uC/OS-II Trace API enter instrum.  */
+#define OS_TRACE_API_EXIT_EN      0u   /* Enable (1) or Disable (0) uC/OS-II Trace API exit  instrum.  */
 
 #endif
-	 	   	  		 			 	    		   		 		 	 	 			 	    		   	 			 	  	 		 				 		  			 		 					 	  	  		      		  	   		      		  	 		 	      		   		 		  	 		 	      		  		  		  

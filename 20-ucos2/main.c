@@ -47,11 +47,9 @@ void  OS_CPU_TickInit (CPU_INT32U  tick_rate)
  * Stacks for tasks
  */
 //{
-#define TASKSTART_STACKSIZE 100
-#define TASK0_STACKSIZE 100
-#define TASK1_STACKSIZE 100
 
-static OS_STK TaskStartStack[TASKSTART_STACKSIZE];
+
+static OS_STK TaskStartStack[APP_CFG_STARTUP_TASK_STK_SIZE];
 static OS_STK Task0Stack[TASK0_STACKSIZE];
 static OS_STK Task1Stack[TASK1_STACKSIZE];
 
@@ -125,7 +123,7 @@ void TaskStart(void *param) {
     // Effectively starting uC/OS
     __enable_irq();
     
-    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
+//    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
 }
 
 
@@ -138,15 +136,16 @@ void TaskStart(void *param) {
  *         HFCLK = HFXO, HFCORECLK = HFCLK, HFPERCLK  = HFCLK
  */
 int main(void) { 
-    
+
+    __disable_irq();
     // Initialize uc/os II
     OSInit();
      
     // Create a task to start the other tasks
     OSTaskCreate(   TaskStart,                                          // Pointer to function
                     (void *) 0,                                         // Parameter for task
-                    (void *) &TaskStartStack[TASKSTART_STACKSIZE-1],    // Initial value of SP
-                    TASKSTART_PRIO);                                    // Task Priority/ID
+                    (void *) &TaskStartStack[APP_CFG_STARTUP_TASK_STK_SIZE-4],    // Initial value of SP
+                    APP_CFG_STARTUP_TASK_PRIO);                                    // Task Priority/ID
 
     // Enter uc/os and never returns
     OSStart();

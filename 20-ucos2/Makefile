@@ -82,29 +82,32 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # UCOS Dir
-UCOS_DIR=../../../Micrium/Software/uCOS-II/
+UCOS_DIR=../../../Micrium/Software/uC-OS2/
 #UCOS_DIR=uCOS-II
 UCOS_SRCDIR=$(UCOS_DIR)/Source
 # Ports Dir for uCOS-II
-#UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/GNU
-UCOS_PORTDIR=uCOS-II/Ports/ARM-Cortex-M/GNU
+UCOS_PORTDIRGNU=$(UCOS_DIR)/Ports/ARM-Cortex-M/ARMv7-M/GNU
+#UCOS_PORTDIR=uCOS-II/Ports/ARM-Cortex-M/GNU
+# Another directory. This contains os_cpu_c.c
+UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M/ARMv7-M
 
 
 # Virtual path
-VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR)
+VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR):$(UCOS_PORTDIRGNU)
 
 # UCOS Include Path
-UCOS_INCLUDEPATH=$(UCOS_SRCDIR)  $(UCOS_PORTDIR)
+UCOS_INCLUDEPATH=$(UCOS_SRCDIR)  $(UCOS_PORTDIRGNU)
 
 # UCOS Source Files
 UCOS_FILES=        os_mbox.c     os_mutex.c  os_sem.c    os_time.c os_core.c \
                   os_flag.c     os_mem.c      os_q.c      os_task.c   os_tmr.c
-UCOS_PORTCFILES=   os_cpu_c.c    os_dbg.c
-UCOS_PORTASMFILES= os_cpu_a.S
+UCOS_PORTCFILES=   os_cpu_c.c
+UCOS_PORTCFILESGNU=   os_dbg.c
+UCOS_PORTASMFILESGNU= os_cpu_a.S
 
-UCOS_SRCFILES= $(addprefix $(UCOS_SRCDIR)/,$(UCOS_FILES) )  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTCFILES))  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTASMFILES)  )
+UCOS_SRCFILES= $(addprefix $(UCOS_SRCDIR)/,$(UCOS_FILES) )  $(addprefix $(UCOS_PORTDIR)/,$(UCOS_PORTCFILES))  $(addprefix $(UCOS_PORTCDIRGNU)/,$(UCOS_PORTCFILESGNU)) $(addprefix $(UCOS_PORTDIRGNU)/,$(UCOS_PORTASMFILESGNU))
 
-UCOS_OBJFILES= $(addprefix ${OBJDIR}/, $(notdir $(UCOS_FILES:.c=.o) $(UCOS_PORTCFILES:.c=.o) $(UCOS_PORTASMFILES:.S=.o)))
+UCOS_OBJFILES= $(addprefix ${OBJDIR}/, $(notdir $(UCOS_FILES:.c=.o) $(UCOS_PORTCFILES:.c=.o) $(UCOS_PORTCFILESGNU:.c=.o) $(UCOS_PORTASMFILESGNU:.S=.o)))
 
 #
 # Main target
@@ -841,7 +844,9 @@ $(DOXYGENCFG):
 
 
 
-## Clean the generated documentation#
+#
+# Clean the generated documentation
+#
 docs-clean:
 	rm -rf html latex
 	echo Done.
@@ -852,7 +857,8 @@ docs-clean:
 CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
 	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
-
+
+
 # These symbols are not files (or directories)
 .PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 .PHONY: default all clean flash burn deploy disassembly dump size

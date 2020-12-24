@@ -169,7 +169,7 @@ OS_ERR err;
                     );
         if( err != OS_ERR_NONE )
             Stop(1);
-        LED_Toggle(LED1|LED2);
+//        LED_Toggle(LED1|LED2);
     }
 }
 
