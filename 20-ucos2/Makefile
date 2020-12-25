@@ -563,14 +563,14 @@ ENTRY=Reset_Handler
 # The rule for building the object file from each C source file.
 #
 ${OBJDIR}/%.o: %.c
-	@echo "  Compiling           ${<}";
+	@echo "  Compiling           $(notdir ${<})";
 	${CC} -c ${CFLAGS} -D${OBJDIR} ${DEPFLAGS} -o ${@} ${<}
 
 #
 # The rule for building the object file from each assembly source file.
 #
 ${OBJDIR}/%.o: %.S
-	@echo "  Assembling          ${<}";
+	@echo "  Assembling          $(notdir ${<})";
 	${CC} -c ${AFLAGS} -D${OBJDIR} -o ${@} -c ${<}
 
 #
