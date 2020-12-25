@@ -20,7 +20,6 @@
 #include "os.h"
 
 #include "led.h"
-#include "uart.h"
 
 /**
  *  Stop function. The parameter can indicate where it was called

@@ -8,9 +8,21 @@
  * @note    Uses as many dependencies as possible
  */
 
-#include "ucos_ii.h"
 #include "buffer.h"
+#include "app_cfg.h"
+#include "os.h"
 
+
+#define USE_ACCESSCONTROL
+
+
+#ifdef USE_ACESSCONTROL
+#define ENTER_CRITICAL_SECTION()    OS_ENTER_CRITICAL()
+#define EXIT_CRITICAL_SECTION()     OS_EXIT_CRITICAL()
+#else
+#define ENTER_CRITICAL_SECTION()
+#define EXIT_CRITICAL_SECTION()
+#endif
 
 /**
  * @brief   initializes a fifo area
@@ -20,9 +32,11 @@ buffer
 buffer_init(void *b, int n) {
 buffer f = (buffer) b;
 
+    ENTER_CRITICAL_SECTION();
     f->front = f->rear = f->data;
     f->size = 0;
     f->capacity = n;
+    EXIT_CRITICAL_SECTION();
     return f;
 }
 
@@ -36,8 +50,10 @@ buffer f = (buffer) b;
 void
 buffer_deinit(buffer f) {
 
+    ENTER_CRITICAL_SECTION();
     f->size = 0;
     f->front = f->rear = f->data;
+    EXIT_CRITICAL_SECTION();
 
 }
 
@@ -49,8 +65,10 @@ buffer_deinit(buffer f) {
  void
  buffer_clear(buffer f) {
 
+    ENTER_CRITICAL_SECTION();
     f->size = 0;
     f->front = f->rear = f->data;
+    EXIT_CRITICAL_SECTION();
 
 }
 
@@ -65,11 +83,12 @@ buffer_insert(buffer f, char x) {
 
     if( buffer_full(f) )
         return -1;
-
+    ENTER_CRITICAL_SECTION();
     *(f->rear++) = x;
     f->size++;
     if( (f->rear - f->data) > f->capacity )
         f->rear = f->data;
+    EXIT_CRITICAL_SECTION();
     return 0;
 }
 
@@ -85,10 +104,12 @@ char ch;
 
     if( buffer_empty(f) )
         return -1;
-
+    ENTER_CRITICAL_SECTION();
     ch = *(f->front++);
     f->size--;
     if( (f->front - f->data) > f->capacity )
         f->front = f->data;
+    EXIT_CRITICAL_SECTION();
+
     return ch;
 }
