@@ -97,17 +97,18 @@ void TaskStart(void *param) {
     /* Configure LEDs */
     LED_Init(LED1|LED2);
     LED_Write(0,LED1|LED2);                                     // Turn them on
+
+    // Initialize the Tick interrupt (CMSIS way)
+    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);
+
+    // Initialize the Tick interrupt (uCOS way)
+    OS_CPU_TickInit(OS_TICKS_PER_SEC);
+
     
-    // Set clock source to external crystal: 48 MHz
-    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
-
-    SysTick_Config(SystemCoreClock/OS_TICKS_PER_SEC);         // Initialize the Tick interrupt (CMSIS way)
-
-    OS_CPU_TickInit(OS_TICKS_PER_SEC);                          // Initialize the Tick interrupt (uCOS way)
-
 #if (OS_TASK_STAT_EN > 0)
     OSStatInit();                               // Determine CPU capacity
 #endif
+
 #if 1                  
     // Create a task to blink LED 0
     OSTaskCreate(   Task0,                                      // Pointer to task
@@ -138,6 +139,10 @@ void TaskStart(void *param) {
 int main(void) { 
 
     __disable_irq();
+
+    // Set clock source to external crystal: 48 MHz
+    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+
     // Initialize uc/os II
     OSInit();
      

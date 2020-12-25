@@ -43,6 +43,7 @@
  */
 
 #include <stdint.h>
+#include "em_device.h"
 
 /*****************************************************************************
  * CONFIGURATION
@@ -154,16 +155,17 @@ static uint8_t heap[__HEAP_SIZE]   __attribute__ ((aligned(8), used, section(".h
   Exception / Interrupt Handler
  *----------------------------------------------------------------------------*/
 /* Cortex-M Processor Exceptions */
-void Reset_Handler           (void) __attribute__((weak));
-void NMI_Handler             (void) __attribute__ ((weak, alias("Default_Handler")));
-void HardFault_Handler       (void) __attribute__ ((weak, alias("Default_Handler")));
-void MemManage_Handler       (void) __attribute__ ((weak, alias("Default_Handler")));
-void BusFault_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
-void UsageFault_Handler      (void) __attribute__ ((weak, alias("Default_Handler")));
-void DebugMon_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
-void SVC_Handler             (void) __attribute__ ((weak, alias("Default_Handler")));
-void PendSV_Handler          (void) __attribute__ ((weak, alias("Default_Handler")));
-void SysTick_Handler         (void) __attribute__ ((weak, alias("Default_Handler")));
+void Reset_Handler(void)            __attribute__((weak));
+void NMI_Handler(void)              __attribute__ ((weak, alias("Default_Handler")));
+void HardFault_Handler(void)        __attribute__ ((weak, alias("Default_Handler")));
+void MemManage_Handler(void)        __attribute__ ((weak, alias("Default_Handler")));
+void BusFault_Handler(void)         __attribute__ ((weak, alias("Default_Handler")));
+void UsageFault_Handler(void)       __attribute__ ((weak, alias("Default_Handler")));
+void DebugMon_Handler(void)         __attribute__ ((weak, alias("Default_Handler")));
+void SVC_Handler(void)              __attribute__ ((weak, alias("Default_Handler")));
+/* Modified or uc/os-ii                                                       */
+void OS_CPU_PendSVHandler(void)     __attribute__ ((weak, alias("Default_Handler")));
+void OS_CPU_SysTickHandler(void)    __attribute__ ((weak, alias("Default_Handler")));
 
 /* Part Specific Interrupts */
 void DMA_IRQHandler(void)           __attribute__ ((weak, alias("Default_Handler")));
@@ -227,8 +229,9 @@ const pFunc __Vectors[] __attribute__ ((section(".vectors"))) = {
   SVC_Handler,                              /*      SVCall Handler            */
   DebugMon_Handler,                         /*      Debug Monitor Handler     */
   Default_Handler,                          /*      Reserved                  */
-  PendSV_Handler,                           /*      PendSV Handler            */
-  SysTick_Handler,                          /*      SysTick Handler           */
+/* Modified or uc/os-ii                                                       */
+  OS_CPU_PendSVHandler,                     /*      PendSV Handler            */
+  OS_CPU_SysTickHandler,                    /*      SysTick Handler           */
 
   /* External interrupts */
 
@@ -417,6 +420,11 @@ void _main(void) {
 /*----------------------------------------------------------------------------
   Default Handler for Exceptions / Interrupts
  *----------------------------------------------------------------------------*/
+uint32_t FaultInfo = 0;
+uint8_t  VecActive = 0;
 void Default_Handler(void) {
+
+    FaultInfo = SCB->ICSR;
+    VecActive = FaultInfo&0xFF;
     __STOP();
 }

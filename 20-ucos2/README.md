@@ -25,7 +25,7 @@ To port the uC/OS to another system, the following requirements must be attended
 
 ##Download
 
-It can be downloaded from Micrium website (register required).
+It couçld be downloaded from Micrium website and a register required). But now, after Micrium was acquired by SiliconLabs, it is now a open source project, housted on  [github](https://github.com/Micrium/uC-OS2). The license now permits commercial use.
 
 It is composed of a small set of C source and header files common to all platforms and another set, specific to a target. There are also different implementations of memory managers.
 
@@ -163,9 +163,32 @@ The infinite loop can be replaced by *OSTaskDel(0)*, which autodelete the *TaskS
     }
     ´´´'
 
-# How to get uC/OS-II
+# Modification of project files
 
-From https://github.com/tony/gpc, you can get in folder 3rd_party/uCOS-II a ucos version ported to GCC, CMSIS and Cortex M3
+Besides the Makefile, other file must be modified in order to point to interrupt routines inside the uc/os code.
+
+The lines defining the interruptio functions
+
+    void PendSV_Handler(void)     __attribute__ ((weak, alias("Default_Handler")));
+    void SysTick_Handler(void)    __attribute__ ((weak, alias("Default_Handler")));
+
+must be modified to
+
+    /* Modified or uc/os-ii                                                       */
+    void OS_CPU_PendSVHandler(void)     __attribute__ ((weak, alias("Default_Handler")));
+    void OS_CPU_SysTickHandler(void)    __attribute__ ((weak, alias("Default_Handler")));
+
+The lines specifying the interrupt vector
+
+    OS_CPU_PendSVHandler,                     /*      PendSV Handler              */
+    OS_CPU_SysTickHandler,                    /*      SysTick Handler             */
+
+must be modified to
+
+    /* Modified or uc/os-ii                                                       */
+    OS_CPU_PendSVHandler,                     /*      PendSV Handler              */
+    OS_CPU_SysTickHandler,                    /*      SysTick Handler             */
+
 ##More information
 
 [uC/OS II on Cortex M](https://www.state-machine.com/qpc/ucos-ii.html)[26]
