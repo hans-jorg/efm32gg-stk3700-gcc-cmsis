@@ -16,7 +16,7 @@
 #define USE_ACCESSCONTROL
 
 
-#ifdef USE_ACESSCONTROL
+#ifdef USE_ACCESSCONTROL
 #define ENTER_CRITICAL_SECTION()    OS_ENTER_CRITICAL()
 #define EXIT_CRITICAL_SECTION()     OS_EXIT_CRITICAL()
 #else
@@ -31,6 +31,9 @@
 buffer
 buffer_init(void *b, int n) {
 buffer f = (buffer) b;
+#if OS_CRITICAL_METHOD == 3      /* Allocate storage for CPU status register */
+    OS_CPU_SR  cpu_sr;
+#endif
 
     ENTER_CRITICAL_SECTION();
     f->front = f->rear = f->data;
@@ -49,6 +52,9 @@ buffer f = (buffer) b;
 
 void
 buffer_deinit(buffer f) {
+#if OS_CRITICAL_METHOD == 3      /* Allocate storage for CPU status register */
+    OS_CPU_SR  cpu_sr;
+#endif
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -64,6 +70,9 @@ buffer_deinit(buffer f) {
  */
  void
  buffer_clear(buffer f) {
+#if OS_CRITICAL_METHOD == 3      /* Allocate storage for CPU status register */
+    OS_CPU_SR  cpu_sr;
+#endif
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -80,6 +89,9 @@ buffer_deinit(buffer f) {
 
 int
 buffer_insert(buffer f, char x) {
+#if OS_CRITICAL_METHOD == 3      /* Allocate storage for CPU status register */
+    OS_CPU_SR  cpu_sr;
+#endif
 
     if( buffer_full(f) )
         return -1;
@@ -101,6 +113,9 @@ buffer_insert(buffer f, char x) {
 int
 buffer_remove(buffer f) {
 char ch;
+#if OS_CRITICAL_METHOD == 3      /* Allocate storage for CPU status register */
+    OS_CPU_SR  cpu_sr;
+#endif
 
     if( buffer_empty(f) )
         return -1;
