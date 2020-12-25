@@ -16,13 +16,14 @@
 #include "em_chip.h"
 #include "em_system.h"
 
-#include "clock_efm32gg.h"
+#include "clock_efm32gg_ext.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "led.h"
 #include "button.h"
+#include "uart.h"
 
 #define TASKDELAYUNTIL
 
@@ -101,6 +102,27 @@ portTickType xLastWakeTime=xTaskGetTickCount();
         }
     }
 }
+
+/**
+ * @brief  Send a char
+ *
+ */
+void Task_SendChar(void *pvParameters){
+const portTickType xFrequency = 2000;
+portTickType xLastWakeTime=xTaskGetTickCount();
+
+    while(1) {
+        if( blinking ) {
+            UART_SendChar('*');
+#ifdef TASKDELAYUNTIL
+            vTaskDelayUntil(&xLastWakeTime,xFrequency);
+#else
+            vTaskDelay(semiperiod1);
+#endif
+        }
+    }
+}
+
 //@}
 
 
@@ -150,10 +172,9 @@ BaseType_t rc;
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-
-
     Button_Init(BUTTON0|BUTTON1);
     LED_Write(0,LED1|LED2);
+    UART_Init();
 
  //   SysTick_Config(SystemCoreClock/1000);   /* 1 ms */
 
@@ -168,7 +189,11 @@ BaseType_t rc;
     rc = xTaskCreate(Task_Button,"Button", 1000,0,3,0);
     if( rc != pdPASS )
         STOP();
-
+        
+    rc = xTaskCreate(Task_SendChar,"UART", 1000,0,6,0);
+    if( rc != pdPASS )
+        STOP();
+        
     vTaskStartScheduler();
 
     while(1) {}

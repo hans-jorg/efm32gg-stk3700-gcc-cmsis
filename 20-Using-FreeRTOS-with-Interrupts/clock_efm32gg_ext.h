@@ -24,7 +24,10 @@ typedef enum {  CLOCK_NONE=0,
                 CLOCK_HFRCO_14MHZ,      ///< High Frequency Internal RC Oscillator: 14 MHz (default)
                 CLOCK_HFRCO_21MHZ,      ///< High Frequency Internal RC Oscillator: 21 MHz
                 CLOCK_HFRCO_28MHZ,      ///< High Frequency Internal RC Oscillator: 28 MHz
-                CLOCK_HFXO              ///< High Frequency Crystall Oscillator: 48 MHz (STK3700)
+                CLOCK_HFXO,             ///< High Frequency Crystall Oscillator: 48 MHz (STK3700)
+                // Below only for Low Frequency Clock A and B
+                CLOCK_ULFRCO,            ///< Ultra Low Frequency
+                CLOCK_HFCORECLOCK_2      ///< HF Core Clock divided by 2
              }  ClockSource_t;
 
 
@@ -45,9 +48,9 @@ typedef struct {
                 ///@}
                 ///@{
                 /* For info only. Not used by ClockSetConfiguration  */
-                uint32_t        hclkfreq;         ///<  =HFCLK/hclkdiv
-                uint32_t        corefreq;         ///<  =HFCLK/hclkdiv/corediv
-                uint32_t        perfreq;          ///<  =HFCLK/hclkdiv/perdiv
+                uint32_t        hclkfreq;       ///@<  =HFCLK/hclkdiv
+                uint32_t        corefreq;       ///@<  =HFCLK/hclkdiv/corediv
+                uint32_t        perfreq;        ///@<  =HFCLK/hclkdiv/perdiv
                 ///@}
 } ClockConfiguration_t;
 
@@ -59,8 +62,9 @@ uint32_t SystemCoreClockSet(ClockSource_t source, uint32_t hclkdiv, uint32_t cor
 uint32_t ClockGetConfiguration(ClockConfiguration_t *p);
 uint32_t ClockConfigureForFrequency(uint32_t freq);
 uint32_t ClockSetHFClockDivisor(uint32_t div);
+uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
+
 uint32_t ClockGetPeripheralClockFrequency(void);
 uint32_t ClockGetCoreClockFrequency(void);
-uint32_t ClockSetPrescalers(uint32_t corediv, uint32_t perdiv);
 
 #endif //SYSTEM_EFM32GG_EXT_H
