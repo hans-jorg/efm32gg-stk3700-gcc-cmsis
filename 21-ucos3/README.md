@@ -29,13 +29,39 @@ It depends on two other packages: os/lib and os/cpu.
 
 ##Download
 
-It can be downloaded from Micrium website (register required). But the most visible version available does not include the required packages and lacks the port folder entirely. A better idea is to download it from the [download center](https://www.micrium.com/downloadcenter/)[31] or more specifically, the [Cor](https://www.micrium.com/downloadcenter/download-results/?searchterm=pa-cortex-m3&supported=true)[tex M3 port page](https://www.micrium.com/downloadcenter/download-results/?searchterm=pa-cortex-m3&supported=true)[32], one with the same or similar architecture. In this case, Texas Instruments LM3S9B92 is a good approximation, because it is a Cortex M3 too.
+It can be downloaded from Micrium website (register required). ~~But the most visible version available does not include the required packages and lacks the port folder entirely. A better idea is to download it from the [download center](https://www.micrium.com/downloadcenter/)[31] or more specifically, the [Cor](https://www.micrium.com/downloadcenter/download-results/?searchterm=pa-cortex-m3&supported=true)[tex M3 port page](https://www.micrium.com/downloadcenter/download-results/?searchterm=pa-cortex-m3&supported=true)[32], one with the same or similar architecture. In this case, Texas Instruments LM3S9B92 is a good approximation, because it is a Cortex M3 too.~~
 
 Another possibility is to download the [Simplicity Studio](https://www.silabs.com/products/development-tools/software/simplicity-studio)[33]. It includes a full uc/os iii for EFM32 devices.
 
+But Silicon Labs open all code of uC/OS-III and related after the acquisition of Micrium. They can now be found in github.
+
+The uC/OS iii depends on the additional packages.
+
+-   -   uC/OS-III: the uC/OS-III
+-   uC/LIB: non standard functions and macros to test characters, generate random numbers, manage memory, manipulate string, etc.
+-   uC/CPU: manager (some) timers and clock frequency. Specifies some parameters like stack growth.
+-   uC/CSP: (optionally) chip support funcions like GPIO pins, etc.
+
+
+All ot them can be found on github.
+
+Package	|	Repository
+--------|-------------
+uC-OS3  | https://github.com/Micrium/uC-OS3 
+uC-CPU  | https://github.com/Micrium/uC-CPU
+uC-LIB  | https://github.com/Micrium/uC-LIB
+
+They can be downloaded as a zip file, or better, can be cloned using git.
+
+    git clone https://github.com/Micrium/uC-OS3
+    git clone https://github.com/Micrium/uC-CPU
+    git clone https://github.com/Micrium/uC-LIB
+
+
+
 ##The uc/os-iii package
 
-The uC/OS iii package, after unpacking, has the following folders:
+The uC/OS iii depends on the following packages:
 
 -   uC/OS-III: the uC/OS-III
 -   uC/LIB: non standard functions and macros to test characters, generate random numbers, manage memory, manipulate string, etc.

@@ -46,6 +46,13 @@ endif
 
 
 #
+# Verbose output for Make (Coment to have verbose output)
+#
+#MAKEFLAGS+= --silent --no-print-directory
+.SILENT:
+
+
+#
 # Defines the part (device) that this project uses
 PART=EFM32GG990F1024
 # Used to find correct CMSIS include file
@@ -80,18 +87,20 @@ CMSISDEVINCDIR=$(GECKOSDKDIR)/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # Micrium Dir
-#UCOS_DIR=../../../Micrium/Software/
-UCOS_DIR=.
+UCOS_DIR=../../../Micrium/Software
+#UCOS_DIR=.
 
 # uCOS-III is the main requisite
-UCOS_SRCDIR=$(UCOS_DIR)/uCOS-III/Source
+UCOS_SRCDIR=$(UCOS_DIR)/uC-OS3/Source
 #UCOS_PORTDIR=$(UCOS_DIR)/Ports/ARM-Cortex-M3/Generic/GNU
-UCOS_PORTDIR=$(UCOS_DIR)/uCOS-III/Ports/ARM-Cortex-M/GNU
+UCOS_PORTDIR1=$(UCOS_DIR)/uC-OS3/Ports/ARM-Cortex-M/ARMv7-M
+UCOS_PORTDIR2=$(UCOS_DIR)/uC-OS3/Ports/ARM-Cortex-M/ARMv7-M/GNU
 
 # uC/CPU is needed by uC/OS
-UCCPU_DIR=./uC-CPU
+UCCPU_DIR=$(UCOS_DIR)/uC-CPU
 UCCPU_SRCDIR=$(UCCPU_DIR)
-UCCPU_PORTDIR=$(UCCPU_DIR)/Ports/ARM-Cortex-M/GNU
+UCCPU_PORTDIR1=$(UCCPU_DIR)/ARM-Cortex-M/ARMv7-M
+UCCPU_PORTDIR2=$(UCCPU_DIR)/ARM-Cortex-M/ARMv7-M/GNU
 
 # uC/Lib is needed by uC/CPU
 UCLIB_DIR=$(UCOS_DIR)/uC-LIB
@@ -100,19 +109,21 @@ UCLIB_PORTDIR=$(UCLIB_DIR)/ARM-Cortex-M3/GNU
 
 
 # Virtual path
-VPATH=$(UCOS_SRCDIR):$(UCOS_PORTDIR) $(UCCPU_SRCDIR) $(UCCPU_PORTDIR) $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
+VPATH=               $(UCOS_SRCDIR)  $(UCOS_PORTDIR1) $(UCOS_PORTDIR2)          \
+                     $(UCCPU_SRCDIR) $(UCCPU_PORTDIR1) $(UCCPU_PORTDIR2)        \
+                     $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
 
 # UCOS Include Path
-UCOS_INCLUDEPATH=   $(UCOS_SRCDIR)  $(UCOS_PORTDIR) \
-                   $(UCCPU_SRCDIR) $(UCCPU_PORTDIR)   \
-                   $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
+UCOS_INCLUDEPATH=    $(UCOS_SRCDIR)  $(UCOS_PORTDIR1) $(UCOS_PORTDIR2)          \
+                     $(UCCPU_SRCDIR) $(UCCPU_PORTDIR1) $(UCCPU_PORTDIR2)        \
+                     $(UCLIB_SRCDIR) $(UCLIB_PORTDIR)
 
 # UCOS Source Files
-UCOS_FILES=         os_cfg_app.c    os_mutex.c      os_stat.c       os_tmr.c     \
-                   os_core.c       os_mem.c        os_prio.c       os_task.c    \
-                   os_dbg.c        os_q.c          os_tick.c    \
-                   os_flag.c       os_msg.c        os_sem.c        os_time.c    \
-                   os_var.c
+UCOS_FILES=         os_cfg_app.c    os_mutex.c      os_stat.c       os_tmr.c    \
+                    os_core.c       os_mem.c        os_prio.c       os_task.c   \
+                    os_dbg.c        os_q.c          os_tick.c    \
+                    os_flag.c       os_msg.c        os_sem.c        os_time.c   \
+                    os_var.c
 UCOS_PORTCFILES=    os_cpu_c.c
 UCOS_PORTASMFILES=  os_cpu_a.s
 
@@ -129,25 +140,25 @@ uCLIB_PORTASMFILES= libmem_a.s
 
 # All ucOS Source Files
 UCOS_SRCFILES=  $(addprefix $(UCOS_SRCDIR)/, $(UCOS_FILES))                  \
-               $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTCFILES))            \
-               $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTASMFILES))          \
-               $(addprefix $(UCCPU_SRCDIR)/, $(UCCPU_FILES))                \
-               $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTFILES))           \
-               $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTASMFILES))        \
-               $(addprefix $(UCLIB_SRCDIR)/, $(UCLIB_FILES))                \
-               $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTFILES))           \
-               $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTASMFILES))        \
+                $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTCFILES))            \
+                $(addprefix $(UCOS_PORTDIR)/, $(UCOS_PORTASMFILES))          \
+                $(addprefix $(UCCPU_SRCDIR)/, $(UCCPU_FILES))                \
+                $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTFILES))           \
+                $(addprefix $(UCCPU_PORTDIR)/, $(UCCPU_PORTASMFILES))        \
+                $(addprefix $(UCLIB_SRCDIR)/, $(UCLIB_FILES))                \
+                $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTFILES))           \
+                $(addprefix $(UCLIB_PORTDIR)/, $(UCLIB_PORTASMFILES))        \
 
 # All ucOS Object Files
 UCOS_OBJFILES=  $(addprefix $(OBJDIR)/, $(UCOS_FILES:.c=.o))                 \
-               $(addprefix $(OBJDIR)/, $(UCOS_PORTCFILES:.c=.o))            \
-               $(addprefix $(OBJDIR)/, $(UCOS_PORTASMFILES:.s=.o))          \
-               $(addprefix $(OBJDIR)/, $(UCCPU_FILES:.c=.o))                \
-               $(addprefix $(OBJDIR)/, $(UCCPU_PORTFILES:.c=.o))            \
-               $(addprefix $(OBJDIR)/, $(UCCPU_PORTASMFILES:.s=.o))         \
-               $(addprefix $(OBJDIR)/, $(UCLIB_FILES:.c=.o))                \
-               $(addprefix $(OBJDIR)/, $(UCLIB_PORTFILES:.c=.o))            \
-               $(addprefix $(OBJDIR)/, $(UCLIB_PORTASMFILES:.s=.o))
+                $(addprefix $(OBJDIR)/, $(UCOS_PORTCFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCOS_PORTASMFILES:.s=.o))          \
+                $(addprefix $(OBJDIR)/, $(UCCPU_FILES:.c=.o))                \
+                $(addprefix $(OBJDIR)/, $(UCCPU_PORTFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCCPU_PORTASMFILES:.s=.o))         \
+                $(addprefix $(OBJDIR)/, $(UCLIB_FILES:.c=.o))                \
+                $(addprefix $(OBJDIR)/, $(UCLIB_PORTFILES:.c=.o))            \
+                $(addprefix $(OBJDIR)/, $(UCLIB_PORTASMFILES:.s=.o))
 
 
 #
@@ -155,12 +166,6 @@ UCOS_OBJFILES=  $(addprefix $(OBJDIR)/, $(UCOS_FILES:.c=.o))                 \
 #
 #default: usage
 default: all
-
-#
-# Verbose output for Make (Coment to have verbose output)
-#
-#MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
 
 #
 # For gcc-arm-embedded
@@ -884,7 +889,9 @@ $(DOXYGENCFG):
 
 
 
-## Clean the generated documentation#
+#
+# Clean the generated documentation
+#
 docs-clean:
 	@rm -rf html latex
 	echo Done.
@@ -895,7 +902,8 @@ docs-clean:
 CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
 	(cflow $(CFLOWFLAGS) -D$(PART) $(addprefix -I ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
-
+
+
 # These symbols are not files (or directories)
 .PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 .PHONY: default all clean flash burn deploy disassembly dump size
