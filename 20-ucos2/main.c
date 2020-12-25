@@ -124,7 +124,7 @@ void TaskStart(void *param) {
 
 #endif
 
-//    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
+    OSTaskDel(OS_PRIO_SELF);                                    // Kill itself. Task should never return
 }
 
 
