@@ -16,9 +16,9 @@
 #define USE_ACCESSCONTROL
 
 
-#ifdef USE_ACESSCONTROL
-#define ENTER_CRITICAL_SECTION()    OS_ENTER_CRITICAL()
-#define EXIT_CRITICAL_SECTION()     OS_EXIT_CRITICAL()
+#ifdef USE_ACCESSCONTROL
+#define ENTER_CRITICAL_SECTION()    CPU_CRITICAL_ENTER()
+#define EXIT_CRITICAL_SECTION()     CPU_CRITICAL_EXIT()
 #else
 #define ENTER_CRITICAL_SECTION()
 #define EXIT_CRITICAL_SECTION()
@@ -31,6 +31,7 @@
 buffer
 buffer_init(void *b, int n) {
 buffer f = (buffer) b;
+CPU_SR_ALLOC();
 
     ENTER_CRITICAL_SECTION();
     f->front = f->rear = f->data;
@@ -49,6 +50,7 @@ buffer f = (buffer) b;
 
 void
 buffer_deinit(buffer f) {
+CPU_SR_ALLOC();
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -62,8 +64,9 @@ buffer_deinit(buffer f) {
  *
  * @note    Does not free area. For now identical to deinit
  */
- void
- buffer_clear(buffer f) {
+void
+buffer_clear(buffer f) {
+CPU_SR_ALLOC();
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -80,6 +83,7 @@ buffer_deinit(buffer f) {
 
 int
 buffer_insert(buffer f, char x) {
+CPU_SR_ALLOC();
 
     if( buffer_full(f) )
         return -1;
@@ -101,6 +105,7 @@ buffer_insert(buffer f, char x) {
 int
 buffer_remove(buffer f) {
 char ch;
+CPU_SR_ALLOC();
 
     if( buffer_empty(f) )
         return -1;

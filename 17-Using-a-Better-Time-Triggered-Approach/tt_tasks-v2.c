@@ -31,7 +31,7 @@ static inline void __disable_irq(void)
 ///@}
 
 /// task tick counter
-static uint32_t task_tickcounter = 0;
+static volatile uint32_t task_tickcounter = 0;
 
 /**
  * @brief Task Info
