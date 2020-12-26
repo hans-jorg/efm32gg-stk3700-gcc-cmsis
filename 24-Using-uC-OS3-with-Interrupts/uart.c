@@ -25,8 +25,13 @@
 
 #include "em_device.h"
 #include "clock_efm32gg_ext.h"
+
+#include "app_cfg.h"
+#include "os.h"
+
 #include "uart.h"
 #include "buffer.h"
+
 
 /**
  * @brief   Macros to enhance portability
@@ -179,12 +184,13 @@ uint32_t bauddiv;
 
 void UART0_RX_IRQHandler(void) {
 uint8_t ch;
-
+    OSIntEnter();
     if ( UART0->IF&(UART_IF_RXDATAV|UART_IF_RXFULL) ) {
         // Put in input buffer
         ch = UART0->RXDATA;
         (void) buffer_insert(inputbuffer,ch);
     }
+    OSIntExit();
 }
 
 
@@ -197,7 +203,7 @@ uint8_t ch;
 
 void UART0_TX_IRQHandler(void) {
 uint8_t ch;
-
+    OSIntEnter();
     // if data in output buffer and transmitter idle, send it
     if( UART0->IF&UART_IF_TXC ) {
         if( UART0->STATUS&UART_STATUS_TXBL ) {
@@ -209,6 +215,7 @@ uint8_t ch;
         }
        UART0->IFC = UART_IFC_TXC;
     }
+    OSIntExit();
 }
 
 /**
