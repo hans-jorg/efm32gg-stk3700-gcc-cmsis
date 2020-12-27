@@ -75,5 +75,5 @@ Determine the largest.
 
 [EFM32GG990 Data Sheet](https://www.silabs.com/documents/public/data-sheets/efm32gg-datasheet.pdf)
 
-[AN0021](https://www.silabs.com/documents/public/application-notes/AN0021.pdf)
+[AN0020](https://www.silabs.com/documents/public/application-notes/AN0020.pdf)
 
