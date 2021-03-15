@@ -287,7 +287,7 @@ int neg = 0;
  */
 
 void
-itoa(int v, char *s) {
+myitoa(int v, char *s) {
 int sign=0;
 int p10 = 10;
 int p10ant = 0;
@@ -332,7 +332,7 @@ int n;
  */
 
 void
-utoa(unsigned x, char *s) {
+myutoa(unsigned x, char *s) {
 int p10 = 10;
 int p10ant = 0;
 char *p;

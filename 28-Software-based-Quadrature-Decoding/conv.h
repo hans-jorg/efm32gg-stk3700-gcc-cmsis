@@ -22,8 +22,8 @@ int iscntrl(int c);
 int isalnum(int c);
 
 //int atoi(char *s);
-void itoa(int v, char *s);
-void utoa(unsigned x, char *s);
+void myitoa(int v, char *s);
+void myutoa(unsigned x, char *s);
 int hextoi(char *s);
 int itohex(unsigned x, char *s);
 

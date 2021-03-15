@@ -1512,7 +1512,7 @@ uint16_t m;
 uint8_t segn,comn,sn;
 SegEncoding_t seg;
 SegEncoding_t s[8] = { 0 };
-uint8_t pos;
+uint8_t pos=0;
 uint32_t segments;
 
     if( code < LCD_GROUP ) {

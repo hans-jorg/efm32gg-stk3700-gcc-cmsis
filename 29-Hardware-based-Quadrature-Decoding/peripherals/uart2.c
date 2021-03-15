@@ -486,7 +486,7 @@ void UART_SendString(USART_TypeDef *uart, char *s) {
  */
 
 unsigned UART_GetCharNoWait(USART_TypeDef *uart) {
-int ch;
+int ch=0;
 
 #ifdef USE_UART1
     switch( (uint32_t) uart) {
@@ -518,7 +518,7 @@ int ch;
  */
 
 unsigned UART_GetChar(USART_TypeDef *uart) {
-int ch;
+int ch=0;
 
 #ifdef USE_UART1
     switch( (uint32_t) uart) {

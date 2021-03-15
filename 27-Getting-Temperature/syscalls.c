@@ -176,7 +176,7 @@ void _main(void) {
  *          it is best to avoid linking with subroutines that require it (exit, system).
  */
 
-void _exit(void) {
+void _exit(int error) {
     while (1) {}        // eternal loop
 }
 

@@ -1,15 +1,21 @@
 # Files
 TODO.md
 
+# Work files
+*.BAK
+
 # Directories
 gcc/
 html/
 utils/
 tmp/
-01-Blink-No-Way/
+X*/
 
 # Prerequisites
 *.d
+
+# VS Code files
+*.log
 
 # Object files
 *.o

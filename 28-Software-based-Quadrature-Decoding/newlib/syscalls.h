@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/times.h>
 
-void _exit(void);
+void _exit(int);
 int _close(int file);
 extern char *__env[1];
 extern char **environ;

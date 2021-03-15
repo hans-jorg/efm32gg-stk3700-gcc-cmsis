@@ -176,7 +176,7 @@ int c = 0;
             } else {
                 LCD_WriteSpecial(LCD_MINUS,1);
             }
-            itoa(c,s);
+            myitoa(c,s);
             LCD_WriteString(s);
             cant = c;
         }

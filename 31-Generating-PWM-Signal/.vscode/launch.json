@@ -1,0 +1,36 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // And https://wiki.segger.com/J-Link_Visual_Studio_Code
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex-M GDB Launch",
+            "type": "cortex-debug",
+            "request": "launch",
+            "executable": "${workspaceFolder}/gcc/pwm1.axf",
+            "cwd": "${workspaceFolder}",
+
+            "serverpath":"",
+            "servertype":"jlink",
+            "device":"EFM32GG990F1024",
+            "interface":"swd",
+            "serialNumber":"",
+          // There are two possibilites: using a JLink script as specified by the
+          // jlinkscript":"${workspaceFolder}/gcc/pwm1.jlink",
+          // line, or embedded the script in a preRestartCommands parameter
+            "preRestartCommands": [
+                "file ${workspaceFolder}/gcc/pwm1.bin",
+                "load",
+                "add-symbol-file ${workspaceFolder}/gcc/pwm1.axf 0x0",
+                "enable breakpoint",
+                "monitor reset"
+            ],
+            "runToEntryPoint": "main",
+            "svdFile": "${workspaceFolder}/gcc/pwm1.svd",
+
+            "preLaunchTask": "Make: make flash",
+        }
+    ]
+}
