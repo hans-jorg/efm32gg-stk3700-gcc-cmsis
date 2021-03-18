@@ -88,6 +88,11 @@ SRCFILES=$(wildcard *.c) $(SUBSRCFILES)
 PREFIX:=arm-none-eabi
 
 #
+# Set debug mode
+#
+DEBUG=y
+
+#
 # Gecko_SDK DIr
 #
 GECKOSDKDIR=../../Gecko_SDK

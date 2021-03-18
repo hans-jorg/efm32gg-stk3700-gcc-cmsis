@@ -83,28 +83,6 @@
                 "isDefault": true
             },
             "detail": "Generate documentation using 'docs' Makefile target."
-        },
-
-        {
-            // Start GDB Proxy
-            "type": "cppbuild",
-            "label": "Make: make gdbproxy",
-            "command": "make",
-            "args": [
-                "gdbproxy"
-            ],
-            "dependsOn": [ "Make: make flash" ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "detail": "Start GDB Proxy."
         }
     ]
 }
