@@ -32,7 +32,7 @@
 ///@}
 
 /// Default delay value.
-#define DELAYVAL 3
+#define DELAYVAL 9
 /**
  * @brief  Quick and dirty delay function
  * @note   Do not use it in production code
@@ -70,6 +70,9 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
     GPIOE->MODEL &= ~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK);       // Clear bits
     GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);  // Set bits
 
+    GPIOE->MODEL = (GPIOE->MODEL&~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK))
+                  |(GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);
+                 
     /* Initial values for LEDs */
     GPIOE->DOUT &= ~(LED1|LED2);                                               // Turn Off LEDs
 

@@ -5,7 +5,7 @@
 
 There is a violation of encapsulation rules when the clock frequency is changed. After the changing of clock frequency, many devices need to be reconfigured. This is the case of the UARTs. 
 
-In the current implementation the UART_Init routine must be called to reconfigure the UART. But the main purpose of the newlib module is to hidden the implementation details, including the UART interface. The initialization of UART is done before the main routine starts (See _main in syscalls.c) and the necessity to call UART_Init in the main procedure leads to run errors difficult to analyze. 
+In the current implementation the UART_Init routine must be called to reconfigure the UART. But the main purpose of the newlib module is to hide the implementation details, including the UART interface. The initialization of UART is done before the main routine starts (See _main in syscalls.c) and the necessity to call UART_Init in the main procedure leads to run errors difficult to analyze. 
 
 The need to reconfigure devices when the clock frequency is changed is present in the drivers for other devices.
 
