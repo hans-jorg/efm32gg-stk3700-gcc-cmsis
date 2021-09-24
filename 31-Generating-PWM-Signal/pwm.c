@@ -199,13 +199,16 @@ unsigned g,p;
 
 #define PINMODE    4
 
+    int ppos;
 
     // Configure pin as output, push-pull, fast
     if( p < 8 ) {       // pins 7-0
-        gpio->MODEL = (gpio->MODEL&~(0xF<<p))|(PINMODE<<p);
+        ppos = p*4;
+        gpio->MODEL = (gpio->MODEL&~(0xF<<ppos))|(PINMODE<<ppos);
     } else {            // pins 15-8
         p -= 8;
-        gpio->MODEH = (gpio->MODEH&~(0xF<<p))|(PINMODE<<p);
+        ppos = p*4;
+        gpio->MODEH = (gpio->MODEH&~(0xF<<ppos))|(PINMODE<<ppos);
     }
 
     return 0;
