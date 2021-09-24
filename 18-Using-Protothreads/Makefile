@@ -1,8 +1,8 @@
 ##
 #  @file     Makefile
 #  @brief    General makefile for EMF32GG
-#  @version  V1.2
-#  @date     03/06/2021
+#  @version  v1.3
+#  @date     23/09/2021
 #
 #  @note     CMSIS library used
 #
@@ -104,6 +104,26 @@ PROTOTHREADDIR=../../../pt-1.4
 CMSISDIR=${GECKOSDKDIR}/platform/CMSIS
 CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 
+
+#
+# Commands Linux/Windows
+#
+ifeq (${HOSTOS},Windows_NT)
+RM=del
+MKDIR=mkdir
+MV=move
+CP=copy
+else
+RM=rm -rf 
+MKDIR=mkdir -p
+MV=mv
+CP=cp
+endif
+
+
+#
+# When using VSCODE
+#
 
 ifeq (${INSIDEVSCODE},yes)
 #
@@ -511,6 +531,12 @@ GUIEDITOR=gedit --new-window
 DOXYGEN=doxygen
 
 #
+# cflow to generate call graphs
+#
+CFLOW=cflow
+CFLOWFLAGS=-l  -b --omit-arguments
+
+#
 # Options for flash and debug
 #
 
@@ -566,7 +592,7 @@ PROJNAME=${shell basename ${CURDIR}}
 # Serial terminal communication
 #
 TTYTERM=/dev/ttyACM0
-TTYBAUD=155200
+TTYBAUD=115200
 
 #
 # Serial terminal emulator
@@ -646,12 +672,12 @@ ${OBJDIR}/%.a:
 ${OBJDIR}/%.axf:  ${OBJFILES}
 	@echo   "Linking             ${@}"
 	${LD}   -T '${LINKERSCRIPT}'        \
-	        ${SPECFLAGS}                \
-	        -Wl,--print-memory-usage    \
-	        --entry '${ENTRY}'          \
-	        -o ${@}                     \
-	         ${OBJFILES}                \
-	         ${LIBS}
+	       ${SPECFLAGS}                \
+	       -Wl,--print-memory-usage    \
+	       --entry '${ENTRY}'          \
+	       -o ${@}                     \
+	        ${OBJFILES}                \
+	        ${LIBS}
 
 ${OBJDIR}/%.bin: ${OBJDIR}/%.axf
 	@echo   "Generating binary   ${@}"
@@ -748,7 +774,7 @@ dump: ${OBJDIR}/${PROGNAME}.axf
 	@echo   "Dumping ${^} and storing output in ${OBJDIR}/${PROGNAME}.dump"
 	${OBJDUMP} ${ODDUMPFLAGS} $^ > ${OBJDIR}/${PROGNAME}.dump
 imagedump: ${OBJDIR}/${PROGNAME}.bin
-	od -x $^ > ${OBJDIR}/${PROGNAME}.hexdump
+	  $\{OBJDUMP} -x $^ > ${OBJDIR}/${PROGNAME}.hexdump
 
 #
 # List size
@@ -766,13 +792,7 @@ nm: ${OBJDIR}/${PROGNAME}.axf
 # The rule to create the target directory.
 #
 ${OBJDIR}:
-ifeq (${HOSTOS},Windows)
-${OBJDIR}:
-	mkdir ${OBJDIR}
-else
-${OBJDIR}:
-	mkdir -p ${OBJDIR}
-endif
+	${MKDIR} ${OBJDIR}
 
 
 #
@@ -845,7 +865,7 @@ endif
 ifeq (${USE_OPENOCD},yes)
 gdbproxy:
 	if [ -c ${TTYTERM} ] ; then echo "Starting OpenOCD"; \
-	    ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
+	   ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
 	else echo "Could not open ${GDBPROXY}"; fi
 #
 # Create gdbinit
@@ -884,7 +904,7 @@ ${DOXYGENCFG}:
 	echo /^DISTRIBUTE_GROUP_DOC/cDISTRIBUTE_GROUP_DOC    = YES >> ${SEDSCRIPT}
 	echo /^EXTRACT_STATIC/cEXTRACT_STATIC    = YES >> ${SEDSCRIPT}
 	sed -i -f ${SEDSCRIPT} ${DOXYGENCFG}
-	rm  -f  ${SEDSCRIPT}
+	-${RM}   ${SEDSCRIPT}
 
 
 
@@ -892,22 +912,42 @@ ${DOXYGENCFG}:
 # Clean the generated documentation
 #
 docs-clean:
-	rm -rf html latex && echo Done.
+	-${RM}  html latex && echo Done.
 
 #
 # Clean out all the generated files
 #
 
 clean:
-	-rm -rf ${OBJDIR} ${wildcard *~} html latex docs
+	-${RM}  ${OBJDIR} ${wildcard *~} html latex docs
 	echo Done
 
 
 #
 # Copy the SVD to OBJDIR folder
 #
-test:
-	echo "Inside VSCODE=${INSIDEVSCODE}"
+
+
+
+#
+# Commands Linux/Windows
+#
+ifeq (${HOSTOS},Windows_NT)
+RM=del
+MKDIR=mkdir
+MV=move
+CP=copy
+else
+RM=rm -rf 
+MKDIR=mkdir -p
+MV=mv
+CP=cp
+endif
+
+
+#
+# When using VSCODE
+#
 
 ifeq (${INSIDEVSCODE},yes)
 svd: ${OBJDIR} ${OBJDIR}/${PART}.svd
@@ -916,14 +956,14 @@ svd:
 endif
 
 ${OBJDIR}/${PART}.svd: FORCE
-	-cp ${SVCDIR}/${PART}.svd  ${OBJDIR}
+	-${CP} - ${SVCDIR}/${PART}.svd  ${OBJDIR}
 
 #
 # generates a call graph
 #
 CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
-	(cflow ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1} | egrep -v "^cflow"
+	{ ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1} | egrep -v "^cflow"
 
 
 # These symbols are not files (or directories}
