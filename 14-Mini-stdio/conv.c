@@ -266,13 +266,15 @@ int neg = 0;
         neg = 1;
         p++;
     }
-    if( *p == 0 ) return n;
-    while ( *p && isspace(*p) ) {
+    if( *p == 0 ) return 0;
+
+    while ( *p && isdigit(*p) ) {
         n *= 10; // n = (n<<3)+(n<<1);
         n += (*p-'0');
+        p++;
     }
-    if( *p != 0 ) return 0;
-    if( neg ) return -n;
+    if( *p != '\0' ) return 0;
+    if( neg ) n = -n;
     return n;
 }
 
