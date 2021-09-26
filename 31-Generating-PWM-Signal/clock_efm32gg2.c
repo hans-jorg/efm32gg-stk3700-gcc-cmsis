@@ -1,5 +1,5 @@
 /**
- * @file    clock_efm32gg-ext.c
+ * @file    clock_efm32gg2.c
  * @brief   Additional CMSIS-like routines to control clock settings  
  *          in EFM32GG devices.
  * @version 1.0
@@ -25,7 +25,6 @@
 #endif
 
 /**
- * @macro      GETBYTEFROMWORD
  * @brief      get a BYTE at address WORD + POS
  */
  
@@ -54,7 +53,6 @@ static callbacks_t callbacks[CALLBACKS_MAX] = {0};
 //}
 
 /**
- * @function        GetProdRev
  * @brief           Inline function to get the chip's Production Revision.
  *
  * @note            From Silicon Labs system_efm32gg.c. It is a static function there
@@ -188,8 +186,10 @@ int i;
  *
  * @param[in] source
  *   CLOCK_LFXO, CLOCK_LFRC, CLOCK_HFRCO, CLOCK_HFXO,
- * @param[in] freq
- *   LFXO frequency in Hz used for target.
+ * @param[in] hclkdiv
+ *   Divisor used to generate HCLK
+ * @param[in] corediv
+ *   Divisor used to generate the Core Clock (additional divisor)
  */
 
 uint32_t
@@ -537,8 +537,10 @@ uint32_t newctrl;
 /**
  * @brief       Change prescalers for Core and Peripheral Clock
  *
- * @param       corediv: prescaler for HFCORECLOCK
- * @param       perdiv:  prescaler for HFPERCLOCK
+ * @param       hclkdiv: prescaler for HCLK clock
+ * @param       corediv: prescaler for HFCORECLOCK from HCLK
+ * @param       perdiv:  prescaler for HFPERCLOCK from HCLK
+ * @param       cloreclkdiv
  *
  * @note        Prescalers must be a power of 2 in the range [1..512]. If it is not,
  *              it will be rounded
@@ -780,6 +782,7 @@ ClockConfiguration_t clockconf;
     return clockconf.hfcoreclkfreq;
 
 }
+
 
 
 

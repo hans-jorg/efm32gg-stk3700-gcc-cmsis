@@ -1391,7 +1391,6 @@ uint32_t v;
  *   level    |     0 |     1 |     2 |     3 |     4 |     5 |     6 |     7
  *   ---------|-------|-------|-------|-------|-------|-------|-------|--------
  *   voltage  |   3.00|   3.08|   3.17|   3.26|   3.34|   3.43|   3.52|   3.60
- *  @endverbatim
  */
 void LCD_SetVoltage(uint32_t source, uint32_t div, uint32_t level ) {
 uint32_t d;

@@ -1,7 +1,7 @@
 #ifndef  SYSTEM_EFM32GG_EXT_H
 #define  SYSTEM_EFM32GG_EXT_H
 /** ***************************************************************************
- * @file     system_efm32gg-ext.h
+ * @file     system_efm32gg2.h
  * @brief    Additional CMSIS-like routines for Cortex-M3 System Layer for
  *           EFM32GG devices.
  * @version  1.0

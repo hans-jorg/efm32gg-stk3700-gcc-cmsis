@@ -208,7 +208,7 @@ static int Timer_ClockEnable(TIMER_TypeDef* timer) {
  *
  * @param    channel  Channel number (0,1,2)
  *
- * @location location used for pins as defined in Table 4.2. Alternate functionality overview of
+ * @param    location location used for pins as defined in Table 4.2. Alternate functionality overview of
  *           datasheet
  */
 
@@ -270,7 +270,7 @@ unsigned gpion,pinn;
 
  * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
  *
- * @location location used for pins as defined in Table 4.2. Alternate functionality overview of
+ * @param    location location used for pins as defined in Table 4.2. Alternate functionality overview of
  *           datasheet
  *
  * @param    params  OR of the following values

@@ -1,7 +1,7 @@
 #ifndef TEMPERATURE_H
 #define TEMPERATURE_H
 /**
- * @file    temperature.
+ * @file    temperature.h
  * @brief   Temperature Reading for EFM32GG
  * @version 1.0
  *

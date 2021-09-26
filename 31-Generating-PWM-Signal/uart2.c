@@ -1,5 +1,5 @@
 /** **************************************************************************
- * @file    uart.c
+ * @file    uart2.c
  * @brief   LED HAL for EFM32GG STK
  * @version 1.0
  *
