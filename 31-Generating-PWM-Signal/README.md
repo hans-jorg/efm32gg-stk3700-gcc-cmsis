@@ -6,7 +6,7 @@
 
 The EFM32GG-STk3700 board has a 4 timer, that can be used to generate PWM signals.
 Each timer has three channels, 0, 1 and 2. Each channel's output can be connected to
-an external pin as shown in the table below.
+an external pin as shown in the table below according the LOCATION field (ROUTE register).
 
 | Timer  | Channel |  0 |  1 |  2 |  3 |  4 |  5 |  6 |  7 |
 |--------|---------|----|----|----|----|----|----|----|----|
@@ -24,7 +24,34 @@ an external pin as shown in the table below.
 |TIMER3  | CC2     |PA15|PE2 |    |    |    |    |    |    |
 
 
-#References
+From the Reference Manual (Section 32.3.4 Alternate Functions)
+
+> Alternate functions are connections to pins from Timers, USARTs etc. These modules contain route
+registers, where the pin connections are enabled. In addition, these registers contain a location bit
+field, which configures which pins the outputs of that module will be connected to if they are enabled.
+If an alternate signal output is enabled for a pin and output is enabled for the pin, the alternate
+function’s output data and output enable signals override the data output and output enable signals
+from the GPIO. However, the pin configuration stays as set in GPIO_Px_MODEL, GPIO_Px_MODEH
+and GPIO_Px_DOUT registers. I.e. the pin configuration must be set to output enable in GPIO for a
+peripheral to be able to use the pin as an output. <br />It is possible, but not recommended to select two or more peripherals as output on the same pin. These
+signals will then be OR'ed together. However, TIMER CCx and CDTIx outputs, which are routed as
+alternate functions, have priority, and will never be OR'ed with other alternate functions. The reader is
+referred to the pin map section of the device datasheet for more information on the possible locations
+of each alternate function and any priority settings.
+
+From Section 20.3.6 GPIO Input/Output
+
+>The TIMn_CCx inputs/outputs and TIM0_CDTIx outputs are accessible as alternate functions through
+GPIO. Each pin connection can be enabled/disabled separately by setting the corresponding CCxPEN
+or CDTIxPEN bits in TIMERn_ROUTE. The LOCATION bits in the same register can be used to move
+all enabled pins to alternate pins.
+
+
+##ROUTE Register
+
+
+References
+----------
 
 [EMF32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
 

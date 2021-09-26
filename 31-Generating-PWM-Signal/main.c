@@ -133,7 +133,7 @@ char s[10];
 
 
     // Configure touch sensor 
-    PWM_Init(TIMER2,PWM_LOC0,PWM_LOC_UNUSED,PWM_LOC_UNUSED);
+    PWM_Init(TIMER2,PWM_LOC0,PWM_PARAMS_ENABLEPIN0);
    
     // Enable IRQs
     __enable_irq();
@@ -148,6 +148,7 @@ char s[10];
     }
 
 }
+
 
 
 

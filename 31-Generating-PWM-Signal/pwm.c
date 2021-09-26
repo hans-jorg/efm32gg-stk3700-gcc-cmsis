@@ -8,7 +8,7 @@
  *
  * @note    The HFPERCLOCK is used as clock source
  *
- * @note    Pinout and Ports
+ * @note    Pinout and Ports for EFM32GG990
  *
  *  Timer  | Channel |  0 |  1 |  2 |  3 |  4 |  5 |  6 |  7 |
  *   ------|---------|----|----|----|----|----|----|----|----|
@@ -34,10 +34,47 @@
 #include "gpio.h"
 #include "pwm.h"
 
+
+/**
+ * @brief Output mode for timer output
+ *
+ * @note  Alternatives are Push-Pull (4), Push-Pull with strength (5)
+ *
+ * @note  Maybe the Wired* modes could be used!
+ */
+#define PINMODE    4
+
+
+/**
+ * @brief   Standard C Macro Utilities
+ */
 #define CONCAT(A,B)  A##B
 #define STRINGFY(A)  #A
 
+/**
+ * @brief Configuration table
+ *
+ * @note Each timer has a LOCATION field, that speficies where the output signal is routed to.
+ *
+ * @note The pin must be configured as output using the GPIO interface
+ *
+ * @note The compound value (timer_channel_loc) is the key. The gpio_pin compound is the
+ *       content. So it is possible to find out which pin is beeing used by a timer
+ */
+
+typedef struct {
+    int16_t     timer_channel_loc;
+    uint16_t    gpio_pin;
+} TimerPin;
+
+/* Macros to build the compounds for timer_channel_loc and gpio_pin */
+#define TCL(T,C,L)                  (((T)<<8)|((C)<<3)|((L)<<0))
 #define GPIOPIN(GPIONUMBER,NUMBER)  ((GPIONUMBER<<8)|(NUMBER))
+
+/*
+ * @brief Macro to easy the initialization
+ */
+
 #define PA(NUMBER)                  GPIOPIN(0,NUMBER)
 #define PB(NUMBER)                  GPIOPIN(1,NUMBER)
 #define PC(NUMBER)                  GPIOPIN(2,NUMBER)
@@ -49,14 +86,11 @@
 #define PI(NUMBER)                  GPIOPIN(8,NUMBER)
 #define PJ(NUMBER)                  GPIOPIN(9,NUMBER)
 
-/* Structure to store info about pin configuration  */
-#define TCL(T,C,L)                  (((T)<<8)|((C)<<3)|((L)<<0))
 
-typedef struct {
-    int16_t     timer_channel_loc;
-    uint16_t    gpio_pin;
-} TimerPin;
-
+/**
+ * @brief Pin usage by timers at the EFM32GG990F1024 microcontroller
+ *
+ */
 static const TimerPin timerpins[] = {
     {   TCL(0,0,0),     PA(0)  },
     {   TCL(0,0,1),     PA(0)  },
@@ -119,6 +153,7 @@ static const TimerPin timerpins[] = {
 /**
  * @brief   PWM_Start
  *
+ * @param   timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
  */
 void PWM_Start(TIMER_TypeDef* timer) {
 
@@ -129,6 +164,7 @@ void PWM_Start(TIMER_TypeDef* timer) {
 /**
  * @brief   PWM_Stop
  *
+ * @param   timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
  */
 void PWM_Stop(TIMER_TypeDef* timer) {
 
@@ -136,8 +172,18 @@ void PWM_Stop(TIMER_TypeDef* timer) {
 
 }
 
+/**
+ * @brief   Timer_ClockEnable
+ *
+ * @note    Local function to configure clock for a specific timer.
+ *
+ * @note    It ENABLES the HFPER Clock
+ *
+ * @param   timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ */
 static int Timer_ClockEnable(TIMER_TypeDef* timer) {
 
+    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     if( timer == TIMER0 ) {
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER0;
     } else if ( timer == TIMER1 ) {
@@ -153,17 +199,27 @@ static int Timer_ClockEnable(TIMER_TypeDef* timer) {
     return 0;
 }
 
+/**
+ * @brief    PWM_ConfigureOutputPin
+ *
+ * @note     local function to configure the pin associdated to a channel to be used as output
+ *
+ * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ *
+ * @param    channel  Channel number (0,1,2)
+ *
+ * @location location used for pins as defined in Table 4.2. Alternate functionality overview of
+ *           datasheet
+ */
 
-static int PWM_ConfigureOutputPin(TIMER_TypeDef* timer, unsigned channel, int loc) {
+static int PWM_ConfigureOutputPin(TIMER_TypeDef* timer, unsigned channel, unsigned location ) {
 unsigned t;
-int16_t k;
+int16_t key;
 TimerPin const *ptimerpin;
 GPIO_P_TypeDef *gpio;
-unsigned g,p;
+unsigned gpion,pinn;
 
-    if( loc == PWM_LOC_UNUSED )
-        return 0;
-
+    /* Finds the index of a timer */
     if( timer == TIMER0 ) {
         t = 0;
     } else if ( timer == TIMER1 ) {
@@ -176,38 +232,31 @@ unsigned g,p;
         return -1;
     }
 
-    timer->ROUTE = (timer->ROUTE
-                        &~(_TIMER_ROUTE_LOCATION_MASK)
-                          )
-                    | (loc<<_TIMER_ROUTE_LOCATION_SHIFT)
-                    | (1<<(_TIMER_ROUTE_CC0PEN_SHIFT+channel));
-
     // Configure GPIO pin
-    k = TCL(t,channel,loc);
+    key = TCL(t,channel,location);
+
+    // It uses a linear search!!!
     ptimerpin = timerpins;
-    // linear search!!!
-    while( (ptimerpin->timer_channel_loc >= 0) && (ptimerpin->timer_channel_loc == k) ) {
+    while( (ptimerpin->timer_channel_loc >= 0) && (ptimerpin->timer_channel_loc == key) ) {
         ptimerpin++;
     }
-    if( ptimerpin->timer_channel_loc != k )
+    if( ptimerpin->timer_channel_loc != key )
         return -2;
 
-    g = ptimerpin->gpio_pin>>8;
-    p = ptimerpin->gpio_pin&0xFF;
+    gpion = ptimerpin->gpio_pin>>8;
+    pinn = ptimerpin->gpio_pin&0xFF;
 
-    gpio = &(GPIO->P[g]);
-
-#define PINMODE    4
+    gpio = &(GPIO->P[gpion]);
 
     int ppos;
 
     // Configure pin as output, push-pull, fast
-    if( p < 8 ) {       // pins 7-0
-        ppos = p*4;
+    if( pinn < 8 ) {       // pins 7-0
+        ppos = pinn*4;
         gpio->MODEL = (gpio->MODEL&~(0xF<<ppos))|(PINMODE<<ppos);
     } else {            // pins 15-8
-        p -= 8;
-        ppos = p*4;
+        pinn -= 8;
+        ppos = pinn*4;
         gpio->MODEH = (gpio->MODEH&~(0xF<<ppos))|(PINMODE<<ppos);
     }
 
@@ -215,14 +264,50 @@ unsigned g,p;
 }
 
 /**
- * @brief   Initializes timer using default parameters
+ * @brief    PWM_Init
  *
- * @note    It configure by default only channel 0
+ * @note     Initialize timer
+
+ * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ *
+ * @location location used for pins as defined in Table 4.2. Alternate functionality overview of
+ *           datasheet
+ *
+ * @param    params  OR of the following values
+ *
+ *           | Params                          |
+ *           |---------------------------------|
+ *           | PWM_PARAMS_ENABLECHANNEL0       |
+ *           | PWM_PARAMS_ENABLECHANNEL1       |
+ *           | PWM_PARAMS_ENABLECHANNEL2       |
+ *           | PWM_PARAMS_ENABLEINTERRUPT0     |
+ *           | PWM_PARAMS_ENABLEINTERRUPT1     |
+ *           | PWM_PARAMS_ENABLEINTERRUPT2     |
+ *           | PWM_PARAMS_ENABLEPIN0           |
+ *           | PWM_PARAMS_ENABLEPIN1           |
+ *           | PWM_PARAMS_ENABLEPIN2           |
+ *           | PWM_PARAMS_ENABLEINVERTPOL0     |
+ *           | PWM_PARAMS_ENABLEINVERTPOL1     |
+ *           | PWM_PARAMS_ENABLEINVERTPOL2     |
+ *           | PWM_PARAMS_ENABLEINVERTPOL2     |
+ *
+ * @note   If there is one value for a channel, it is assumed it is enabled
  */
 
-
-int PWM_Init(TIMER_TypeDef* timer, int loc0, int loc1, int loc2) {
+int PWM_Init(TIMER_TypeDef* timer, int location, unsigned params) {
 int rc;
+
+    // Assert consistency (If any configuration for a channel exists, it must be enabled)
+    if( params&(PWM_PARAMS_ENABLEINTERRUPT0|PWM_PARAMS_ENABLEPIN0|PWM_PARAMS_ENABLEINVERTPOL0) )
+        params |= PWM_PARAMS_ENABLECHANNEL0;
+    if( params&(PWM_PARAMS_ENABLEINTERRUPT1|PWM_PARAMS_ENABLEPIN1|PWM_PARAMS_ENABLEINVERTPOL1) )
+        params |= PWM_PARAMS_ENABLECHANNEL1;
+    if( params&(PWM_PARAMS_ENABLEINTERRUPT2|PWM_PARAMS_ENABLEPIN2|PWM_PARAMS_ENABLEINVERTPOL2) )
+        params |= PWM_PARAMS_ENABLECHANNEL2;
+    if( location == PWM_LOC_UNUSED )
+        location = 0;
+
+    /* Set clock for peripherals. If already set, it is a nop */
 
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
@@ -231,39 +316,85 @@ int rc;
     rc = Timer_ClockEnable(timer);
     if( rc < 0 ) return -1;
 
-    /* Configure output pins */
-    PWM_ConfigureOutputPin(timer, 0, loc0);
-    PWM_ConfigureOutputPin(timer, 1, loc1);
-    PWM_ConfigureOutputPin(timer, 2, loc2);
+    /* Timer must be stopped */
+    PWM_Stop(timer);
 
-    /* Configure timer */
-    rc = PWM_Config(timer,1,0xFFFF, 0);
+    /* Configure timer to default values: div=1, top = max*/
+    rc = PWM_Config(timer,1,0xFFFF);
     if( rc < 0 ) return -2;
 
-    if( loc0 != PWM_LOC_UNUSED ) {
+    /* Configure location, i.e., where pins coulde located */
+    timer->ROUTE = (timer->ROUTE&~(_TIMER_ROUTE_LOCATION_MASK))|(location<<_TIMER_ROUTE_LOCATION_SHIFT);
+
+    /* Configure output pins for output */
+    if( params&PWM_PARAMS_ENABLEPIN0 ) {
+        PWM_ConfigureOutputPin(timer, 0, location);
+    }
+    if( params&PWM_PARAMS_ENABLEPIN1 ) {
+        PWM_ConfigureOutputPin(timer, 1, location);
+    }
+    if( params&PWM_PARAMS_ENABLEPIN2 ) {
+        PWM_ConfigureOutputPin(timer, 2, location);
+    }
+
+    /* Reset channel configuration */
+    timer->CC[0].CTRL = 0;
+    timer->CC[1].CTRL = 0;
+    timer->CC[2].CTRL = 0;
+    timer->CC[0].CCVB = 0xFFFF;
+    timer->CC[1].CCVB = 0xFFFF;
+    timer->CC[2].CCVB = 0xFFFF;
+
+    /* Configure polarity of channel output */
+    if( params&PWM_PARAMS_ENABLEINVERTPOL0 ) {
+        timer->CC[0].CTRL |= TIMER_CC_CTRL_OUTINV;
+    }
+    if( params&PWM_PARAMS_ENABLEINVERTPOL1 ) {
+        timer->CC[1].CTRL |= TIMER_CC_CTRL_OUTINV;
+    }
+    if( params&PWM_PARAMS_ENABLEINVERTPOL2 ) {
+        timer->CC[2].CTRL |= TIMER_CC_CTRL_OUTINV;
+    }
+
+    /* Configure channel interrupts */
+    timer->IEN &= ~(TIMER_IEN_CC0|TIMER_IEN_CC1|TIMER_IEN_CC2);
+    if( params&PWM_PARAMS_ENABLEINTERRUPT0 ) {
+        timer->IEN = TIMER_IEN_CC0;
+    }
+    if( params&PWM_PARAMS_ENABLEINTERRUPT1 ) {
+        timer->IEN = TIMER_IEN_CC1;
+    }
+    if( params&PWM_PARAMS_ENABLEINTERRUPT2 ) {
+        timer->IEN = TIMER_IEN_CC2;
+    }
+
+    /* Configure all specified channels */
+    if( params&PWM_PARAMS_ENABLECHANNEL0 ) {
         timer->CC[0].CTRL =  TIMER_CC_CTRL_ICEVCTRL_RISING
                             |TIMER_CC_CTRL_ICEDGE_RISING
                             |TIMER_CC_CTRL_CMOA_CLEAR
                             |TIMER_CC_CTRL_COIST
                             |TIMER_CC_CTRL_MODE_PWM;
+        timer->CC[0].CCVB = 0xFFFF;
     }
-    if( loc1 != PWM_LOC_UNUSED ) {
+    if( params&PWM_PARAMS_ENABLECHANNEL1 ) {
         timer->CC[1].CTRL =  TIMER_CC_CTRL_ICEVCTRL_RISING
                             |TIMER_CC_CTRL_ICEDGE_RISING
                             |TIMER_CC_CTRL_CMOA_CLEAR
                             |TIMER_CC_CTRL_COIST
                             |TIMER_CC_CTRL_MODE_PWM;
+        timer->CC[1].CCVB = 0xFFFF;
     }
-    if( loc2 != PWM_LOC_UNUSED ) {
+    if( params&PWM_PARAMS_ENABLECHANNEL2 ) {
         timer->CC[2].CTRL =  TIMER_CC_CTRL_ICEVCTRL_RISING
                             |TIMER_CC_CTRL_ICEDGE_RISING
                             |TIMER_CC_CTRL_CMOA_CLEAR
                             |TIMER_CC_CTRL_COIST
                             |TIMER_CC_CTRL_MODE_PWM;
+        timer->CC[2].CCVB = 0xFFFF;
     }
 
-    timer->IEN = 0;
-
+    /* Finally, start timer */
     PWM_Start(timer);
 
     return 0;
@@ -272,6 +403,11 @@ int rc;
 /**
  * @brief   Returns status of all channels as a bit vector in a unsigned int
  *
+ * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ *
+ * @param    channel  Channel number (0,1,2)
+ *
+ * @return   The threshold value
  */
 
 unsigned PWM_Read(TIMER_TypeDef* timer, unsigned channel) {
@@ -284,7 +420,13 @@ unsigned m;
 
 
 /**
- * @brief   Find prescaler encoding (actually ln2(div))
+ * @brief   Find prescaler encoding for a divider value
+ *
+ * @note    Actually is simple the ln2(v)
+ *
+ * @param   v the divider
+ *
+ * @note
  *
  *      |   div    | coding  |
  *      |----------|- -------|
@@ -295,8 +437,7 @@ unsigned m;
  *      | ....     | .....   |
  *      |  1024    |    10   |
  *
- * @note    It is ln2(div)
- *
+ * @note    It rounds to the nearest higher power of 2. Is 3 is treated as 4, 64 as
  */
 
 static unsigned finddivencoding(unsigned v) {
@@ -310,11 +451,21 @@ unsigned c = 0;
 
     return c;
 }
-/**
- * @brief   Returns status of all channels as a bit vector in a unsigned int
- */
 
-int PWM_Config(TIMER_TypeDef *timer, unsigned div, unsigned top, int pol) {
+
+/**
+ * @brief    PWM_Config
+ *
+ * @note     Configure timer (top value and divider)
+ *
+ * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ *
+ * @param    div   prescaler to be used. It is rounded to the nearest highest power of 2
+ *
+ * @param    top   Maximal value reached by timer. It resets to 0 when reaching it
+ *
+ */
+int PWM_Config(TIMER_TypeDef *timer, unsigned div, unsigned top) {
 unsigned d;
 
     PWM_Stop(timer);
@@ -329,16 +480,6 @@ unsigned d;
 
     timer->TOP = top;
 
-    if( pol ) {
-        timer->CC[0].CTRL |= TIMER_CC_CTRL_OUTINV;
-        timer->CC[1].CTRL |= TIMER_CC_CTRL_OUTINV;
-        timer->CC[2].CTRL |= TIMER_CC_CTRL_OUTINV;
-    } else {
-        timer->CC[0].CTRL &= ~TIMER_CC_CTRL_OUTINV;
-        timer->CC[1].CTRL &= ~TIMER_CC_CTRL_OUTINV;
-        timer->CC[2].CTRL &= ~TIMER_CC_CTRL_OUTINV;
-    }
-
     PWM_Start(timer);
 
     return 0;
@@ -347,6 +488,14 @@ unsigned d;
 
 /**
  * @brief   PWM_Write
+ *
+ * @note    Set threshold value for  a channel
+ *
+ * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ *
+ * @param    channel  Channel number (0,1,2)
+ *
+ * @param    value    The threshold value to be set
  *
  * @note    Uses buffered write to CCV
  */
