@@ -4,13 +4,13 @@
  * @file    pwm.h
  */
 
-#define PWM_LOC0                   0
-#define PWM_LOC1                   1
-#define PWM_LOC2                   2
-#define PWM_LOC3                   3
-#define PWM_LOC4                   4
-#define PWM_LOC5                   5
-#define PWM_LOC_UNUSED            -1
+#define PWM_LOC0                             0
+#define PWM_LOC1                             1
+#define PWM_LOC2                             2
+#define PWM_LOC3                             3
+#define PWM_LOC4                             4
+#define PWM_LOC5                             5
+#define PWM_LOC_UNUSED                      -1
 
 /**
  * @brief   configuration parameters
