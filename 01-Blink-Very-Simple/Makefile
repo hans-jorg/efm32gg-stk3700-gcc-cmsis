@@ -812,7 +812,7 @@ nm: ${OBJDIR}/${PROGNAME}.axf
 # The rule to create the target directory.
 #
 ${OBJDIR}:
-	${MKDIR} ${OBJDIR}}
+	${MKDIR} ${OBJDIR}
 
 #
 # Rules for building the ${PROGNAME} example.
