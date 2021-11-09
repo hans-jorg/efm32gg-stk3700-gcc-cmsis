@@ -103,7 +103,7 @@ CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 #
 # Commands Linux/Windows
 #
-ifeq (${HOSTOS},Windows_NT)
+ifeq (${HOSTOS},Windows)
 RM=del
 MKDIR=mkdir
 MV=move
@@ -927,7 +927,7 @@ clean:
 #
 # Commands Linux/Windows
 #
-ifeq (${HOSTOS},Windows_NT)
+ifeq (${HOSTOS},Windows)
 RM=del
 MKDIR=mkdir
 MV=move

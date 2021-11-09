@@ -183,7 +183,7 @@ UCOS_OBJFILES=  ${addprefix ${OBJDIR}/, ${UCOS_FILES:.c=.o}}                 \
 #
 # Commands Linux/Windows
 #
-ifeq (${HOSTOS},Windows_NT)
+ifeq (${HOSTOS},Windows)
 RM=del
 MKDIR=mkdir
 MV=move
@@ -1018,7 +1018,7 @@ clean:
 #
 # Commands Linux/Windows
 #
-ifeq (${HOSTOS},Windows_NT)
+ifeq (${HOSTOS},Windows)
 RM=del
 MKDIR=mkdir
 MV=move
