@@ -99,42 +99,24 @@ GECKOSDKDIR=../../Gecko_SDK
 CMSISDIR=${GECKOSDKDIR}/platform/CMSIS
 CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 
-
 #
 # Commands Linux/Windows
 #
 ifeq (${HOSTOS},Windows)
-RM=del
+# Windows
+RM=rmdir /s /q
 MKDIR=mkdir
 MV=move
 CP=copy
+NOOUT= > NUL
 else
+# Linux
 RM=rm -rf
 MKDIR=mkdir -p
 MV=mv
 CP=cp
+NOOUT=
 endif
-
-
-#
-# When using VSCODE
-#
-
-#
-# Commands Linux/Windows
-#
-ifeq (${HOSTOS},Windows)
-RM=del
-MKDIR=mkdir
-MV=move
-CP=copy
-else
-RM=rm -rf
-MKDIR=mkdir -p
-MV=mv
-CP=cp
-endif
-
 
 #
 # When using VSCODE
@@ -574,10 +556,19 @@ ifeq (${USE_JLINK},yes)
 #
 # JLink
 #
+ifeq (${HOSTOS},Windows)
+# For Windows
+JLINK=JLink
+GDBPROXY=JLinkGDBServer
+JLINKPARMS= -Device ${PART} -If SWD -Speed 4000
+JLINKFLASHSCRIPT=${OBJDIR}/flash.jlink
+else
+# For Linux
 JLINK=JLinkExe
 GDBPROXY=JLinkGDBServer
 JLINKPARMS= -Device ${PART} -If SWD -Speed 4000
 JLINKFLASHSCRIPT=${OBJDIR}/flash.jlink
+endif
 endif
 
 
@@ -926,7 +917,6 @@ ${DOXYGENCFG}:
 	-${RM}   ${SEDSCRIPT}
 
 
-
 #
 # Clean the generated documentation
 #
@@ -936,45 +926,19 @@ docs-clean:
 #
 # Clean out all the generated files
 #
-
 clean:
-	-$(RM) ${OBJDIR} ${wildcard *~} html latex docs
-	-$(RM) .vscode/*.log
+	-$(RM) ${OBJDIR} ${wildcard *~} html latex docs NOOUT
+	-$(RM) .vscode/*.log NOOUT
 	echo Done
-
 
 #
 # Copy the SVD to OBJDIR folder
 #
-
-
-
-#
-# Commands Linux/Windows
-#
-ifeq (${HOSTOS},Windows)
-RM=del
-MKDIR=mkdir
-MV=move
-CP=copy
-else
-RM=rm -rf
-MKDIR=mkdir -p
-MV=mv
-CP=cp
-endif
-
-
-#
-# When using VSCODE
-#
-
 ifeq (${INSIDEVSCODE},yes)
 svd: ${OBJDIR} ${OBJDIR}/${PART}.svd
 else
 svd:
 endif
-
 ${OBJDIR}/${PART}.svd: FORCE
 	-${CP} ${SVCDIR}/${PART}.svd  ${OBJDIR}
 
