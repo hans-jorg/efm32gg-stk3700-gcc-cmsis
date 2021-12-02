@@ -806,7 +806,7 @@ usage:
 	@echo "make size         list size of output file"
 	@echo "make term         open a terminal for serial communication to board"
 	@echo "make openocd      start an openocd proxy"
-	@make "make proxy"       start a gdb proxy
+	@echo "make proxy"       start a gdb proxy
 	@echo "make docs         generates docs using doxygen"
 
 #
