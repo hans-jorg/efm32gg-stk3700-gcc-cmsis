@@ -784,6 +784,7 @@ disassembly: ${OBJDIR}/${PROGNAME}.axf
 dump: ${OBJDIR}/${PROGNAME}.axf
 	@echo   "Dumping ${^} and storing output in ${OBJDIR}/${PROGNAME}.dump"
 	${OBJDUMP} ${ODDUMPFLAGS} $^ > ${OBJDIR}/${PROGNAME}.dump
+
 imagedump: ${OBJDIR}/${PROGNAME}.bin
 	${OBJDUMP}   $\{OBJDUMP} -x $^ > ${OBJDIR}/${PROGNAME}.hexdump
 
