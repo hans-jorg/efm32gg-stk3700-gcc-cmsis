@@ -555,9 +555,7 @@ To get the call graph, there are many options to generate the needed information
 
 And the use a tool, to combine the information of callgraph and stack usage.
 
-An important note is that function called thru function pointer and interrupts are not considered.
-
-
+An important note is that functions called thru function pointers or interrupts are not considered.
 
 A list of these tools:
 

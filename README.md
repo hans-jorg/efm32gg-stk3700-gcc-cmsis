@@ -10,7 +10,8 @@ This material is intended as a companion for the lectures in a course in Embedde
 
 It assumes a basic knowledge of C. It consists of many small projects, each introducing one, and sometimes two, aspects of the development process.
 
-Appendices show how to install the needed tools, how to use them and the structure of a project.
+A [companion text](Developing-for-the-EFM32GG-STK3700-using-gcc-and-makefiles.pdf) describes the projects and the source code.
+[Another text](Installing-Tools.md) shows how to install the needed tools, how to use them and the structure of a project.
 
 The EFM32GG-STK3700 Development Board
 -------------------------------------
@@ -19,28 +20,61 @@ The EFM32GG-STK3700 Development Board
 The EFM32 Giant Gecko is a family of Cortex M3 microcontrollers manufactured by Silicon Labs (who bought Energy Micro, the initial manufacturer). The EFM32 microcontroller family has many subfamilies with different Cortex-M architectures and features as shown below.
 
 
-Family         | Core              | Features | Flash (kB) | RAM (kB)
----------------|-------------------|----------|------------|---------------
-Zero Gecko     |   ARM Cortex-M0+  |          |   4- 32    | 2- 4
-Happy Gecko    |   ARM Cortex-M0+  | USB      |  32- 64    | 4- 8
-Tiny Gecko     |   ARM Cortex-M3   | LCD      |   4- 32    | 2- 4
-Gecko          |   ARM Cortex-M3   | LCD      |  16- 128   | 8-16
-Jade Gecko     |   ARM Cortex-M3   |          | 128-1024   | 32-256
-Leopard Gecko  | ARM Cortex-M3     | USB, LCD |  64- 256   | 32
-Giant Gecko    | ARM Cortex-M3     | USB. LCD | 512-1024   | 128
-Giant Gecko S1 | ARM Cortex-M4     | USB, LCD | 2048       | 512
-Pearl Gecko    |  ARM Cortex-M4    |          | 128-1024   | 32-256
-Wonder Gecko   |  ARM Cortex-M4    | USB, LCD |  64- 256   | 32
+Family         | Core              | Features | Flash (kB) | RAM (kB)   |
+---------------|-------------------|----------|------------|------------|
+Zero Gecko     |   ARM Cortex-M0+  |          |   4- 32    | 2-4        |
+Happy Gecko    |   ARM Cortex-M0+  | USB      |  32- 64    | 4-8        |
+Tiny Gecko     |   ARM Cortex-M3   | LCD      |   4- 32    | 2-4        |
+Gecko          |   ARM Cortex-M3   | LCD      |  16- 128   | 8-16       |
+Jade Gecko     |   ARM Cortex-M3   |          | 128-1024   | 32-256     |
+Leopard Gecko  |   ARM Cortex-M3   | USB, LCD |  64- 256   | 32         |
+Giant Gecko    |   ARM Cortex-M3   | USB. LCD | 512-1024   | 128        |
+Giant Gecko S1 |   ARM Cortex-M4   | USB, LCD | 2048       | 512        |
+Pearl Gecko    |   ARM Cortex-M4   |          | 128-1024   | 32-256     |
+Wonder Gecko   |   ARM Cortex-M4   | USB, LCD |  64- 256   | 32         |
+
+
+The EMF32GGF1024 Microcontroller
+--------------------------------
+
+The microcontroller used in the STK3700 board is the EMF32GGF1024 microcontroller.
+Its main features are:
+
+| Device | Description                    |
+|--------|--------------------------------|
+| Flash	 | 1024	KBytes                    |
+| RAM	 | 128 KBytes                     |
+| Clock  | 48 MHz max.                    |
+| VDD    | 1.98-3.8 V                     |
+| Power  | 10 mA @ 48 MHz, 219 uA @ 1 MHz |
+| Package| BGA112                         |
+| GPIO	 | 86 pins                        |
+| USB	 | HS/FS Host Device or OTG	      |
+| DMA    | 12 channels                    |
+| EBI    | External bus interface 4x256 MB|
+| LCD    | up to 8 commons and 34 segments|
+| USART  | 3                              |
+| UART	 | 2                              |
+| LEUART | 2                              |
+| I2C    | 2 (10 Kbps-1 Mpbs)             |
+| Timer  | 4 x 16-bit timer, 4x3 PWM      |
+| LETIMER| 1 x 16-bit timer               |
+| ADC	 | 8 x 12-bit, 500 Ksps           |
+| DAC	 | 1 x 12-bit, 500 ksps           |
+| OpAmp	 | 3                              |
+| Comp   | 2 x 8 inputs capacitive sensing|
+
 
 
 The EMF32GG-STK3700 Development Board
 -------------------------------------
 
-
 The EMF32GG-STK3700 is a development board featuring a EFM32GG990F1024 MCU (a Giant Gecko microcontroller) with 1 MB Flash memory and 128 kB RAM. It has also the following peripherals:
 
 -   160 segment LCD
--   2 user buttons, 2 user LEDs and a touch slider
+-   2 user buttons
+-   2 user LEDs
+-   1 Touch slider
 -   Ambient Light Sensor and inductive-capacitive metal sensor
 -   EFM32 OPAMP footprint
 -   32 MB NAND flash
@@ -49,13 +83,6 @@ The EMF32GG-STK3700 is a development board featuring a EFM32GG990F1024 MCU (a Gi
 It has a 20 pin expansion header, breakout pads for easy access to I/O pins, different alternatives for power sources including USB and a 0.03 F Super Capacitor for backup power domain.
 
 For developing, there is an Integrated Segger J-Link USB debugger/emulator with debug out functionality and an Advanced Energy Monitoring system for precise current tracking.
-
-The development board EMF32GG-STK3700 features a EFM32GG990F1024 microcontroller from the Giant Gecko family. It is a Cortex M3 processor with the following features:
-
-
-Flash (KB)  | RAM (KB)  |  GPIO  |  USB |  LCD   | USART/UART  | LEUART  | Timer/PWMRTC  |  ADC |  DAC | OpAmp
-------------|-----------|--------|------|--------|-------------|---------|---------------|------|------|--------
-    1024    |  128      |    87  |  Y   |  8x34  |     3/2     |    2 2  |      4/12     |  1(8)| 2(8) |  3
 
 
 Basic References
@@ -66,7 +93,7 @@ The most important references are:
 
 -   [EFM32GG Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)[1]: Manual describing all peripherals, memory map.
 -   [EFM32GG-STK3700 Giant Gecko Starter Kit User's Guide](https://www.silabs.com/documents/public/user-guides/efm32gg-stk3700-ug.pdf)[2]: Information about the STK3700 Board.
--   [EFM32GG990 Datasheet](https://www.silabs.com/documents/public/data-sheets/EFM32GG990.pdf)[3]: Technical information about the EMF32GG990F1024 including electrical specifications and pinout.
+-   [EFM32GG990 Datasheet](https://www.silabs.com/documents/public/data-sheets/EFM32GG990.pdf): Technical information about the EMF32GG990F1024 including electrical specifications and pinout.
 -   [EFM32 Microcontroller Family Cortex M3 Reference Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32-Cortex-M3-RM.pdf)[4]
 
 Peripherals
@@ -112,7 +139,7 @@ Examples for the EFM32GG-STK3700 Development Board
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
 -    01-Blink: Blick LEDs with direct access to registers
-*    01-Blink-NO: How to not do it
+-    01-Blink-NO: How to not do it
 -    02-Blink: Blick LEDs with a HAL for GPIO
 -    03-Blink: Blink LEDs with a LED HAL above the GPIO HAL
 -    04-Blink: Blink LEDs with a LED HAL above hardware
