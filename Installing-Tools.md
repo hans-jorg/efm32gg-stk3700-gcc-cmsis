@@ -2,8 +2,6 @@
 COMPILING THE PROJECTS
 ======================
 
-[TOC]
-
 # 1 Introduction
 
 The development board EMF32GG-STK3700 features a EFM32GG990F1024 microcontroller from the Giant Gecko family. It means it is a Cortex M3. Its main features are:
