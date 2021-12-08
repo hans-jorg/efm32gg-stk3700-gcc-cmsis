@@ -59,7 +59,7 @@ int i;
  */
 
 int main(void) {
-/// Pointer to GPIO Port E registers
+/// Shortcut to Porte E: Pointer to GPIO Port E registers
 GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
 
     /* Enable Clock for GPIO */
@@ -67,29 +67,36 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCKL for GPIO
 
     /* Configure Pins in GPIOE */
+#if 1
+    // Using two steps
     GPIOE->MODEL &= ~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK);       // Clear bits
     GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);  // Set bits
-
+#else
+    // Using one step
     GPIOE->MODEL = (GPIOE->MODEL&~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK))
                   |(GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);
-                 
+#endif
+
     /* Initial values for LEDs */
     GPIOE->DOUT &= ~(LED1|LED2);                                               // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
-
+    // This is a trick to comment out a piece of code.
+#if 0
+        // Alternating LEDs: -- *- ** *-
         GPIOE->DOUT ^= LED1;
         Delay(DELAYVAL);
 
         GPIOE->DOUT ^= LED2;
         Delay(DELAYVAL);
-
+#else
+        // Blinking both LEDs at the same time: -- **
         GPIOE->DOUT |= LED1|LED2;
         Delay(2*DELAYVAL);
 
         GPIOE->DOUT &= ~(LED1|LED2);
         Delay(DELAYVAL);
-
+#endif
     }
 }
