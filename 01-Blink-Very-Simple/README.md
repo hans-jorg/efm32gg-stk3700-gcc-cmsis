@@ -52,16 +52,24 @@ To enable clock for peripherals, the *HFPERCLKEN* bit in the *HFPERCLKDIV* regis
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO; // Enable HFPERCKL for GPIO
     
-To access the register for GPIO Port E, a constant is defined, that points to the corresponding memory address.
+To easy access to the register for GPIO Port E, a constant is defined, that points to the memory region containing the GPIO E registers.
 
     GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]); // GPIOE
 
 To configure the pins as outputs one has to set the mode fields in the MODE registers. There are two MODE registers: *MODEL* to configure pins 0 to 7 and *MODEH*, for pins 8 to 15. To drive the LEDs, the fields must be set to Push-Pull configuration, but just or a binary value is not enough. The field must be cleared (set to 0) before.
 
     /* Configure Pins in GPIOE */
-    GPIOE->MODEL &= ~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK); // Clear bits
-    GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL); // Set bits
-    
+    GPIOE->MODEL &= ~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK); 		// Clear bits
+    GPIOE->MODEL |= (GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL); 	// Set bits
+
+This can be done in one step, with a longer command.
+
+    GPIOE->MODEL = (GPIOE->MODEL&~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK))
+    				|(GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);
+
+In the code, this is under conditional compiling pattern. #if 1..#else...#endif. Changing 1 to 0, 
+the code under the else is compiled.
+
 Finally, to set the desired value, one can or a value with a bit 1 in the desired position and all other bits set to 0.
 
     GPIOE->DOUT |= LED1;
@@ -73,3 +81,8 @@ To clear it, one must AND a value with a bit 0 in the desired position and all o
 To toggle a bin, one can XOR a value with a bit 1 in the desired position (and other bits set to 0).
 
     GPIOE->DOUT ^= LED1;
+
+In the code, there are two blinking options by using conditional compiling.
+
+	Alternate:         00 0* ** *0 00 ....
+    Both:              00 ** 00 .....
