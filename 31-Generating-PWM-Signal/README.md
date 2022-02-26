@@ -1,4 +1,4 @@
-22 PWM Generation
+31 PWM Generation
 =================
 
 # PWM Generation
@@ -10,20 +10,20 @@ an external pin as shown in the table below according the LOCATION field in ROUT
 It is not possible to route the channel outputs independently. The LOCATION field specify the
 route used by the timer unit.
 
-| Timer  | Channel |  0 |  1 |  2 |  3 |  4 |  5 |  6 |  7 |
-|--------|---------|----|----|----|----|----|----|----|----|
-|TIMER0  | CC0     |PA0 |PA0 |PF6 |PD1 |PA0 |PF0 |    |    |
-|TIMER0  | CC1     |PA1 |PA1 |PF7 |PD2 |PC0 |PF1 |    |    |
-|TIMER0  | CC2     |PA2 |PA2 |PF8 |PD3 |PC1 |PF2 |    |    |
-|TIMER1  | CC0     |    |PE10|PB0 |PB7 |PD6 |    |    |    |
-|TIMER1  | CC1     |    |PE11|PB1 |PB8 |PD7 |    |    |    |
-|TIMER1  | CC2     |    |PE12|PB2 |PB11|    |    |    |    |
-|TIMER2  | CC0     |PA8 |PA12|PC8 |    |    |    |    |    |
-|TIMER2  | CC1     |PA9 |PA13|PC9 |    |    |    |    |    |
-|TIMER2  | CC2     |PA10|PA14|PC10|    |    |    |    |    |
-|TIMER3  | CC0     |PE14|PE0 |    |    |    |    |    |    |
-|TIMER3  | CC1     |PE15|PE1 |    |    |    |    |    |    |
-|TIMER3  | CC2     |PA15|PE2 |    |    |    |    |    |    |
+| Timer  | Channel | 0    | 1    | 2    | 3    | 4   | 5   | 6   | 7   |
+| ------ | ------- | ---- | ---- | ---- | ---- | --- | --- | --- | --- |
+| TIMER0 | CC0     | PA0  | PA0  | PF6  | PD1  | PA0 | PF0 |     |     |
+| TIMER0 | CC1     | PA1  | PA1  | PF7  | PD2  | PC0 | PF1 |     |     |
+| TIMER0 | CC2     | PA2  | PA2  | PF8  | PD3  | PC1 | PF2 |     |     |
+| TIMER1 | CC0     |      | PE10 | PB0  | PB7  | PD6 |     |     |     |
+| TIMER1 | CC1     |      | PE11 | PB1  | PB8  | PD7 |     |     |     |
+| TIMER1 | CC2     |      | PE12 | PB2  | PB11 |     |     |     |     |
+| TIMER2 | CC0     | PA8  | PA12 | PC8  |      |     |     |     |     |
+| TIMER2 | CC1     | PA9  | PA13 | PC9  |      |     |     |     |     |
+| TIMER2 | CC2     | PA10 | PA14 | PC10 |      |     |     |     |     |
+| TIMER3 | CC0     | PE14 | PE0  |      |      |     |     |     |     |
+| TIMER3 | CC1     | PE15 | PE1  |      |      |     |     |     |     |
+| TIMER3 | CC2     | PA15 | PE2  |      |      |     |     |     |     |
 
 
 From the Reference Manual (Section 32.3.4 Alternate Functions)

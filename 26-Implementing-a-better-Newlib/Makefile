@@ -45,7 +45,7 @@ PROGNAME=newlib2
 # Verbose output for Make (Coment to have verbose output}
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # Compatibility Windows/Linux

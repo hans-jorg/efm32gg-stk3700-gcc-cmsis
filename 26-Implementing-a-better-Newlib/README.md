@@ -11,7 +11,7 @@ The need to reconfigure devices when the clock frequency is changed is present i
 
 In order to avoid this problem.
 
-1 - a callback mechanism is implemented in the clock routines. Whenever a clock changed, a registered routine is called and does the reconfiguration. There are two callbacks, one is called before the change (it permits to turn off any transmition or processing) and other after (it does the actual reconfiguration).
+1 - a callback mechanism is implemented in the clock routines. Whenever a clock changed, a registered routine is called and does the reconfiguration. There are two callbacks, one is called before the change (it permits to turn off any transmission or processing) and other after (it does the actual reconfiguration).
 
 2 - The device, in this case, UART, routines need to register the functions. register a callback to reconfigure the baud rate according the new clock frequency.
 

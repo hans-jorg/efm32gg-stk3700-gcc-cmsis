@@ -4,40 +4,58 @@
  * @file    pwm.h
  */
 
-#define PWM_LOC0                             0
-#define PWM_LOC1                             1
-#define PWM_LOC2                             2
-#define PWM_LOC3                             3
-#define PWM_LOC4                             4
-#define PWM_LOC5                             5
-#define PWM_LOC_UNUSED                      -1
 
 /**
- * @brief   configuration parameters
+ * @brief   location options
+ * 
+ * @note    one for each timer
+ */
+
+#define PWM_LOC0                              1
+#define PWM_LOC1                              2
+#define PWM_LOC2                              3
+#define PWM_LOC3                              4
+#define PWM_LOC4                              5
+#define PWM_LOC5                              6
+
+/**
+ *' @brief  ' configuration parameters
  */
 ///{
-#define PWM_PARAMS_ENABLECHANNEL0            1
-#define PWM_PARAMS_ENABLECHANNEL1            2
-#define PWM_PARAMS_ENABLECHANNEL2            4
-#define PWM_PARAMS_ENABLEINTERRUPT0          8
-#define PWM_PARAMS_ENABLEINTERRUPT1         16
-#define PWM_PARAMS_ENABLEINTERRUPT2         32
-#define PWM_PARAMS_ENABLEPIN0               64
-#define PWM_PARAMS_ENABLEPIN1              128
-#define PWM_PARAMS_ENABLEPIN2              256
-#define PWM_PARAMS_ENABLEINVERTPOL0        512
-#define PWM_PARAMS_ENABLEINVERTPOL1       1024
-#define PWM_PARAMS_ENABLEINVERTPOL2       2048
+#define PWM_PARAMS_ENABLE                     0x001
+#define PWM_PARAMS_ENABLEPIN                  0x002
+#define PWM_PARAMS_ENABLEINTERRUPT            0x004
+#define PWM_PARAMS_ENABLEINVERTPOL            0x008
+
+#define PWM_PARAMS_CH0_ENABLE                 ((PWM_PARAMS_ENABLE         )<<0)
+#define PWM_PARAMS_CH0_ENABLEPIN              ((PWM_PARAMS_ENABLEPIN      )<<0)
+#define PWM_PARAMS_CH0_ENABLEINTERRUPT        ((PWM_PARAMS_ENABLEINTERRUPT)<<0)
+#define PWM_PARAMS_CH0_ENABLEINVERTPOL        ((PWM_PARAMS_ENABLEINVERTPOL)<<0)
+
+#define PWM_PARAMS_CH1_ENABLE                 ((PWM_PARAMS_ENABLE         )<<4)
+#define PWM_PARAMS_CH1_ENABLEPIN              ((PWM_PARAMS_ENABLEPIN      )<<4)
+#define PWM_PARAMS_CH1_ENABLEINTERRUPT        ((PWM_PARAMS_ENABLEINTERRUPT)<<4)
+#define PWM_PARAMS_CH1_ENABLEINVERTPOL        ((PWM_PARAMS_ENABLEINVERTPOL)<<4)
+
+#define PWM_PARAMS_CH2_ENABLE                 ((PWM_PARAMS_ENABLE         )<<8)
+#define PWM_PARAMS_CH2_ENABLEPIN              ((PWM_PARAMS_ENABLEPIN      )<<8)
+#define PWM_PARAMS_CH2_ENABLEINTERRUPT        ((PWM_PARAMS_ENABLEINTERRUPT)<<8)
+#define PWM_PARAMS_CH2_ENABLEINVERTPOL        ((PWM_PARAMS_ENABLEINVERTPOL)<<8)
+
 ///}
 
 
 
-int         PWM_Init(TIMER_TypeDef* timer, int location, unsigned params);
-int         PWM_Config(TIMER_TypeDef *timer, unsigned div, unsigned top);
+int  PWM_Init(TIMER_TypeDef* timer, int loc, unsigned params);
+int  PWM_ConfigChannel(TIMER_TypeDef* timer, int channel, unsigned params );
+int  PWM_ConfigTimer(TIMER_TypeDef *timer, unsigned div, unsigned top);
 
-int         PWM_Write(TIMER_TypeDef *timer, unsigned channel, unsigned value);
-unsigned    PWM_Read(TIMER_TypeDef *timer, unsigned channel);
-void        PWM_Start(TIMER_TypeDef *timer);
-void        PWM_Stop(TIMER_TypeDef *timer);
+void PWM_Start(TIMER_TypeDef* timer);
+void PWM_Stop(TIMER_TypeDef* timer);
+int  PWM_Read(TIMER_TypeDef* timer, unsigned channel);
+int  PWM_Write(TIMER_TypeDef *timer, unsigned channel, unsigned value);
+
+int  PWM_ReconfigureChannel(TIMER_TypeDef* timer, int channel, unsigned top);
+
 #endif  // PWM_H
 

@@ -44,7 +44,7 @@ static int counter = 0;             // must be static
         counter--;
     } else {
         counter = SOFTDIVIDER-1;
-        LED_Toggle(LED1);
+        LED_Toggle(LED2);
     }
 }
 
@@ -112,7 +112,7 @@ char s[10];
     printf("\nStarting......\n");
 
     // Turn on LEDs
-    LED_Write(0,LED1|LED2);
+    LED_Write(0,LED2);
 
     // Configure SysTick
     SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
@@ -133,7 +133,7 @@ char s[10];
 
 
     // Configure touch sensor 
-    PWM_Init(TIMER2,PWM_LOC0,PWM_PARAMS_ENABLEPIN0);
+    PWM_Init(TIMER3,PWM_LOC1,PWM_PARAMS_CH2_ENABLEPIN);
    
     // Enable IRQs
     __enable_irq();
