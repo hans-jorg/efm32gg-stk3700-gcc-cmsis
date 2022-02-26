@@ -407,8 +407,8 @@ unsigned gpion,pinn;
 
     gpio = &(GPIO->P[gpion]); /* Get GPIO Pointer */
 
+#if 0
     int ppos;
-
     // Configure pin as output, push-pull, fast
     if( pinn < 8 ) {        // pins 7-0
         ppos = pinn*4;
@@ -418,7 +418,7 @@ unsigned gpion,pinn;
         ppos = pinn*4;
         gpio->MODEH = (gpio->MODEH&~(0xF<<ppos))|(PINMODE<<ppos);
     }
-
+#endif
     /* Disable all interrupts. They will be set later when configuring 
        the channel
      */

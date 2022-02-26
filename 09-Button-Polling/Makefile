@@ -851,6 +851,7 @@ endif
 # Start GDB proxy
 #
 ifeq (${USE_JLINK},yes)
+proxy:
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo sh -c \" ${GDBPROXY} ${JLINKPARMS} \"  ; \
@@ -869,6 +870,7 @@ ${GDBINIT}: FORCE
 endif
 
 ifeq (${USE_OPENOCD},yes)
+proxy:
 gdbproxy:
 	if [ -c ${TTYTERM} ] ; then echo "Starting OpenOCD"; \
 	   ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
@@ -953,7 +955,7 @@ cflow:
 # These symbols are not files (or directories}
 .PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
 .PHONY: all burn clean debug default deploy deploy dis disassembly
-.PHONY: docs docs-clean doxygen dump edit flash gdbproxy gdbproxy
+.PHONY: docs docs-clean doxygen dump edit flash gdbproxy proxy
 .PHONY: help imagedump nm size term terminal usage svd
 
 #
