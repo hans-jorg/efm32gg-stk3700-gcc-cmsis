@@ -210,7 +210,10 @@ void PWM_Stop(TIMER_TypeDef* timer) {
  */
 static int EnableTimerClock(TIMER_TypeDef* timer) {
 
-    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
+    /* Set clock for peripherals. If already enabled, it is a nop */
+    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;       // Enable HFPERCKL for GPIO
+
     if( timer == TIMER0 ) {
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER0;
     } else if ( timer == TIMER1 ) {
@@ -339,10 +342,6 @@ unsigned d;
     if ( EnableTimerClock(timer) < 0 )
         return -1;
 
-    /* Set clock for peripherals. If already set, it is a nop */
-    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;       // Enable HFPERCKL for GPIO
-
     PWM_Stop(timer);
 
     d = finddivencoding(div);
@@ -354,8 +353,6 @@ unsigned d;
                   |(TIMER_CTRL_MODE_UP);
 
     timer->TOP = top;
-
-    PWM_Start(timer);
 
     return 0;
 
@@ -407,7 +404,6 @@ unsigned gpion,pinn;
 
     gpio = &(GPIO->P[gpion]); /* Get GPIO Pointer */
 
-#if 0
     int ppos;
     // Configure pin as output, push-pull, fast
     if( pinn < 8 ) {        // pins 7-0
@@ -418,7 +414,7 @@ unsigned gpion,pinn;
         ppos = pinn*4;
         gpio->MODEH = (gpio->MODEH&~(0xF<<ppos))|(PINMODE<<ppos);
     }
-#endif
+
     /* Disable all interrupts. They will be set later when configuring 
        the channel
      */
@@ -443,6 +439,7 @@ unsigned gpion,pinn;
 int
 PWM_ConfigChannel(TIMER_TypeDef* timer, int channel, unsigned params ) {
 int t;
+static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
 
     /* Finds the index of a timer */
     t = FindTimerIndex(timer);
@@ -466,19 +463,11 @@ int t;
     
     /* Configure channel interrupts */
     if( params&PWM_PARAMS_ENABLEINTERRUPT ) {
-        switch(channel) {
-        case 0: 
-            timer->IEN = TIMER_IEN_CC0;
-            break;
-        case 1:
-            timer->IEN = TIMER_IEN_CC1;
-            break;
-        case 2:
-            timer->IEN = TIMER_IEN_CC2;
-            break;
-        }
+        timer->IEN |= ientable[channel];
+    } else {
+        timer->IEN &= ~ientable[channel];
     }
-    
+   
     /* Configure channel */
     timer->CC[channel].CTRL =  TIMER_CC_CTRL_ICEVCTRL_RISING
                             |TIMER_CC_CTRL_ICEDGE_RISING
@@ -532,26 +521,31 @@ int rc;
     rc = PWM_ConfigTimer(timer,1,0xFFFF);
     if( rc < 0 ) return -3;
 
-    /* Configure location, i.e., where pins could be located */
-    timer->ROUTE = (timer->ROUTE&~(_TIMER_ROUTE_LOCATION_MASK))
-                  |(loc<<_TIMER_ROUTE_LOCATION_SHIFT);
+    unsigned route = timer->ROUTE;
 
     for(int ch=0;ch<3;ch++) {
+        // Get 4 bits containing the channel configuration
         unsigned p = params>>(4*ch);
-        if( (p&0xF) == 0 )
-            continue;
-        if( (p&PWM_PARAMS_ENABLEPIN) ) {
-            /* Disable pin */
-            timer->ROUTE &= ~pinenable[ch];
-        } else {
-            /* Configure pin for output */
-            PWM_ConfigOutputPin(timer, ch, loc);
-            timer->ROUTE |= pinenable[ch];
+        if( (p&0xF) != 0 ) {
+                continue;
+            if( (p&PWM_PARAMS_ENABLEPIN)!=0 ) {
+                /* Configure pin for output */
+                PWM_ConfigOutputPin(timer, ch, loc);
+                route |= pinenable[ch];
+            } else {
+                /* Disable pin */
+                route &= ~pinenable[ch];
+            }
         }
 
         /********************/
         PWM_ConfigChannel(timer,ch,p);
     }
+
+
+    /* Configure location, i.e., where pins could be located */
+    timer->ROUTE = (route&~(_TIMER_ROUTE_LOCATION_MASK))
+                  |(loc<<_TIMER_ROUTE_LOCATION_SHIFT);
 
     /* Finally, start timer */
     PWM_Start(timer);

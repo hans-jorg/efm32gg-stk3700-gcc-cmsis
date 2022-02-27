@@ -131,20 +131,31 @@ char s[10];
 
     LCD_WriteString("hello");
 
-
-    // Configure touch sensor 
+    // Configure PWM output 
     PWM_Init(TIMER3,PWM_LOC1,PWM_PARAMS_CH2_ENABLEPIN);
    
     // Enable IRQs
-    __enable_irq();
+//    __enable_irq();
+
+    val = 15000;
+
+    PWM_Write(TIMER3,2,val);
+
+    PWM_Start(TIMER3);
 
     while (1) {
+    #if 0
         printf("Enter new value: ");
         fgets(s,9,stdin);
         if( s[0] == '\n' ) continue;
         LED_Toggle(LED2);
         val = (unsigned) atoi(s);
-        PWM_Write(TIMER2,0,val);
+    #endif
+        // LED_Toggle(LED1);
+        printf("counter=%7u  status=%X value=%X top=%7u\n",TIMER3->CNT,TIMER3->STATUS,
+                        TIMER3->CC[2].CCVP,TIMER3->TOP);
+        PWM_Start(TIMER3);
+
     }
 
 }
