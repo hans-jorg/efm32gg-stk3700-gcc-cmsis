@@ -99,7 +99,7 @@ unsigned val;
 char s[10];
     
     /* Configure LEDs */
-    LED_Init(LED1|LED2);
+    LED_Init(LED2);
 
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
@@ -137,7 +137,7 @@ char s[10];
     // Enable IRQs
 //    __enable_irq();
 
-    val = 15000;
+    val = 1000;
 
     PWM_Write(TIMER3,2,val);
 
@@ -152,9 +152,12 @@ char s[10];
         val = (unsigned) atoi(s);
     #endif
         // LED_Toggle(LED1);
-        printf("counter=%7u  status=%X value=%X top=%7u\n",TIMER3->CNT,TIMER3->STATUS,
-                        TIMER3->CC[2].CCVP,TIMER3->TOP);
-        PWM_Start(TIMER3);
+        printf("counter=%5X status=%5X value=%5X top=%5X\n",TIMER3->CNT,
+                        TIMER3->STATUS,
+                        TIMER3->CC[2].CCV,
+                        TIMER3->TOP);
+   //     PWM_Write(TIMER3,2,val);
+  //      PWM_Start(TIMER3);
 
     }
 

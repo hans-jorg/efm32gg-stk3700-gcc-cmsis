@@ -200,36 +200,6 @@ void PWM_Stop(TIMER_TypeDef* timer) {
 }
 
 /**
- * @brief   Timer_ClockEnable
- *
- * @note    Local function to configure clock for a specific timer.
- *
- * @note    It ENABLES the HFPER Clock
- *
- * @param   timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
- */
-static int EnableTimerClock(TIMER_TypeDef* timer) {
-
-    /* Set clock for peripherals. If already enabled, it is a nop */
-    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
-    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;       // Enable HFPERCKL for GPIO
-
-    if( timer == TIMER0 ) {
-        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER0;
-    } else if ( timer == TIMER1 ) {
-        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER1;
-    } else if ( timer == TIMER2 ) {
-        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER2;
-    } else if ( timer == TIMER3 ) {
-        CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_TIMER3;
-    } else {
-        return -1;
-    }
-
-    return 0;
-}
-
-/**
  * @brief  FindTimerIndex
  * 
  * @param timer 
@@ -245,6 +215,39 @@ int t;
 
     return t;
 }
+
+
+/**
+ * @brief   Timer_ClockEnable
+ *
+ * @note    Local function to configure clock for a specific timer.
+ *
+ * @note    It ENABLES the HFPER Clock
+ *
+ * @param   timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
+ */
+static int EnableTimerClock(TIMER_TypeDef* timer) {
+static uint32_t timerenabletable[] = {
+    CMU_HFPERCLKEN0_TIMER0,
+    CMU_HFPERCLKEN0_TIMER1,
+    CMU_HFPERCLKEN0_TIMER2,
+    CMU_HFPERCLKEN0_TIMER3
+};
+int t;
+    /* Check valid timer and get index */
+    t = FindTimerIndex(timer);
+    if( t < 0 )
+        return -1;
+
+    /* Set clock for peripherals. If already enabled, it is a nop */
+    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;       // Enable HFPERCKL for GPIO
+
+    /* Enable clock for timer */
+    CMU->HFPERCLKEN0 |= timerenabletable[t];
+    return 0;
+}
+
 
 /**
  * @brief   Returns status of all channels as a bit vector in a unsigned int
@@ -316,7 +319,7 @@ unsigned c = 0;
 
 int PWM_Write(TIMER_TypeDef *timer, unsigned channel, unsigned value) {
 
-    timer->CC[channel].CCVB = value;          // Write to buffer to avoid glitch
+    timer->CC[channel].CCV = value;          // Write to buffer to avoid glitch
 
     return 0;
 
@@ -348,17 +351,17 @@ unsigned d;
 
     timer->CTRL = (timer->CTRL
                       &~(_TIMER_CTRL_PRESC_MASK
-                        |_TIMER_CTRL_MODE_MASK))
+                        |_TIMER_CTRL_MODE_MASK
+                        |_TIMER_CTRL_CLKSEL_MASK))
                   |(d<<_TIMER_CTRL_PRESC_SHIFT)
-                  |(TIMER_CTRL_MODE_UP);
+                  |TIMER_CTRL_MODE_UP
+                  |TIMER_CTRL_CLKSEL_PRESCHFPERCLK;
 
     timer->TOP = top;
 
     return 0;
 
 }
-
-
 
 
 /**
@@ -447,12 +450,14 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
         return -1;
 
     /* if timer not initialized, bail out */
-    if( (timer_initialized&(1<<t)) == 0 )
+    if( (timer_initialized&(1<<t)) != 0 )
         return -2;
 
    /* Reset channel configuration */
     timer->CC[channel].CTRL = 0;
     timer->CC[channel].CCVB = 0xFFFF;
+    timer->CC[channel].CCV  = 0xFFFF;
+
     
     /* Configure polarity of channel output */
     if( params&PWM_PARAMS_ENABLEINVERTPOL ) {
@@ -469,11 +474,13 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
     }
    
     /* Configure channel */
-    timer->CC[channel].CTRL =  TIMER_CC_CTRL_ICEVCTRL_RISING
-                            |TIMER_CC_CTRL_ICEDGE_RISING
-                            |TIMER_CC_CTRL_CMOA_CLEAR
-                            |TIMER_CC_CTRL_COIST
-                            |TIMER_CC_CTRL_MODE_PWM;
+    timer->CC[channel].CTRL = 
+                 TIMER_CC_CTRL_ICEVCTRL_RISING  // increment on rising edge
+                |TIMER_CC_CTRL_ICEDGE_RISING    // increment on rising edge
+                |TIMER_CC_CTRL_COFOA_CLEAR      // reset on overflow
+                |TIMER_CC_CTRL_CMOA_TOGGLE      // toggle output on equal
+             //   |TIMER_CC_CTRL_COIST            // initial value
+                |TIMER_CC_CTRL_MODE_PWM;        // mode
 
     channel_initialized |= (1<<(t*4+channel));
     return 0;
@@ -518,7 +525,7 @@ int rc;
     PWM_Stop(timer);
 
     /* Configure timer to default values: div=1 top=max */
-    rc = PWM_ConfigTimer(timer,1,0xFFFF);
+    rc = PWM_ConfigTimer(timer,2,0xFFF);
     if( rc < 0 ) return -3;
 
     unsigned route = timer->ROUTE;
@@ -527,7 +534,6 @@ int rc;
         // Get 4 bits containing the channel configuration
         unsigned p = params>>(4*ch);
         if( (p&0xF) != 0 ) {
-                continue;
             if( (p&PWM_PARAMS_ENABLEPIN)!=0 ) {
                 /* Configure pin for output */
                 PWM_ConfigOutputPin(timer, ch, loc);
