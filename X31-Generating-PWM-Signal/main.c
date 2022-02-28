@@ -95,7 +95,7 @@ unsigned m = 1<<(n-1);
 #define DELAYVAL 2
 
 int main(void) {
-unsigned val;
+
 char s[10];
     
     /* Configure LEDs */
@@ -137,12 +137,12 @@ char s[10];
     // Enable IRQs
 //    __enable_irq();
 
-    val = 1000;
-
-    PWM_Write(TIMER3,2,val);
+    PWM_Write(TIMER3,2,0);
 
     PWM_Start(TIMER3);
 
+    int cnt=0;
+    unsigned val = 0;
     while (1) {
     #if 0
         printf("Enter new value: ");
@@ -156,8 +156,15 @@ char s[10];
                         TIMER3->STATUS,
                         TIMER3->CC[2].CCV,
                         TIMER3->TOP);
-   //     PWM_Write(TIMER3,2,val);
-  //      PWM_Start(TIMER3);
+     //   PWM_Write(TIMER3,2,val);
+     //   PWM_Start(TIMER3);
+        if( cnt-- == 0 ) {
+            LED_Toggle(LED1);
+            cnt = 1000;
+            val += 0x100;
+            if( val > 0XFFF ) val = 0;
+            PWM_Write(TIMER3,2,val);
+        }
 
     }
 
