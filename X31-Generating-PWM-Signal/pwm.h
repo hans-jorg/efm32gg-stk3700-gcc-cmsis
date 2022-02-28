@@ -11,12 +11,12 @@
  * @note    one for each timer
  */
 
-#define PWM_LOC0                              1
-#define PWM_LOC1                              2
-#define PWM_LOC2                              3
-#define PWM_LOC3                              4
-#define PWM_LOC4                              5
-#define PWM_LOC5                              6
+#define PWM_LOC0                              0
+#define PWM_LOC1                              1
+#define PWM_LOC2                              2
+#define PWM_LOC3                              3
+#define PWM_LOC4                              4
+#define PWM_LOC5                              5
 
 /**
  *' @brief  ' configuration parameters

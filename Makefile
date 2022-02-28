@@ -3,7 +3,7 @@
 #
 
 .SILENT=
-SUBPROJECTS=$(shell ls -d [0-9][0-9]-* )
+SUBPROJECTS=$(shell ls -d [0-9][0-9]-* X[0-9][0-9]-* )
 MAKEFLAGS += --no-print-directory
 
 # Build all

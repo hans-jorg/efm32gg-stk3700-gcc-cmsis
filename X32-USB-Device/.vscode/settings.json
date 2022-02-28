@@ -1,0 +1,7 @@
+{
+    "cmake.configureOnOpen": false,
+    "files.associations": {
+        "usb_packets.h": "c",
+        "usb_descriptors.h": "c"
+    }
+}

@@ -542,10 +542,11 @@ int rc;
                 /* Disable pin */
                 route &= ~pinenable[ch];
             }
+            /********************/
+            PWM_ConfigChannel(timer,ch,p);
         }
 
-        /********************/
-        PWM_ConfigChannel(timer,ch,p);
+
     }
 
 

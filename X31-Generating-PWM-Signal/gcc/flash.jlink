@@ -1,0 +1,4 @@
+r
+h
+loadbin gcc/pwm1.bin,0
+exit
