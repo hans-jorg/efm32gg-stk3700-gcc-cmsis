@@ -161,8 +161,8 @@ char s[10];
         if( cnt-- == 0 ) {
             LED_Toggle(LED1); // Trying to control LED thru GPIO
             cnt = 1000;
-            val += 0x100;
-            if( val > 0XFFF ) val = 0;
+            val += 0x1000;
+            if( val > 0XFFFF ) val = 0;
             PWM_Write(TIMER3,2,val);
         }
 

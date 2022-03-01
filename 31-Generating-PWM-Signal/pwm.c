@@ -44,6 +44,15 @@
  */
 #define PINMODE    4
 
+/**
+ * @brief  Maximal value for timer
+ * 
+ * @note   Duty cycle is set as a fraction of this value
+ * 
+ * @note   Maximal value must be less or equal to 0xFFFF.
+ *         It is a 16 bit value
+ */
+#define MAXTIMER 0XFFFF
 
 /**
  * @brief    List of Timers
@@ -319,7 +328,7 @@ unsigned c = 0;
 
 int PWM_Write(TIMER_TypeDef *timer, unsigned channel, unsigned value) {
 
-    timer->CC[channel].CCV = value;          // Write to buffer to avoid glitch
+    timer->CC[channel].CCVB = value;          // Write to buffer to avoid glitch
 
     return 0;
 
@@ -455,8 +464,8 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
 
    /* Reset channel configuration */
     timer->CC[channel].CTRL = 0;
-    timer->CC[channel].CCVB = 0xFFFF;
-    timer->CC[channel].CCV  = 0xFFFF;
+    timer->CC[channel].CCVB = MAXTIMER;
+    timer->CC[channel].CCV  = MAXTIMER;
 
     
     /* Configure polarity of channel output */
@@ -475,8 +484,8 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
    
     /* Configure channel */
     timer->CC[channel].CTRL = 
-                 TIMER_CC_CTRL_ICEVCTRL_RISING  // increment on rising edge
-                |TIMER_CC_CTRL_ICEDGE_RISING    // increment on rising edge
+                0// TIMER_CC_CTRL_ICEVCTRL_RISING  // increment on rising edge
+                //|TIMER_CC_CTRL_ICEDGE_RISING    // increment on rising edge
                 |TIMER_CC_CTRL_COFOA_CLEAR      // reset on overflow
                 |TIMER_CC_CTRL_CMOA_TOGGLE      // toggle output on equal
                 |TIMER_CC_CTRL_COIST            // initial value
@@ -525,7 +534,7 @@ int rc;
     PWM_Stop(timer);
 
     /* Configure timer to default values: div=1 top=max */
-    rc = PWM_ConfigTimer(timer,2,0xFFF);
+    rc = PWM_ConfigTimer(timer,2,MAXTIMER);
     if( rc < 0 ) return -3;
 
     uint32_t route = timer->ROUTE;
