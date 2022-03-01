@@ -450,7 +450,7 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
         return -1;
 
     /* if timer not initialized, bail out */
-    if( (timer_initialized&(1<<t)) != 0 )
+    if( (timer_initialized&(1<<t)) == 0 )
         return -2;
 
    /* Reset channel configuration */
@@ -479,7 +479,7 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
                 |TIMER_CC_CTRL_ICEDGE_RISING    // increment on rising edge
                 |TIMER_CC_CTRL_COFOA_CLEAR      // reset on overflow
                 |TIMER_CC_CTRL_CMOA_TOGGLE      // toggle output on equal
-             //   |TIMER_CC_CTRL_COIST            // initial value
+                |TIMER_CC_CTRL_COIST            // initial value
                 |TIMER_CC_CTRL_MODE_PWM;        // mode
 
     channel_initialized |= (1<<(t*4+channel));
@@ -528,7 +528,7 @@ int rc;
     rc = PWM_ConfigTimer(timer,2,0xFFF);
     if( rc < 0 ) return -3;
 
-    unsigned route = timer->ROUTE;
+    uint32_t route = timer->ROUTE;
 
     for(int ch=0;ch<3;ch++) {
         // Get 4 bits containing the channel configuration

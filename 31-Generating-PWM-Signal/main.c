@@ -118,18 +118,18 @@ char s[10];
     SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
 
     // Configure LCD
-    LCD_Init();
+    //LCD_Init();
 
-    LCD_SetAll();
+    //LCD_SetAll();
     Delay(DELAYVAL);
 
-    LCD_ClearAll();
+    //LCD_ClearAll();
     Delay(DELAYVAL);
 
     s[0] = 0;
-    LCD_WriteString(s);
+    //LCD_WriteString(s);
 
-    LCD_WriteString("hello");
+    //LCD_WriteString("hello");
 
     // Configure PWM output 
     PWM_Init(TIMER3,PWM_LOC1,PWM_PARAMS_CH2_ENABLEPIN);
@@ -159,7 +159,7 @@ char s[10];
      //   PWM_Write(TIMER3,2,val);
      //   PWM_Start(TIMER3);
         if( cnt-- == 0 ) {
-            LED_Toggle(LED1);
+            LED_Toggle(LED1); // Trying to control LED thru GPIO
             cnt = 1000;
             val += 0x100;
             if( val > 0XFFF ) val = 0;
