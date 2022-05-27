@@ -701,7 +701,8 @@ help: usage
 usage:
 	@echo "Usage:"
 	@echo "make all          generate image file in ${OBJDIR}"
-	@echo "make build        generate .axf file in ${OBJDIR}"
+	@echo "make build        generate .axf file in "
+	@echo "make edit         open files in a editor"
 	@echo "make flash        write to flash using ${FLASHER}"
 	@echo "make clean        delete all generated files"
 	@echo "make debug        creates debug session with gdb"
