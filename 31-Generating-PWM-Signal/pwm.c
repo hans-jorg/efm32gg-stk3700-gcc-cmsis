@@ -323,7 +323,7 @@ unsigned c = 0;
  *
  * @param    value    The threshold value to be set
  *
- * @note    Sould use buffered write to CCV (CCVB)
+ * @note     Uses buffered write to CCV (CCVB)
  */
 
 int PWM_Write(TIMER_TypeDef *timer, unsigned channel, unsigned value) {
