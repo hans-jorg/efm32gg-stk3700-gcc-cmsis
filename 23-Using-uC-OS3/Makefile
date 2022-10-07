@@ -220,157 +220,19 @@ endif
 default: build
 
 #
-# For gcc-arm-embedded
-#
-
-#--------------------------------------------------------------------------
-#|   ARM core | Command Line Options                       | multilib     |
-#| / ARM arch |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M0+ | -mthumb -mcpu=cortex-m0plus                | armv6-m      |
-#| Cortex-M0  | -mthumb -mcpu=cortex-m0                    |              |
-#| Cortex-M1  | -mthumb -mcpu=cortex-m1                    |              |
-#|            |--------------------------------------------|              |
-#|            | -mthumb -march=armv6-m                     |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M3  | -mthumb -mcpu=cortex-m3                    | armv7-m      |
-#|            |--------------------------------------------|              |
-#|            | -mthumb -march=armv7-m                     |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M4  | -mthumb -mcpu=cortex-m4                    | armv7e-m     |
-#| (No FP}    |--------------------------------------------|              |
-#|            | -mthumb -march=armv7e-m                    |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M4  | -mthumb -mcpu=cortex-m4 -mfloat-abi=softfp | armv7e-m     |
-#| (Soft FP}  | -mfpu=fpv4-sp-d16                          | /softfp      |
-#|            |--------------------------------------------|              |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
-#|            | -mfpu=fpv4-sp-d16                          |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M4  | -mthumb -mcpu=cortex-m4 -mfloat-abi=hard   | armv7e-m     |
-#| (Hard FP}  | -mfpu=fpv4-sp-d16                          | /fpu         |
-#|            |--------------------------------------------|              |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
-#|            | -mfpu=fpv4-sp-d16                          |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M7  | -mthumb -mcpu=cortex-m7                    | armv7e-m     |
-#| (No FP}    |--------------------------------------------|              |
-#|            | -mthumb -march=armv7e-m                    |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M7  | -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp | armv7e-m     |
-#| (Soft FP}  | -mfpu=fpv5-sp-d16                          | /softfp      |
-#|            |--------------------------------------------| /fpv5-sp-d16 |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
-#|            | -mfpu=fpv5-sp-d16                          |              |
-#|            |--------------------------------------------|--------------|
-#|            | -mthumb -mcpu=cortex-m7 -mfloat-abi=softfp | armv7e-m     |
-#|            | -mfpu=fpv5-d16                             | /softfp      |
-#|            |--------------------------------------------| /fpv5-d16    |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=softfp |              |
-#|            | -mfpu=fpv5-d16                             |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-M7  | -mthumb -mcpu=cortex-m7 -mfloat-abi=hard   | armv7e-m     |
-#| (Hard FP}  | -mfpu=fpv5-sp-d16                          | /fpu         |
-#|            |--------------------------------------------| /fpv5-sp-d16 |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
-#|            | -mfpu=fpv5-sp-d16                          |              |
-#|            |--------------------------------------------|--------------|
-#|            | -mthumb -mcpu=cortex-m7 -mfloat-abi=hard   | armv7e-m     |
-#|            | -mfpu=fpv5-d16                             | /fpu         |
-#|            |--------------------------------------------| /fpv5-d16    |
-#|            | -mthumb -march=armv7e-m -mfloat-abi=hard   |              |
-#|            | -mfpu=fpv5-d16                             |              |
-#|------------|--------------------------------------------|--------------|
-#| ARMv8-M    | -mthumb -march=armv8-m.base                | armv8-m.base |
-#| Baseline   |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
-#| Mainline   |                                            |              |
-#| (No FP}    |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
-#| Mainline   | -mfloat-abi=softfp -mfpu=fpv5-sp-d16       | /softfp      |
-#| (Soft FP}  |                                            | /fpv5-sp-d16 |
-#|            |--------------------------------------------|--------------|
-#|            | -mthumb -march=armv8-m.main                | armv8-m.main |
-#|            | -mfloat-abi=softfp -mfpu=fpv5-d16          | /softfp      |
-#|            |                                            | /fpv5-d16    |
-#|------------|--------------------------------------------|--------------|
-#| ARMv8-M    | -mthumb -march=armv8-m.main                | armv8-m.main |
-#| Mainline   | -mfloat-abi=hard -mfpu=fpv5-sp-d16         | /fpu         |
-#| (Hard FP}  |                                            | /fpv5-sp-d16 |
-#|            |--------------------------------------------|--------------|
-#|            | -mthumb -march=armv8-m.main                | armv8-m.main |
-#|            | -mfloat-abi=hard -mfpu=fpv5-d16            | /fpu         |
-#|            |                                            | /fpv5-d16    |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-R4  | [-mthumb] -march=armv7-r                   | armv7-ar     |
-#| Cortex-R5  |                                            | /thumb       |
-#| Cortex-R7  |                                            |              |
-#| Cortex-R8  |                                            |              |
-#| (No FP}    |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=softfp| armv7-ar     |
-#| Cortex-R5  | -mfpu=vfpv3-d16                            | /thumb       |
-#| Cortex-R7  |                                            | /softfp      |
-#| Cortex-R8  |                                            |              |
-#| (Soft FP}  |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-R4  | [-mthumb] -march=armv7-r -mfloat-abi=hard  | armv7-ar     |
-#| Cortex-R5  | -mfpu=vfpv3-d16                            | /thumb       |
-#| Cortex-R7  |                                            | /fpu         |
-#| Cortex-R8  |                                            |              |
-#| (Hard FP}  |                                            |              |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-A*  | [-mthumb] -march=armv7-a                   | armv7-ar     |
-#| (No FP}    |                                            | /thumb       |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-A*  | [-mthumb] -march=armv7-a -mfloat-abi=softfp| armv7-ar     |
-#| (Soft FP}  | -mfpu=vfpv3-d16                            | /thumb       |
-#|            |                                            | /softfp      |
-#|------------|--------------------------------------------|--------------|
-#| Cortex-A*  | [-mthumb] -march=armv7-a -mfloat-abi=hard  | armv7-ar     |
-#| (Hard FP}  | -mfpu=vfpv3-d16                            | /thumb       |
-#|            |                                            | /fpu         |
-#--------------------------------------------------------------------------
-
-#
-# Set the compiler CPU/FPU options.
-#
-CPUFLAGS=-mcpu=cortex-m3 -mthumb
-
-#
-# FPU Options
-# ATTENTION!!! Do no mix them. All object files must be compiled with same FPU flags
-#
-# float-abi options
-#        soft:   Full software floating point using integer registers for function parameters
-#        hard:   Full hardware floating point
-#        softfp: Use hardware floating point with the same abi of software floating point
-#
-# fpu options
-#        fpv?:   ARM FPU (version 1 and 2 deprecated}
-#        neon:   ARM Vector FPU
-#        crypto: Crypto Unit
-#        d16:    Register bank as 16 double precision registers
-#        sp:     Single precision
-#
-# To use no FPU, do not define FPUFLAGS
-# Use hardware FPU
-    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -DENABLE_FPU
-# Use software for Floating Point
-    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
-# Use hardware (when available?} but with an interface similar to the used by software
-    #FPUFLAGS=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp  -DENABLE_FPU
-
+# Compiler parameters
+#    See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
+ #   of the GNU ARM installation folder
+ #
+ #    The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and 
+ #   a 128KByte RAM.
+ #   It has no FPU!. So it will use a software emulation of the FPU (default)
+ #
+ #   The default printf and scanf functions do not support floating point data.
+ #   In order to use printf and scanf that support floating point, 
+ #   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
+CPUFLAGS= -mcpu=cortex-m3 -mthumb
 FPUFLAGS= -mfloat-abi=soft
-
-#
-# Additional FPUFLAGS are
-#  -fsingle-precision-constant: Use only single precision constants
-#  -Wdouble-promotion:          Flag use of dobule preciswion
-#  -Werror=double-promotion:
-
 #
 # Specs script (modification of compiler and linker flags}
 #

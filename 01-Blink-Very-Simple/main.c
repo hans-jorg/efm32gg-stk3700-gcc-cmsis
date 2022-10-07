@@ -58,6 +58,7 @@ int i;
 
  */
 
+
 int main(void) {
 /// Shortcut to Porte E: Pointer to GPIO Port E registers
 GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE

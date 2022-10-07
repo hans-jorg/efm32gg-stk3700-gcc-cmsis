@@ -387,6 +387,41 @@ uint32_t *pTable __attribute__((unused));
 #ifndef DO_NO_INITIALIZE_SYSTEM_CORE_CLOCK
     SystemCoreClockGet();
 #endif
+    /* Initialize FPU, if available and specified 
+     * by enabling coprocessors in the CPAR register 
+     * The Cortex M3 does not have a FPU!
+     * The Cortex M4 can have a single precision FPU
+     *       It controlled by the CP10 and CP11 fields on the CPAR
+     * The Cortex M7 can have a single or a single/double precision FPU
+     * 
+    */
+#ifdef __ARM_FP
+   SCB->CPAR |= (0x3<<20)|(0x3<<22);
+#endif
+
+    /* 
+     * To used the FPU
+     *     Specifify the -mfpu=fpv4-sp-d16 flag,
+     *     Initialize FPU by enabling coprocessors in the CPAR register, as below
+     * 
+     * The compiler can use two software interfaces for the FPU:
+     *      -mfloat-abi=hard
+     *       The FPU operations are accessed thru the FPU registers
+     *      -mfloat-abi=softfp 
+     *       The FPU operations are accessed thru the softfp calls,
+     *       mantaining compability with  software that uses software floating point.
+     *
+     * The Cortex M3 does not have a FPU!
+     * The Cortex M4 can have a single precision FPU
+     *       It controlled by the CP10 and CP11 fields on the CPAR register
+     * The Cortex M7 can have a single or a single/double precision FPU
+    *       Both are enabled by the CP10 and CP11 fields of the CPACR register
+     * 
+    */
+#ifdef __ARM_FP
+   SCB->CPAR |= (0x3<<20)|(0x3<<22);
+#endif
+
     /* Initialize C library */
     _main();
 
