@@ -141,16 +141,17 @@ default: build
 
 #
 # Compiler parameters
-#    See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
- #   of the GNU ARM installation folder
- #
- #    The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and 
- #   a 128KByte RAM.
- #   It has no FPU!. So it will use a software emulation of the FPU (default)
- #
- #   The default printf and scanf functions do not support floating point data.
- #   In order to use printf and scanf that support floating point, 
- #   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
+#   See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
+#   of the GNU ARM installation folder
+#
+#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and 
+#   a 128KByte RAM.
+#   It has no FPU!. So it will use a software emulation of the FPU (default)
+#
+#   The default printf and scanf functions do not support floating point data.
+#   In order to use printf and scanf that support floating point, 
+#   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
+#
 CPUFLAGS= -mcpu=cortex-m3 -mthumb
 FPUFLAGS= -mfloat-abi=soft
 #
