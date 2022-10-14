@@ -1,7 +1,7 @@
 32 USB Device
 =============
 
-## Introduction 
+## Introduction
 
 This projects shows the implementation of a CDC (Communications Device Class)
 device on the EFM32GG990-STK3700 Board.
@@ -10,11 +10,11 @@ Only a Full Speed version is, for now, implemented. There are two reasons for it
 
 1. In order to be a low speed device, a 4.7 K resistor must be connected to the
    DMUP pin, but this resistor is not available in the STM3700 Board.
-2. Low speed devices do not use standard USB cables. Mouse and keyboards have 
+2. Low speed devices do not use standard USB cables. Mouse and keyboards have
    attached cables conforming a specific standard.
 
 > NOTE: To develop USB firmware for the EFM32 is a dauting task. Information is
-> spread in many manuals, application notes, standards. Sometimes only looking 
+> spread in many manuals, application notes, standards. Sometimes only looking
 > at the example code for the application note can give the correct information.
 
 > NOTE: efm32lib mentioned in the source code was renamed emlib, and is part of
@@ -23,7 +23,7 @@ Only a Full Speed version is, for now, implemented. There are two reasons for it
 
 ## The USB Protocol
 
-The USB uses a host/device protocol, where the host delivers power to the 
+The USB uses a host/device protocol, where the host delivers power to the
 device and is in charge to initiate the communication. The host uses a
 A-Connector and the device a B connector. With the introduction of the
 On The Go Device, that can be a host or a device, according some circunstances,
@@ -43,8 +43,8 @@ The USB protocol has many speeds:
 | Super Speed 40 Gbps | SS+ |  4.0  |   40 Gbps  | Not supported |
 
 
-The host delivers a 5 V with at least 100 mA. This can be upgraded to 1.5 A 
-after negotiation.      
+The host delivers a 5 V with at least 100 mA. This can be upgraded to 1.5 A
+after negotiation.
 
 
 ## This Implementation
@@ -57,11 +57,11 @@ This implementation has the following features:
 * Maximum Packet Size set to 64
 * Use of DMA mode (Faster and simpler, but more difficult to debug)
 
-> One motive is that "It should also be noted that according to USB specification, 
+> One motive is that "It should also be noted that according to USB specification,
 > low-speed mode is defined to support a limited number of low-bandwidth
-> devices, such as mice. Low-speed devices are not allowed to use standard USB 
+> devices, such as mice. Low-speed devices are not allowed to use standard USB
 > cables, and a separate specification for low-speed cables exist." (An0046)
-> 
+>
 > Another motive is the absence of a 4.7 K resistor driven by  DMPU pin,
 > to attend the USB impedance standards for devices.
 
@@ -69,7 +69,7 @@ This implementation has the following features:
 
 | File                    |  Contents                                   |
 |-------------------------|---------------------------------------------|
-| usb_config.h            | General configuration like VendorID         | 
+| usb_config.h            | General configuration like VendorID         |
 | usb_descriptors.h       | Definition of all descriptors               |
 | usb_descriptors.c       | Routines to build some descriptors          |
 | usb_device.c            | Main routine for a USB device               |
@@ -85,7 +85,7 @@ This implementation has the following features:
 
 There are different versions of connectors for host and devices.
 
-For hosts, a type A connector is used. It is a squared connector, relatively 
+For hosts, a type A connector is used. It is a squared connector, relatively
 large. The black version is for speed up to High Speed. The blue ones, for
 higher speeds.
 
@@ -104,7 +104,7 @@ The devices use type B connectors in a variety of forms.
 
 > The Micro-B connector is beeing replaced by the Type-C in cell phones.
 
-All these connectors, are been slowly replaced by Type-C. It is faster, more 
+All these connectors, are been slowly replaced by Type-C. It is faster, more
 robust, support large current and it is reversible.
 
 # Endpoints
@@ -113,7 +113,7 @@ All communications occurs from an enpoint and to an endpoint.
 There is a special endpoint (#0) that is used in the configuration process.
 
 In addition to endpoint #0, a full- or high-speed device can have up to 30
-additional endpoint addresses (1–15, IN and OUT). 
+additional endpoint addresses (1–15, IN and OUT).
 
 A low-speed device can have at most two additional endpoint addresses which can
 be two IN, two OUT, or one in each direction.
@@ -128,7 +128,7 @@ the controller. A pipe is created during the enumeration process.
 
 # Enumeration process
 
-During enumeration, 
+During enumeration,
 
 1.  A device is connected. Device in Powered state.
 2.  The hub detects the speed.
@@ -137,7 +137,7 @@ During enumeration,
 5.  Host assigns an address using a Set Address request. Device in Address state.
 6.  Hosts send a Get Descriptor to the this address. First a Device Descriptor.
 7.  Then one or more Configuration Descriptors as specified in Device Descriptor.
-8.  The hosts requests more descriptors. If the device does not support one, it 
+8.  The hosts requests more descriptors. If the device does not support one, it
     must returns a STALL packet.
 9.  The host requests the string descriptor 0.
 10. The host requests the serial number string.
@@ -157,8 +157,8 @@ A device moves thru different states:
 
 * Powered
 * Default
-* Address: 
-* Configured: When the host send a Set Configuration request. The device must 
+* Address:
+* Configured: When the host send a Set Configuration request. The device must
   run according the configuration selected.
 * Attached: When the hub is not powering the VBUS line, due to over-current or
   host request.
@@ -169,7 +169,7 @@ A device moves thru different states:
 
 # Transfer types
 
-A transfer is always initiated by the host. In version 2 of USB the following 
+A transfer is always initiated by the host. In version 2 of USB the following
 transfer types are defined.
 
 
@@ -206,14 +206,14 @@ The maximum packet sizes (MPS) are specified by the USB standards.
 | Super Speed       |   512      |   1024      |   1..1024    |   1..1024      |
 
 
-All packets, except the last one, must be equal to the maximum packet size 
-dealed in the configuration phase. When the transfer size is a multiple of the 
+All packets, except the last one, must be equal to the maximum packet size
+dealed in the configuration phase. When the transfer size is a multiple of the
 MPS, a zero length packet (ZLP) should be sent to mark the end of transfer.
 
 ## Packet types
 
-Each packet begins with a Packet ID (PID). The PID is a 4-bit field, that 
-identifies the packet and is followed by its complement. So, the PID demands 
+Each packet begins with a Packet ID (PID). The PID is a 4-bit field, that
+identifies the packet and is followed by its complement. So, the PID demands
 8-bits.
 
 | PID Name | Pid Encoding | Packet type | Transfer types     | Speed      |
@@ -256,16 +256,16 @@ identifies the packet and is followed by its complement. So, the PID demands
 
 OTG devices can work as a host or as a device. An example is a camera. When
  connected to a PC, it will work as a device, but when connected to a printer,
- it can work as a host. 
- 
-OTG needs to solve a problem at the start of a connection. Which device 
-powers the connection. This is done by the cable (one must be a micro-A 
+ it can work as a host.
+
+OTG needs to solve a problem at the start of a connection. Which device
+powers the connection. This is done by the cable (one must be a micro-A
 and the other a micro-B). The micro-A device must have the ID pin grounded.
 
-After that, there are some protocols to negotiate, who is going to be the host 
+After that, there are some protocols to negotiate, who is going to be the host
 and who is going to be the device.
 
-There are some OTG specific protocols like Host Negotiation Protocol (HNP) and 
+There are some OTG specific protocols like Host Negotiation Protocol (HNP) and
 Session Request Protocol (SRP).
 
 ## USB Interface on the EFM32GG990
@@ -287,7 +287,7 @@ The EFM32GG990 has a built in USB controller with the following features:
 * 12 endpoints and the 0 endpoint
 * Built in voltage regulator for the PHY transceiver.
 
-> According AN0065, the maximum packet size is 64 for control OUT endpoint #0. 
+> According AN0065, the maximum packet size is 64 for control OUT endpoint #0.
 > The options are 8, 16, 32 and 64 bytes.
 
 > There is support for CONTROL, ISOCHRONOUS, BULK and INTERRUPT endpoints.
@@ -308,28 +308,28 @@ There are 8 pins associate with the USB interface.
 |   VREGO    | VREGO | VBUS regulator output     |        |                 |
 
 
-The VBUS, VREGI and VREGO pins are dedicated, i.e., not shared with other MCU 
+The VBUS, VREGI and VREGO pins are dedicated, i.e., not shared with other MCU
 functions.
 
 | Pin        |  Description                                          |
 |------------|-------------------------------------------------------|
 | USB_VREGI  | USB Input to internal 3.3 V regulator.                |
 | USB_VREGO  | USB Decoupling for internal 3.3V USB regulator  <br/> and regulator output. |
-| USB_VBUS   | USB 5.0 V VBUS input.   
+| USB_VBUS   | USB 5.0 V VBUS input.
 
 VBUSEN signal will turn on the VBUS power when the interface as a host or as
  a OTG A Device.
 
-> From AN0046. "A low-speed capable device is identified by a 1.5 kohm pull-up 
+> From AN0046. "A low-speed capable device is identified by a 1.5 kohm pull-up
 > resistor on the D- line. The internal pull-up resistor on EFM32
 > microcontrollers is approximately 2.2 kohm, so an external 4.7 kohm resistor
 > must be placed in parallel to be standard compliant. This resistor should be
-> connected to the USB_DMPU pin so it can be switched on and off by the 
+> connected to the USB_DMPU pin so it can be switched on and off by the
 > USB PHY."
 
 
 
-The circuit for powering the USB interface is flexible and enables, as shown 
+The circuit for powering the USB interface is flexible and enables, as shown
 Section 15.3.2 of the RM.
 
 * Bus-powered devices (Figure 15.2)
@@ -340,35 +340,35 @@ Section 15.3.2 of the RM.
 * Host (Figure 15.7)
 
 
-> The built in voltage regulator for the USB PHU is enabled by default and can 
+> The built in voltage regulator for the USB PHU is enabled by default and can
 > thus be used to power the EFM32 itself. Systems not using the USB should
 > disable the regulator by setting VREGDIS in USB_CTRL. (See RM 15.3.4)
 
-There is only one interrupt allocated to the USB interface (USB_IRQHandler). 
+There is only one interrupt allocated to the USB interface (USB_IRQHandler).
 The USB_IF register contains the interrupt flags.
 
 The USB Low Speed and High Speed are supported by the EFM32GG990 devicces.
-But the STK3700 board doest no support Low Speed devices. 
+But the STK3700 board doest no support Low Speed devices.
 
 The DMPU and VBUSEN are controlled directly by the PHY. It is possible to
-change the their polarity by setting the DMPUAP and VBUSENAP bits, respectively, 
+change the their polarity by setting the DMPUAP and VBUSENAP bits, respectively,
 on the USB_CTRL register.
 
 > The STK3700 Board does not support Low Speed. There should be a 4.7 K resistor
-> driven by DMPU to make the impedance attend the USB protocols. 
-> Connection characteristics for low speed are different from the one 
+> driven by DMPU to make the impedance attend the USB protocols.
+> Connection characteristics for low speed are different from the one
 > delivered by the board.
->  
-> It may work but would be not reliable and most hosts and hubs support full 
+>
+> It may work but would be not reliable and most hosts and hubs support full
 > speed.
 
 
 
-> NOTE: The core is designed to be interrupt-driven. Polling interrupt mechanism 
+> NOTE: The core is designed to be interrupt-driven. Polling interrupt mechanism
 > is not recommended: this may result in undefined resolutions.
 
-> NOTE: In device mode, just after Power On Reset or a Soft Reset, the 
-> USB_GINTSTS.SOF bit is set to 1 for debug purposes. This status must be cleared 
+> NOTE: In device mode, just after Power On Reset or a Soft Reset, the
+> USB_GINTSTS.SOF bit is set to 1 for debug purposes. This status must be cleared
 > and can be ignored.
 
 ## Clocking the USB interface
@@ -383,7 +383,7 @@ HFCORECLKEN0 register), that can be sourced from:
 * LFXO: 32768 Hz external crystal oscillator (used when in the EM2 state)
 * LFRCO: 32768 Hz internal oscillator (used when in the EM2 state)
 
-The clock source is specified by the field USBCLOCKSEL in the CMD register. 
+The clock source is specified by the field USBCLOCKSEL in the CMD register.
 The current source is given by the bits USBCLFRCOSEL, USBCLFXOSEL and
  USBCHFCLKSEL in the CMU_STATUS register.
 
@@ -424,7 +424,7 @@ All others are part of the Core and need HFCORECLK_USBC clock.
 | Endpoint | Register          |                                              |
 |----------|-------------------|----------------------------------------------|
 |   0      | USB_DIEP0CTL      | Device IN Endpoint 0 control register        |
-|   ^      | USB_DIEP0INT      | Device IN Endpoint 0 interrupt register      | 
+|   ^      | USB_DIEP0INT      | Device IN Endpoint 0 interrupt register      |
 |   ^      | USB_DIEP0TSIZ     | Device IN Endpoint 0 transfer size register  |
 |   ^      | USB_DIEP0TXFSTS   | Device IN Endpoint 0 status register         |
 |   ^      | USB_DIEP0DMAADDR  | Device IN Endpoint 0 DMA address register    |
@@ -446,12 +446,12 @@ All others are part of the Core and need HFCORECLK_USBC clock.
 |   ^      | USB_DIEP5_DMAADDR | Device IN Endpoint 6 DMA address register    |
 |  ---     |  ----             | ------                                       |
 |   0      | USB_DOEP0CTL      | Device OUT Endpoint 0 control register       |
-|   ^      | USB_DOEP0INT      | Device OUT Endpoint 0 interrupt register     | 
+|   ^      | USB_DOEP0INT      | Device OUT Endpoint 0 interrupt register     |
 |   ^      | USB_DOEP0TSIZ     | Device OUT Endpoint 0 transfer size register |
 |   ^      | USB_DOEPTXFSTS    | Device OUT Endpoint 0 status register        |
 |   ^      | USB_DOEP0DMAADDR  | Device OUT Endpoint 0 DMA address register   |
 |   1      | USB_DOEP0_CTL     | Device OUT Endpoint 1 control register       |
-|   ^      | USB_DOEP0_INT     | Device OUT Endpoint 1 interrupt register     | 
+|   ^      | USB_DOEP0_INT     | Device OUT Endpoint 1 interrupt register     |
 |   ^      | USB_DOEP0_TSIZ    | Device OUT Endpoint 1 transfer size register |
 |   ^      | USB_DOEP0_TXFSTS  | Device OUT Endpoint 1 status register        |
 |   ^      | USB_DOEP0_DMAADDR | Device OUT Endpoint 1 DMA address register   |
@@ -483,7 +483,7 @@ All others are part of the Core and need HFCORECLK_USBC clock.
 
 
 There is data structures in the EMF32GG header files that make it easier
-to handle these registers. 
+to handle these registers.
 
 | Type               | Defined in              |
 |--------------------|-------------------------|
@@ -513,10 +513,10 @@ USB_HC_TypeDef has the field below:
 
 
 
-There are corresponding fields in the USB_TypeDef structure: DIEP[6], DOEP[6] 
-and HC[14]. 
+There are corresponding fields in the USB_TypeDef structure: DIEP[6], DOEP[6]
+and HC[14].
 
-In the case of DIEP and DOEP, these symbols only can be used to access the 
+In the case of DIEP and DOEP, these symbols only can be used to access the
 registers of endpoints 1 to 6. For Endpoint 0, there are  specific fields in the
 USB_TypeDef structure.
 
@@ -544,21 +544,21 @@ to these registers in a straightforward way.
 
 
 Care should be taken when accessing registers of endpoint 0 due to some
-differences. One important one is that endpoint 0 only realizes control 
+differences. One important one is that endpoint 0 only realizes control
 transfers.
 
 ## Operation Mode
 
-The USB interface has a builtin RAM used to store the packets to be sent or the 
+The USB interface has a builtin RAM used to store the packets to be sent or the
 received ones. It is called FIFO RAM and it is managed by core. Data from it
 can be transfered into or from external memory using:
 
 * DMA Mode: The core fetches the data to be transmitted or updates the received
   data on the AHB
-* Slave Mode: The application initiates the data transfers for data fetch and 
+* Slave Mode: The application initiates the data transfers for data fetch and
   store.
 
-This implementation only uses DMA Mode. It is easier to use DMA, because the 
+This implementation only uses DMA Mode. It is easier to use DMA, because the
 core handles the data movement between FIFO and buffers in external memory.
 In DMA mode the core transfers data  to/from FIFO using
 
@@ -567,25 +567,25 @@ In DMA mode the core transfers data  to/from FIFO using
 
 In DMA mode it is possible to generate interrupt at
 
-* Transfer-Level: an interrupt is generated when the full transfer is completed. 
+* Transfer-Level: an interrupt is generated when the full transfer is completed.
   In Device mode, the core handles all errors.
-* Transaction-Level: an interrupt is generated when a transfer of one packet 
+* Transaction-Level: an interrupt is generated when a transfer of one packet
   (maximum packet size or short packet size) is completed.
 
 ## Working as Device
 
-The USB interface has as 2 KB builtin RAM used to implement FIFO for the 
+The USB interface has as 2 KB builtin RAM used to implement FIFO for the
 endpoints. Basically, the data is received into or transmitted from FIFO.
 
-There are buffers in the MCU RAM and data is moved between FIFO and RAM using 
-DMA. 
+There are buffers in the MCU RAM and data is moved between FIFO and RAM using
+DMA.
 
-There are some difference on the handling of Control, Bulk, Interrupt and 
-Isochronous transfers. There are differences between the handling of periodic 
+There are some difference on the handling of Control, Bulk, Interrupt and
+Isochronous transfers. There are differences between the handling of periodic
 and non periodic transfers.
 
-> The transfers are defines as IN or OUT according the Host point of view. 
-> IN tranfers move data from device to host and OUT transfers from host to 
+> The transfers are defines as IN or OUT according the Host point of view.
+> IN tranfers move data from device to host and OUT transfers from host to
 > device.
 
 ### Receiving data from Host (OUT transfers)
@@ -596,7 +596,7 @@ When using non isochronous (control, bulk or interrupt) transfers, the generic
 1 - Allocate a buffer in memory at a DWORD (32 bit) boundary.
 2 - The enpoint must be configured by setting the USB_DOEPx_CTL register.
 2 - Set USB_DOEPx_DMAADDR address register (DWORD address aligned)
-3 - Set USB_DOEPx_TSIZ transfer size register. The XFERSIZE (Transfer Size 
+3 - Set USB_DOEPx_TSIZ transfer size register. The XFERSIZE (Transfer Size
     Field and the PKTCNT (Packet Count) Field must be set.
 4 - When a interrupt is generated, test if the Endpoint transfer size register
 
@@ -608,7 +608,7 @@ The configuration must set the following fields:
 * MPS: Maximum packet size (0..2047)
 
 The packet count (PKTCNT) must be a multiple of the Maximum Packet Size (MPS)
- for the endpoint. Altough it is possible that MPS is not a multiple of 4, the 
+ for the endpoint. Altough it is possible that MPS is not a multiple of 4, the
  use of multiple of 4 makes everything simple.
 
    $$ N = TransferSize/MPS $$
@@ -618,13 +618,13 @@ The packet count (PKTCNT) must be a multiple of the Maximum Packet Size (MPS)
 To transmit non periodic data to a host , an IN endpoint must be used. A bulk
 or a control transfer can be used.
 
-Since the data must be available when the host asks for it, the information 
-about the data must be set before. It will only be transmitted when the host 
+Since the data must be available when the host asks for it, the information
+about the data must be set before. It will only be transmitted when the host
 asks and it is in the FIFO.
 
 1 - Allocate a buffer with a 32-bit alignement.
 2 - Put the data onto it.
-3 - Set ENDPOINT address register 
+3 - Set ENDPOINT address register
 4 - Set ENDPOINT packet count and transfer size.
 
 
@@ -649,9 +649,9 @@ as shown below.
 
       SA_RX=0000              +--------------------------+
                               |rx_fifo_size (SZ_RX)      |
-      SA_TX0 = SIZ_RX         +--------------------------+ 
-                              |tx_fifo_size #0 (SZ_TX0)  | 
-      SA_TX1 = SA_TX0+SZ_TX0  +--------------------------+  
+      SA_TX0 = SIZ_RX         +--------------------------+
+                              |tx_fifo_size #0 (SZ_TX0)  |
+      SA_TX1 = SA_TX0+SZ_TX0  +--------------------------+
                               |tx_fifo_size #1 (SZ_TX1)  |
       SA_TX2 = SA_TX1+SZ_TX1  +--------------------------|
                               |    and so on.            |
@@ -661,7 +661,7 @@ The registers used for configurations are:
 
 | Register.Field                 | Name            |  Value               |
 |--------------------------------|-----------------|----------------------|
-| USB_GRXFSIZ.RXFDEP             | RxFIFO Depth    | SZ_RX                | 
+| USB_GRXFSIZ.RXFDEP             | RxFIFO Depth    | SZ_RX                |
 | USB_GNPTXFSIZ.NPTXFINEPTXF0DEP | TxFIFO 0 Depth  | SZ_TX0               |
 | USB_GNPTXFSIZ.NPTXFSTADDR      | Start Address   | SA_TX0               |
 | USB_DIEPTXF1.INEPNTXFDEP       | TxFIFO 1 Depth  | SZ_TX1               |
@@ -678,12 +678,12 @@ The registers used for configurations are:
 | USB_DIEPTXF6.INEPNTXFSTADDR    | Start Address   | SA_TX6=SA_TX5+SZ_TX5 |
 
 NOTE: Using CMSIS header, the DIEPTXFx registers are accessed by the DIEPTXFx
-fields of USB structure. For example, to set the INEPNTXFDEP field, one can 
+fields of USB structure. For example, to set the INEPNTXFDEP field, one can
 use
 
    USB->DIEPTXF1 =  (USB->DIEPTXF1&~_USB_DIEPTXF1_INEPNTXFDEP_MASK)
                     |(SZ_TX1<<_USB_DIEPTXF1_INEPNTXFDEP_SHIFT);
- 
+
 
 To flush the FIFOs, set
 
@@ -695,13 +695,13 @@ and wait until USB_GRSTCTL.TXFFLSH=0 and USB_GRSTCTL.RXFFLSH=0.
 
 The size of the Rx FIFO must include:
 
-* 4*N+6 bytes: 
+* 4*N+6 bytes:
 * 1 byte for global OUT NAK
-* (LPS/4)+1 bytes: for normal endpoints or ((LPS/4)+1)*2 bytes: for 
+* (LPS/4)+1 bytes: for normal endpoints or ((LPS/4)+1)*2 bytes: for
   high bandwith endpoints (recommended)
 * N bytes: status information
 
-where N is the number of SETUP packest (n>=3) and MPS is the largest packet 
+where N is the number of SETUP packest (n>=3) and MPS is the largest packet
 size.
 
 The size of a Tx FIFO must include, at least,
@@ -720,35 +720,35 @@ The size of a Tx FIFO must include, at least,
 Follow these steps to enable the USB (See 15.3.1)
 
 1. Enable the clock to the system part by setting USB in CMU_HFCORECLKEN0.
-2. If the internal USB regulator is bypassed (by applying 3.3V on USB_VREGI and 
+2. If the internal USB regulator is bypassed (by applying 3.3V on USB_VREGI and
    USB_VREGO externally), disable the regulator by setting VREGDIS in USB_CTRL.
-3. If the PHY is powered from VBUS using the internal regulator, the VREGO 
+3. If the PHY is powered from VBUS using the internal regulator, the VREGO
    sense circuit should be enabled by setting VREGOSEN in USB_CTRL.
 4. Enable the USB PHY pins by setting PHYPEN in USB_ROUTE.
 5. If host or OTG dual-role device, set VBUSENAP in USB_CTRL to the desired
-   value and then enable the USB_VBUSEN pin in USB_ROUTE. Set the MODE for the 
+   value and then enable the USB_VBUSEN pin in USB_ROUTE. Set the MODE for the
    pin to PUSHPULL.
-6. If low-speed device, set DMPUAP in USB_CTRL to the desired value and then 
+6. If low-speed device, set DMPUAP in USB_CTRL to the desired value and then
    enable the USB_DMPU pin in USB_ROUTE. Set the MODE for the pin to PUSHPULL.
-7. Make sure HFXO is ready and selected. The core part requires the undivided 
-   HFCLK to be 48 MHz when USB is active (during suspend/session-off a 32 kHz 
+7. Make sure HFXO is ready and selected. The core part requires the undivided
+   HFCLK to be 48 MHz when USB is active (during suspend/session-off a 32 kHz
    clock is used)..
 8. Enable the clock to the core part by setting USBC in CMU_HFCORECLKEN0.
-9. Wait for the core to come out of reset. This is easiest done by polling a 
-core register with non-zero reset value until it reads a non-zero value. This 
+9. Wait for the core to come out of reset. This is easiest done by polling a
+core register with non-zero reset value until it reads a non-zero value. This
 takes approximately 20 48-MHz cycles.
 10. Start initializing the USB core as described in USB Core Description, as below.
 
 For both, host and device, the following procedure must be acomplished.
 
 1. Program the following fields in the Global AHB Configuration (USB_GAHBCFG)
-   register. 
-   • DMA Mode bit 
+   register.
+   • DMA Mode bit
    • AHB Burst Length field • Global Interrupt Mask bit = 1
    • Non-periodic TxFIFO Empty Level (can be enabled only when the core is
    operating in Slave mode as a host.) • Periodic TxFIFO Empty Level (can be
    enabled only when the core is operating in Slave mode)
-2. Program the following field in the Global Interrupt Mask (USB_GINTMSK) 
+2. Program the following field in the Global Interrupt Mask (USB_GINTMSK)
    register:
    • USB_GINTMSK.RXFLVLMSK = 0
 1. Program the following fields in USB_GUSBCFG register.
@@ -766,7 +766,7 @@ For both, host and device, the following procedure must be acomplished.
 
 
 
-To initialize the USB core to work as a device, the following sequence must be 
+To initialize the USB core to work as a device, the following sequence must be
 performed by the application.
 
 1. Program the following fields in USB_DCFG register.
@@ -829,7 +829,7 @@ switched off by the Host.
 The application can perform a soft disconnect by setting the Soft disconnect bit
 (SFTDISCON) in Device Control Register (USB_DCTL).
 
-#### Soft disconnecte sequence 
+#### Soft disconnecte sequence
 
 To do a Soft disconnect, Soft reset and USB Device Enumeration sequence, the
 following sequence of actions should be done:
@@ -848,7 +848,7 @@ following sequence of actions should be done:
 #### Suspend sequence
 
 
-To do a Soft disconnect, Soft reset, USB Device Enumeration sequence, the 
+To do a Soft disconnect, Soft reset, USB Device Enumeration sequence, the
 following sequence of operations must be done:
 
 1. The core detects a USB suspend and generates a Suspend Detected interrupt.
@@ -866,7 +866,7 @@ following sequence of operations must be done:
    ensures the soft reset is completed properly.
 7. Initialize the core according to the instructions in Device Initialization
    (p. 251) .
-  
+
 
 
 
@@ -875,13 +875,13 @@ following sequence of operations must be done:
 The EFM32GG990 is directly connected to the USB Type AB connector. The USB
  powering used is the OTG Dual Role Device without regulator, with a software
   controlled switch.
-  
+
 There is an additional physical switch (SW700), that controls the VMCU source:
 
 * Coin cell
 * MCU USB 5V
 * Debug USB 5V.
-  
+
 The software controlled switch is controlled by the EFM_USB_VBUSEN signal and
 switches between the device or the board as power source for VBUS.
 
@@ -897,12 +897,12 @@ The signals used are show below.
 | EFM_USB_VBUSEN    |  VBUSEN   |          |   PF5    |               |
 | EFM_USB_VBUS      |  VBUS     |          |  (B8)    |       1       |
 | EFM_USB_VREGO     |  VREGO    |          |  (B11)   |               |
-|                   |  VREGI    |          |  (B10)   |       1       | 
+|                   |  VREGI    |          |  (B10)   |       1       |
 
 
 The ID pin is used in OTG mode, to find if the interface will work as a A-Type
- or a B-Type (A-Type provides power). 
- 
+ or a B-Type (A-Type provides power).
+
 The DMPU (Pullup control for DM) pin is not used in the STK3700 BOard. It is
 needed to put a 4.7 Kohms resistor in paralled to the 2.2 Kohms internal
 resistor and to correctly signalize the board as a device. So it is not possible
@@ -953,8 +953,7 @@ below and are supported by most operating systems like Linux and Windows.
 
 ## References
 
-1. [EMF32GG Reference
-   Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
+1. [EMF32GG Reference    Manual](https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf)
 2. [EFM32GG990 Data Sheet](https://www.silabs.com/documents/public/data-sheets/efm32gg-datasheet.pdf)
 3. [AP2151 - 0.5A Single Channel Current-limited Power Switch](https://www.diodes.com/assets/Datasheets/AP2141-51.pdf)
 4. [AN0046: USB Hardware Design Guidelines](https://www.silabs.com/documents/public/application-notes/an0046-efm32-usb-hardware-design-guidelines.pdf)
@@ -984,10 +983,10 @@ Device with the following features:
 
 VBUSEN is used to control a switch (AP2151) thru an active high EN signal.
 VBUSEN is connected to PF5. When VBUSEN is high, the internal 5 V is connected
-to VBUS. When EFM32 runs as a device, it must be set to low or left floating 
+to VBUS. When EFM32 runs as a device, it must be set to low or left floating
 (there is a pull down resistor).
 
-Over Current Fault Signal (OC_FAULT) is connected to PF6 and can be used to 
+Over Current Fault Signal (OC_FAULT) is connected to PF6 and can be used to
 trigger an interrupt.
 
 ### Enable Clock
@@ -996,15 +995,15 @@ Following 15.3.1
 
 1. Enable the USB System Clock (HFCORECLK_USB)
    CMU_HFCORECLKEN0.USB = 1
-   
+
 2. Enable internal regulator, i.e., the VREGO sense circuit and VBUSEN polarity
    USB_CTRL.VREGOSEN  = 1
    USB_CTRL.VBUSENAP  = 0
 
 3. Enable the pins used by USB PHY
    USB_ROUTE.PHYPEN = 1
-   
-4. Select HFXO as MCU clock source (Verify if it is ready and selected). 
+
+4. Select HFXO as MCU clock source (Verify if it is ready and selected).
    HFCORECLK must be 48 MHz. HFCORECLKDIV does not matter because USB uses an
    undivided HCORECLK
    # Enable HFXOEN
@@ -1018,11 +1017,11 @@ Following 15.3.1
    CMU_CMD.HFCLKSEL = 2
    # Set VBUSEN Polarity ???
 
-   
+
 5. Enable the USB Core Clock.
    CMU_HFCORECLKEN0.USBC = 1
 
-6. Wait for the core to come out of reset. This takes approximately 20 48-MHz 
+6. Wait for the core to come out of reset. This takes approximately 20 48-MHz
    cycles.
    while ( USB_IF==0 ) {}
 
@@ -1070,7 +1069,7 @@ Following 15.4.1.2 (p. 251)
    USB_DCFG.NZSTSOUTHSHK = 1
    # Set Periodic Frame Interval (80%)
    USB_DCFG.NZSTSOUTHSHK = 0
-   
+
 2. Unmask the following interrupts.
    # USB Reset Mask
    USB_GINTMSK.  = 1
@@ -1080,7 +1079,7 @@ Following 15.4.1.2 (p. 251)
    USB_GINTMSK.ERLYSUSPMSK = 1
    # USB Suspend Mask
    USB_GINTMSK.USBSUSPMSK = 1
-   
+
 3. Wait for the USB_GINTSTS.USBRST interrupt, which indicates a reset has been
    detected on the USB and lasts for about 10 ms. On receiving this interrupt,
    the application must perform the steps listed in Initialization on USB Reset
@@ -1091,7 +1090,7 @@ Following 15.4.1.2 (p. 251)
    of reset on the USB. On receiving this interrupt, the application must read
    the USB_DSTS register to determine the enumeration speed and perform the
    steps listed in Initialization on Enumeration Completion (p. 285).
-   
+
 At this point, the device is ready to accept SOF packets and perform control
 transfers on control endpoint.
 
@@ -1103,7 +1102,7 @@ Following 15.4.4.1.1 (p. 285)
 
 1. Set the NAK bit for all OUT endpoints (x=1..6) [and 0?]
    USB_DOEPx_CTL.SNAK = 1
-   
+
 2. Unmask following interrupts
    USB_DAINTMSK.INEP0 = 1 (control 0 IN endpoint)
    USB_DAINTMSK.OUTEP0 = 1 (control 0 OUT endpoint)
@@ -1111,20 +1110,20 @@ Following 15.4.4.1.1 (p. 285)
    USB_DOEPMSK.XFERCOMPL = 1
    USB_DIEPMSK.XFERCOMPL = 1
    USB_DIEPMSK.TIMEOUTMSK = 1
-   
+
 3. To transmit or receive data, for DMA some interrupts must be masked.
    See 15.4.4.1.7 (p. 287).
    USB_GINTMSK.NPTXFEMPMSK = 0
    USB_GINTMSK.RXFLVMSK = 0
 
-4. Set up the Data FIFO RAM for receiving control OUT data and setup data, by 
-   programmming the  USB_GRXFSIZ Register. Only Depth is needed because the 
+4. Set up the Data FIFO RAM for receiving control OUT data and setup data, by
+   programmming the  USB_GRXFSIZ Register. Only Depth is needed because the
    address for the receive FIFO is 0. (See below for size info)
    USB_GRFSIZ.RXFDEP = RxFIFO Depth (Size)
 
 5. Setup the Device IN Endpoint Transmit FIFO size register in order to be able
    to transmit control IN data. It depends on the FIFO number chosen (???).
-   When using Endpoint 0, use USB_GNPTXFSIZ, Non-periodic Transmit FIFO Size 
+   When using Endpoint 0, use USB_GNPTXFSIZ, Non-periodic Transmit FIFO Size
    Register
    USB_GNPTXFSIZ.NPTXFINEPTXF0DEP   =   EP0 TxFIFO Depth
    USB_GNPTXFSIZ.NPTXFSTADDR        =   EP0 TxFIFO Start Address
@@ -1133,9 +1132,9 @@ Following 15.4.4.1.1 (p. 285)
 
 6. Program the following fields in the endpoint-specific registers for control
    OUT endpoint 0 to receive a SETUP packet
-   USB_DOEP0TSIZ.SUPCNT = 3 (to receive up to 3 back-to-back SETUP packets) 
+   USB_DOEP0TSIZ.SUPCNT = 3 (to receive up to 3 back-to-back SETUP packets)
    USB_DOEP0DMAADDR = area to store any SETUP packets received
-   
+
 At this point, all initialization required to receive SETUP packets is done,
 except for enabling control OUT endpoint 0 in DMA mode.
 
@@ -1221,7 +1220,7 @@ From 15.4.2.1
 2. When the device application detects the USB_GINTSTS.SESSREQINT interrupt, it
    programs the required bits in the USB_DCFG register.
 
-3. When the Host drives Reset, the Device triggers USB_GINTSTS.USBRST [bit 12] 
+3. When the Host drives Reset, the Device triggers USB_GINTSTS.USBRST [bit 12]
    on detecting theReset. The host then follows the USB 2.0 Enumeration sequence.
 
 
@@ -1264,30 +1263,30 @@ endpoint-specific registers.
 For IN transfers, the Transfer Size field in the Endpoint Transfer Size register
 denotes a payload that constitutes multiple maximum-packet-size packets and a
 single short packet. This short packet is transmitted at the end of the
-transfer. 
+transfer.
 
-To transmit a few maximum-packet-size packets and a short packet at the end of 
+To transmit a few maximum-packet-size packets and a short packet at the end of
 the transfer:
 
   Transfer size[epnum] = n * mps[epnum] + sp
-   (where n is an integer >= 0, and 0 <= sp < mps[epnum]) 
-   If (sp > 0), then packet count[epnum] = n + 1. 
-   Otherwise, packet count[epnum] = n a. 
+   (where n is an integer >= 0, and 0 <= sp < mps[epnum])
+   If (sp > 0), then packet count[epnum] = n + 1.
+   Otherwise, packet count[epnum] = n a.
 
 To transmit a single zero-length data packet:
 
    Transfer size[epnum] = 0 •
    Packet count[epnum] = 1 b
-   
-To transmit a few maximum-packet-size packets and a zero-length data packet at 
-the end of the transfer, the application must split the transfer in two parts. 
-The first sends maximum-packet-size data packets and the second sends the 
-zero-length data packet alone. 
+
+To transmit a few maximum-packet-size packets and a zero-length data packet at
+the end of the transfer, the application must split the transfer in two parts.
+The first sends maximum-packet-size data packets and the second sends the
+zero-length data packet alone.
 
    First transfer:
-      transfer size[epnum] = n * mps[epnum]; 
+      transfer size[epnum] = n * mps[epnum];
       packet count = n;
-   Second transfer: 
+   Second transfer:
       transfer size[epnum] = 0; packet count = 1;
 
 In DMA mode, the core fetches an IN data packet from the memory, always
@@ -1301,8 +1300,8 @@ Size register. At the end of IN transfer, which ended with a Endpoint
 Disabled interrupt, the application must read the Transfer Size register to
 determine how much data posted in the transmit FIFO was already sent on the USB.
 
-Data fetched into transmit FIFO = 
-   Application-programmed initial transfer size – core-updated final transfer size 
+Data fetched into transmit FIFO =
+   Application-programmed initial transfer size – core-updated final transfer size
 Data transmitted on USB =
    (application-programmed initial packet count – Core updated final packet
    count) * mps[epnum] • Data yet to be transmitted on USB =
@@ -1322,7 +1321,7 @@ The steps to transmit data to the host are:
    the CNAK and Endpoint Enable bits.
 
    USB_DIEPx_CTL.MPS  = MPS
-   USB_DIEPx_CTL.USB_TXFNUM = 
+   USB_DIEPx_CTL.USB_TXFNUM =
    USB_DIEPx_CTL.EPENA = 1
    USB_DIEPx_CTL.EPTYPE = 0
 
@@ -1354,9 +1353,9 @@ as shown below.
 
       SA_RX=0000              +--------------------------+
                               |rx_fifo_size (SZ_RX)      |
-      SA_TX0 = SIZ_RX         +--------------------------+ 
-                              |tx_fifo_size #0 (SZ_TX0)  | 
-      SA_TX1 = SA_TX0+SZ_TX0  +--------------------------+  
+      SA_TX0 = SIZ_RX         +--------------------------+
+                              |tx_fifo_size #0 (SZ_TX0)  |
+      SA_TX1 = SA_TX0+SZ_TX0  +--------------------------+
                               |tx_fifo_size #1 (SZ_TX1)  |
       SA_TX2 = SA_TX1+SZ_TX1  +--------------------------|
                               |    and so on.            |
@@ -1366,7 +1365,7 @@ The registers used for configurations are:
 
 | Register.Field                 | Name            |  Value               |
 |--------------------------------|-----------------|----------------------|
-| USB_GRXFSIZ.RXFDEP             | RxFIFO Depth    | SZ_RX                | 
+| USB_GRXFSIZ.RXFDEP             | RxFIFO Depth    | SZ_RX                |
 | USB_GNPTXFSIZ.NPTXFINEPTXF0DEP | TxFIFO 0 Depth  | SZ_TX0               |
 | USB_GNPTXFSIZ.NPTXFSTADDR      | Start Address   | SA_TX0=SZ_RX         |
 | USB_DIEPTXF1.INEPNTXFDEP       | TxFIFO 1 Depth  | SZ_TX1               |
@@ -1388,14 +1387,14 @@ Size of FIFO
 Following 15.4.7.1
 
 When using DMA mode, the depth must include an additional location per channel,
-because the DMA Address Registers USB_DIEPx_DMAADDR/USB_DOEPx_DMAADDR for 
+because the DMA Address Registers USB_DIEPx_DMAADDR/USB_DOEPx_DMAADDR for
 device mode and USB_HCxx_DMAADDR for host mode are stored in FIFO.
 
 According 15.4.4.1
 
-RxFIFO: At a minimum, this must be equal to 1 max packet size of control 
-endpoint 0 + 2 DWORDs (for the status of the control OUT data packet) + 
-10 DWORDs (for setup packets). 
+RxFIFO: At a minimum, this must be equal to 1 max packet size of control
+endpoint 0 + 2 DWORDs (for the status of the control OUT data packet) +
+10 DWORDs (for setup packets).
 
 TxFIFO: At a minimum, this must be equal to 1 max packet size of control
 endpoint 0.
@@ -1437,7 +1436,7 @@ recommended.
 Transmit FIFO RAM Allocation must have:
 
 The minimum RAM space required for each IN Endpoint Transmit FIFO is the maximum
-packet size for that particular IN endpoint. 
+packet size for that particular IN endpoint.
 
 More space allocated in the transmit IN Endpoint FIFO results in a better
 performance on the USB and can hide latencies on the AHB.
@@ -1562,7 +1561,7 @@ From em_core.h
    #define CORE_EXIT_ATOMIC()            CORE_ExitAtomic(irqState)
    #define CORE_YIELD_ATOMIC()           CORE_YieldAtomic(void)
 
-In em_core.c. There are two ways to implement CORE_EnterAtomic. One uses 
+In em_core.c. There are two ways to implement CORE_EnterAtomic. One uses
 get_BASEPRI and other get_PRIMASK
 '
    SL_WEAK CORE_irqState_t CORE_EnterAtomic(void)    {
@@ -1597,7 +1596,7 @@ From em_usbhal.h
 
    return retVal;
    }
- 
+
 
 The Init routine is huge!!!!!. It uses data from a structure to initialize
 the USB as a device.
@@ -1772,7 +1771,7 @@ For a CDC the struture is initialized as
    #if ( USB_PWRSAVE_MODE & USB_PWRSAVE_MODE_ONVBUSOFF )
       if ( USBHAL_VbusIsOn() ) {
          USBD_SetUsbState( USBD_STATE_POWERED );
-      } 
+      }
       else
    #endif
       {
@@ -1787,8 +1786,8 @@ From usbdint.c
 
 
    void USB_IRQHandler( void ) {
-   
-   
+
+
    CORE_DECLARE_IRQ_STATE;
 
    CORE_ENTER_ATOMIC();
@@ -1833,7 +1832,7 @@ From usbdint.c
          }
       }
    }
-  
+
    status = USBHAL_GetCoreInts();
    /* If no more interrupts */
    if ( status == 0 ) {
@@ -1884,7 +1883,7 @@ USBD_ArmEP0(ep) {
    if( ep->in ) { // IN
       if( ep->remaining == 0 )
          ep->zlp = 1;
-      
+
       HAL_SetEp0DMAAddrIN(ep->buff)
       Size = SL_MIN(ep->remaining, ep->packetsize)
       HAL_StartEp0IN( , dev->ep0MpsCode )
@@ -1920,7 +1919,7 @@ USBD_Read( addr, data, len, callback ) {
 
    ep = GetEpFromEpAddr(addr);
 
-   // Check for inconsistencies 
+   // Check for inconsistencies
    // ep must be OUT: ASSERT(ep->in == false)
   CORE_ENTER_ATOMIC();
 
@@ -1938,7 +1937,7 @@ USBD_Write( addr, data, len, callback ) {
 
    ep = GetEpFromEpAddr(addr);
 
-   // Check for inconsistencies 
+   // Check for inconsistencies
    // ep must be IN: ASSERT(ep->in)
 
    ep->buf      = data;
@@ -1970,19 +1969,19 @@ There maximum number of exceptions depends on th Cortex model.
 |    M33    |    480     |
 
 Each interrupt has a priority that is a number that  starts from 0 (highest
-priority). The number of priority is defined by the manufacturer, and it is 
+priority). The number of priority is defined by the manufacturer, and it is
 generally 8 or 16.
 
-> NOTE: Care must be taken, because the default priority is 0 for all 
+> NOTE: Care must be taken, because the default priority is 0 for all
 > interrupts.
 
-void Reset_Handler(void);           
-void NMI_Handler(void);             
+void Reset_Handler(void);
+void NMI_Handler(void);
 void HardFault_Handler(void);
 void MemManage_Handler(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
-void DebugMon_Handler(void); 
-void SVC_Handler(void);  
+void DebugMon_Handler(void);
+void SVC_Handler(void);
 void PendSV_Handler(void);
-void SysTick_Handler(void);    
+void SysTick_Handler(void);
