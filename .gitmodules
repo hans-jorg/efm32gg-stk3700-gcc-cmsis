@@ -1,3 +1,0 @@
-[submodule "X33-USB-Device-TinyUSB/tinyusb"]
-	path = X33-USB-Device-TinyUSB/tinyusb
-	url = https://github.com/hathach/tinyusb/
