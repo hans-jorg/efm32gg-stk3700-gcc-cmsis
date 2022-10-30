@@ -74,8 +74,6 @@
 #define __SYSTEM_INIT_AFTER_INIT
 #endif
 
-/* Function (in system_efm32gg.c) to update the SystemCoreClock variable */
-uint32_t SystemCoreClockGet(void);
 
 /*----------------------------------------------------------------------------
   Define how initialize DATA and BSS section
@@ -385,10 +383,6 @@ uint32_t *pTable __attribute__((unused));
 /* SystemInit runs with itialized data */
   SystemInit();
 
-#endif
-
-#ifndef DO_NO_INITIALIZE_SYSTEM_CORE_CLOCK
-    SystemCoreClockGet();
 #endif
     /* Initialize C library */
     _main();

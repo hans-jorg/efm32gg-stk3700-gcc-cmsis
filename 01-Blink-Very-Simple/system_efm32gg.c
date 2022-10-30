@@ -46,15 +46,13 @@
  **************************   LOCAL VARIABLES   ********************************
  ******************************************************************************/
 
-/*
- * System oscillator frequencies. These frequencies are normally constant
- * for a target, but they are made configurable in order to allow run-time
- * handling of different boards. The crystal oscillator clocks can be set
- * compile time to a non-default value by defining respective EFM32_nFXO_FREQ
- * values according to board design. By defining the EFM32_nFXO_FREQ to 0,
- * one indicates that the oscillator is not present, in order to save some
- * SW footprint.
- */
+/* System oscillator frequencies. These frequencies are normally constant */
+/* for a target, but they are made configurable in order to allow run-time */
+/* handling of different boards. The crystal oscillator clocks can be set */
+/* compile time to a non-default value by defining respective EFM32_nFXO_FREQ */
+/* values according to board design. By defining the EFM32_nFXO_FREQ to 0, */
+/* one indicates that the oscillator is not present, in order to save some */
+/* SW footprint. */
 
 #ifndef EFM32_HFXO_FREQ
 #define EFM32_HFXO_FREQ (48000000UL)
@@ -100,7 +98,7 @@ __STATIC_INLINE uint8_t GetProdRev(void)
  * @details
  *   Required CMSIS global variable that must be kept up-to-date.
  */
-uint32_t SystemCoreClock;
+uint32_t SystemCoreClock = 14000000UL;
 
 /*******************************************************************************
  **************************   GLOBAL FUNCTIONS   *******************************

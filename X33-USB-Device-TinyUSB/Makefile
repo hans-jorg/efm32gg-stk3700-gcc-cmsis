@@ -45,7 +45,7 @@ PROGNAME=usb-cdc
 # Verbose output for Make (Coment to have verbose output}
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # Compatibility Windows/Linux
@@ -71,10 +71,25 @@ PART=EFM32GG990F1024
 # Used to find correct CMSIS include file
 PARTCLASSCMSIS=EFM32GG
 
+
+#
+# Tiny USB
+#
+
+# Subdirectory
+TUDIR=tinyusb/src
+# Source files
+TUSRC=${TUDIR}/tusb.c
+# Include files
+TUINCDIR=${TUDIR}
+# Defines
+TUFLAGS=-DCFG_TUSB_MCU=OPT_MCU_EFM32GG -DCFG_TUSB_OS=OPT_OS_NONE
+
+
 #
 # Source files
 #
-SRCFILES=${wildcard *.c}
+SRCFILES=${wildcard *.c} ${TUSRC}
 #SRCFILES= main.c
 
 #
@@ -220,7 +235,7 @@ CERRORFLAGS=                                        \
 # Include path
 #
 CMSISINCDIR= ${CMSISDIR}/Include
-INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR}
+INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} ${TUINCDIR}
 
 
 ###############################################################################
@@ -245,6 +260,7 @@ AFLAGS=                                             \
 CFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${TUFLAGS}                              \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${CSECTIONS}                            \
             -D${PART}                               \
@@ -281,7 +297,7 @@ CFLAGS+= -Wuninitialized -Werror
 #
 # Controlling dependencies on header files
 #
-DEPFLAGS=-MT $@  -MMD -MP -MF ${OBJDIR}/$*.d
+DEPFLAGS=-MT ${OBJDIR}/${notdir $@}  -MMD -MP -MF ${OBJDIR}/${ $notdir @}:.o=.d}
 
 #
 # libraries linked
@@ -662,7 +678,7 @@ nm: ${OBJDIR}/${PROGNAME}.axf
 # The rule to create the target directory.
 #
 ${OBJDIR}:
-	${MKDIR} ${OBJDIR}
+	${MKDIR} -p ${OBJDIR} ${OBJDIR}/${TUDIR}
 
 
 #

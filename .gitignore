@@ -13,6 +13,7 @@ Docs/
 Z*/
 Utils/
 vscode/
+X33-USB-Device-TinyUSB/tinyusb/
 
 # Prerequisites
 *.d
