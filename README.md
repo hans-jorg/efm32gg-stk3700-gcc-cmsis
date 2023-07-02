@@ -138,36 +138,46 @@ Examples for the EFM32GG-STK3700 Development Board
 
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
--    01-Blink: Blick LEDs with direct access to registers
--    01-Blink-NO: How to not do it
--    02-Blink: Blick LEDs with a HAL for GPIO
--    03-Blink: Blink LEDs with a LED HAL above the GPIO HAL
--    04-Blink: Blink LEDs with a LED HAL above hardware
--    05-SysTick: Using SysTick to implement delays
--    06-ClockFrequency: Changing the core clock frequency
--    07-StateMachine: Processing inside the SysTick Interrupt
--    08-Timers: Timers
--    09-Button: Buttons
--    10-Button: More about buttons
--    11-Debounce: Debouncing
--    12-UART: Serial Communication using polling
--    13-UART: Serial Communication using interrupts
--    14-Ministdio: Mini Standard I/O Package
--    15-Newlib: Using Newlib
--    16-TimeTriggered: Time Triggered Systems
--    17-Protothreads: Using Protothreads
--    18-FreeRTOS: Using FreeRTOS
--    19-ucos2: Using uC/OS-II
--    20-ucos3: Using uC/OS-III
--    21-LCD: Using the LCD display
--    22-Better newlib support
--    23-Temperature: Getting the CPU temperature
--    24-Quadrature: a software based decoding
--   \*25-Quadrature-v2: a hardware based decoding.
+-    01-Blink-Very-Simple: Blink LEDs with direct access to registers
+-    02-Blink-Simple-GPIO-HAL-1: Blink LEDs with simple GPIO
+-    02-Blink-Simple-GPIO-HAL-2: Blink LEDs with a GPIO module
+-    03-Blink-Layered-LED-HAL: Blink LEDs with a LED module over a GPIO module
+-    04-Blink-LED-HAL: Blink LEDs with a LED module with direct access to registers
+-    05-Using-SysTick: Blink LEDs using SysTick timer
+-    06-Changing-Clock-Frequency: Blink LEDs when changing CPU frequency
+-    07-Using-a-State-Machine: Blink LEDs using a state machine
+-    08-Software-Timers: Blink LEDs using (software) timers
+-    09-Button-Polling: Polling buttons
+-    10-Button-Interrupt: Buttons generate interrupt
+-    11-Implementing-Debounce: Debouncing buttons
+-    12-UART-Polling: Simple UART interface using polling
+-    13-UART-Interrupt: Advanced UART interface using interrupts and buffers
+-    14-Mini-stdio: A simple and small module with some stdio routines
+-    15-Using-Newlib: Using the newlib (part of ARM GNU C Compiler) 
+-    16-Using-a-Time-Triggered-Approach: Using Pont [PTTES](https://www.safetty.net/publications/pttes) approach
+-    17-Using-a-Better-Time-Triggered-Approach: Using Pont [ERES](https://www.safetty.net/publications/the-engineering-of-reliable-embedded-systems-second-edition) approach
+-    18-Using-Protothreads: Using [Dunkels](http://dunkels.com/adam/pt/) protothreads
+-    19-Using-FreeRTOS: Using [FreeRTOS](https://www.freertos.org/)
+-    20-Using-FreeRTOS-with-Interrupts: Using [FreeRTOS](https://www.freertos.org/) and interrupts
+-    21-Using-uC-OS2: Using [uc/OS2](https://github.com/weston-embedded/uC-OS2)
+-    22-Using-uC-OS2-with-Interrupts:
+-    23-Using-uC-OS3:
+-    24-Using-uC-OS3-with-Interrupts:
+-    25-Using-the-LCD: Using the onboard LCD (with a simple module)
+-    26-Implementing-a-better-Newlib: More advanced implementation of newlib interface
+-    27-Getting-Temperature: Showing the temperature from internal sensor
+-    28-Software-based-Quadrature-Decoding: Reading the encoder with a state machine
+-    29-Hardware-based-Quadrature-Decoding: Reading the encoder using HW timer
+-    30-Using-the-Slider-Control: Using the on board slider
+-    31-Generating-PWM-Signal: Generating PWM signals using HW timer
+-    **X32-USB-Device-Barebone: USB interface using a register based API
+-    **X33-Cleaning X33-USB-Device-TinyUSB: USB interface using a middleware
+
 
 OBS:
 
--    The hardware decoding in 25-Quadrature-v2 is not working well. Probably
-     the encoder is too noisy. I will try with a better one.
-
-**Those marked with an asterisk are unfinished!!!**
+1.   The hardware decoding in 29-Hardware-based-Quadrature-Decoding is
+     not working well. Probably the encoder is too noisy. I will try with
+     a better one.
+2.    **Projects marked with an asterisk are unfinished!!!** 
+3.    **Projects marked with a double asterisk are in a very initial stage**

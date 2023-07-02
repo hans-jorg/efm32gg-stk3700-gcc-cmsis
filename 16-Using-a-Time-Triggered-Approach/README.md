@@ -2,7 +2,7 @@
 ==========================
 
 ##A time triggered kernel
- 
+
 This is the 7th version of Blink. The main modification is the use of a time triggered scheduler. In the last example, a periodical interrupt (SysTick) was used to implement a simple state machine.
 
 
@@ -22,7 +22,7 @@ In the last example a counter was used to divide further the interrupts, because
     void SysTick_Handler(void) {
     static int counter = 0; // must be static
     static int8_t state = 0; // must be static
-    
+
         if( counter != 0 ) {
     	    counter--;
         } else {
@@ -108,7 +108,7 @@ A better alternative is the interrupt processing routine to signalize that a tas
 
 ##Time Triggered Scheduler
 
-The approach shown before is the basis of a time triggered task scheduler according [Pontt](https://www.safetty.net/products/publications/pttes)[21].
+The approach shown before is the basis of a time triggered task scheduler according [Pont](https://www.safetty.net/products/publications/pttes)[21].
 A list of tasks, including information about period and the counter value is maintained through an API. A task is then started (by calling the corresponding function) when the period is over as indicated by the run variable.
 
     typedef struct {
