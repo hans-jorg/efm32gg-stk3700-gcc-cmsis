@@ -144,12 +144,12 @@ default: build
 #   See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
 #   of the GNU ARM installation folder
 #
-#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and 
+#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and
 #   a 128KByte RAM.
 #   It has no FPU!. So it will use a software emulation of the FPU (default)
 #
 #   The default printf and scanf functions do not support floating point data.
-#   In order to use printf and scanf that support floating point, 
+#   In order to use printf and scanf that support floating point,
 #   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
 #
 CPUFLAGS= -mcpu=cortex-m3 -mthumb
@@ -378,6 +378,19 @@ CDBGFLAGS=
 KDBG=kdbg
 KDBGFLAGS=
 
+ifneq (${HOSTOS},Windows)
+## Gede
+GEDE=gede
+GEDEFLAGS=
+GEDE=
+endif
+
+ifneq (${HOSTOS},Windows)
+## Seer
+SEER=seergdb
+SEERFLAGS=
+SEERINIT=
+endif
 
 #
 # GUI Editor
@@ -574,11 +587,15 @@ usage:
 	@echo "make edit         open files in a editor"
 	@echo "make flash        write to flash using ${FLASHER}"
 	@echo "make clean        delete all generated files"
-	@echo "make debug        creates debug session with gdb"
-	@echo "make   gdb        creates debug session with gdb (same as debug}"
-	@echo "make   tui        creates debug session with gdb text user interface"
-	@echo "make   ddd        creates debug session with ddd"
-	@echo "make   nemiver    creates debug session with nemiver"
+	@echo "make debug        creates a debug session with gdb"
+	@echo "make   gdb        creates a debug session with gdb (same as debug}"
+	@echo "make   tui        creates a debug session with gdb text user interface"
+	@echo "make   ddd        creates a debug session with ddd"
+	@echo "make   nemiver    creates a debug session with nemiver"
+ifneq (${HOSTOS},Windows)
+	@echo "make   seer       creates a debug session using seer"
+	@echo "make   gede       creates a debug session using gede"
+endif
 	@echo "make dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
 	@echo "make dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
 	@echo "make nm           list symbol table in standard output"
@@ -715,7 +732,34 @@ cgdb: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 #
 kdbg: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${KDBG}  -r localhost:2331 ${OBJDIR}/${PROGNAME}.axf
+
+#
+# Debug using GEDE GUI
+#
+ifneq (${HOSTOS},Windows)
+gede: ${OBJDIR}/${PROGNAME}.bin
+
+	echo "GdpPath=arm-none-eabi-gdb"              > ${GEDEINIT}
+	echo "LastProgram=${OBJDIR}/${PROGNAME}.bin"  >> ${GEDEINIT}
+	echo "TcpHost=localhost"                      >> ${GEDEINIT}
+	echo "TcpPort=${GDBPORT}"                     >> ${GEDEINIT}
+	echo "InitialBreakpoint=\"main\""             >> ${GEDEINIT}
+	echo "Gede: TBD"
+	gede --projconfig ${GDBINIT}
+	${GEDE}              {OBJDIR}/${PROGNAME}.axf
 endif
+
+#
+# Debug using Seer GUI
+#
+ifneq (${HOSTOS},Windows)
+seer: ${OBJDIR}/${PROGNAME}.bin
+	${SEER} --connect localhost:${GDBPORT} --bf main {OBJDIR}/${PROGNAME}.axf
+endif
+
+## INSIDE_VSCODE
+endif
+
 
 #
 # Start GDB proxy
@@ -745,6 +789,7 @@ gdbproxy:
 	if [ -c ${TTYTERM} ] ; then echo "Starting OpenOCD"; \
 	   ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
 	else echo "Could not open ${GDBPROXY}"; fi
+
 #
 # Create gdbinit
 #
