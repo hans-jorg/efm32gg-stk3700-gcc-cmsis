@@ -5,6 +5,7 @@
 ******************************************************************************/
 
 #include <stdint.h>
+#include <ctype.h>
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -46,7 +47,8 @@ static int counter = 0;
 int main(void) {
 ClockConfiguration_t clockconf;
 int cntchar;
-unsigned ch,checho;
+unsigned ch;
+int changecase = 0;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
@@ -66,22 +68,33 @@ unsigned ch,checho;
     /* Configure UART */
     UART_Init();
 
+    UART_SendString("\r\n\n\nSPACE toggles change case\n\r");
+
+
     cntchar = 0;
     ch = '*';
-    checho = ch;
     while (1) {
 
         if( (ch = UART_GetCharNoWait()) != 0 ) {
             LED_Toggle(LED2);
-            if( (ch != '\n') && (ch != '\r') )
-                checho = ch;
-        }
-        if( (cntchar++%80)!=0 ) {
-            UART_SendChar(checho);
         } else {
+            continue;
+        }
+        if( ch == ' ' ) {
+            changecase = !changecase;
+        }
+        if( changecase ) {
+            if( isupper(ch)) {
+                ch = tolower(ch);
+            } else if ( islower(ch) ) {
+                ch = toupper(ch);
+            }
+        }
+        if( (cntchar++%80)==0 ) {
             UART_SendChar('\n');
             UART_SendChar('\r');
         }
+        UART_SendChar(ch);
     }
 
 }

@@ -5,6 +5,7 @@
 ******************************************************************************/
 
 #include <stdint.h>
+#include <ctype.h>
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -59,6 +60,7 @@ int main(void) {
 ClockConfiguration_t clockconf;
 unsigned ch;
 int counter;
+int changecase = 0;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
@@ -81,24 +83,41 @@ int counter;
     __enable_irq();
 
     counter = 0;
-    UART_SendString("\r\n\n\n\rHello\n\r");
+    UART_SendString("\r\n\n\nSPACE toggles changing case\n\r");
+
+
     while (1) {
 
         if( (ch = UART_GetCharNoWait()) != 0 ) {
             LED_Toggle(LED2);
+            if( ch == ' ' ) {
+                changecase = !changecase;
+            }
+            if( changecase ) {
+                if( isupper(ch)) {
+                    ch = tolower(ch);
+                } else if ( islower(ch) ) {
+                    ch = toupper(ch);
+                }
+            }
             if( (ch == '\n') || (ch == '\r') ) {
                 UART_SendString("\n\r");
+                counter = 0;
             } else if( ch == '\x1B' ) {
-                UART_SendString("12345678901234567890\n\r");
+                UART_SendString("\n\r12345678901234567890\n\r");
+                counter = 0;
             } else {
+                counter++;
+                if( (counter%80) == 0 ) {
+                    UART_SendString("\n\r");
+                    counter = 0;
+                }
                 UART_SendChar(ch);
             }
+
+
         }
-        counter++;
-        if( counter > 100000000 ) {
-            UART_SendChar('*');
-            counter = 0;
-        }
+
     }
 
 }
