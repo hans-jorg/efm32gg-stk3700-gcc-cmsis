@@ -65,16 +65,19 @@ uint8_t data[10];
 
         rc = I2CMaster_Send(I2C1,VALIDADDR,data,1);
         if( rc < 0 ) {
-            fprintf(stderr,"Detecting valid I2C device with address %d failed (%d)\n",ADDR1,rc);
+            fprintf(stderr,"Detecting valid I2C device with address %d failed (%d)\n",VALIDADDR,rc);
         } else {
-            fprintf(stderr,"Detected I2C device with address %d successful\n",ADDR1);
+            fprintf(stderr,"Detected I2C device with address %d successful\n",VALIDADDR);
         }
 
         rc = I2CMaster_Send(I2C1,NOTVALIDADDR,data,1);
-        if( rc >= 0 ) {
-            fprintf(stderr,"Detect %d failed(%d)\n",ADDR2,rc);
+        if( rc < 0 ) {
+            fprintf(stderr,"Detected an I2c device with address %d \n",NOTVALIDADDR);
+        } else {
+            fprintf(stderr,"Detected an I2c device with address"
+                           " %d but the address should be invalid\n",NOTVALIDADDR);
         }
-
+        Delay(1000000);
     }
     /* NEVER */
 }
