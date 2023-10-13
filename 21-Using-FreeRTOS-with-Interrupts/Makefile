@@ -469,11 +469,8 @@ stack-report=stack-usage
 PUNCOVER=puncover
 STACKUSAGE=stack-usage
 
-
 # Only needed for stack-usage
 CFLAGS += -fstack-usage -fdump-ipa-cgraph
-
-
 
 #
 # Options for flash and debug
