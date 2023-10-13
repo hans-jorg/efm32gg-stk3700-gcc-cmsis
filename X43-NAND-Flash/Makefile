@@ -3,6 +3,7 @@
 #  @brief    General makefile for EMF32GG
 #  @version  v1.4
 #  @date     13/10/2023
+
 #
 #  @note     CMSIS library used
 #
@@ -10,30 +11,20 @@
 #            http://gnuwin32.sourceforge.net/packages/make.htm
 #
 #  @note options
-#  @param all          generate image file
-#  @param build        generate the axf file
-#  @param flash        write image file into microcontroller
-#  @param edit         open source files for editing
-#  @param debug        creates debug session (default: gdb}
-#  @param   gdb            creates debug session with gdb (same as debug}
-#  @param   tui            creates debug session with gdb text user interface
-#  @param   ddd            creates debug session with ddd
-#  @param   nemiver        creates debug session with nemiver
-#  @param openocd      start openocd for debugging
-#  @param proxy        start GDB proxy
-#  @param size         show code size
-#  @param nm           list symbols
-#  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
-#  @param dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
-#  @param nm           list symbol table in standard output"
-#  @param size         list size of output file"
-#  @param term         open a terminal for serial communication to board"
-#  @param openocd      start an openocd proxy"
-#  @param proxy        start a gdb proxy"
-#  @param docs         generates docs using doxygen"
-#  @param stack-report generates a stack usage report"
-#  @param cflow        generates flow (call) map"
-#  @param touch        forces compilation of all modules by next build"
+#  @param all      generate image file
+#  @param build    generate the axf file
+#  @param flash    write image file into microcontroller
+#  @param edit     open source files for editing
+#  @param debug    creates debug session (default: gdb}
+#  @param   gdb        creates debug session with gdb (same as debug}
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
+#  @param openocd  start openocd for debugging
+#  @param proxy    start GDB proxy
+#  @param size     show code size
+#  @param nm       list symbols
+#  @param dump     show object code in assembly format
 #
 #
 #  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully tested.
@@ -49,7 +40,7 @@
 #
 # Program name
 #
-PROGNAME=blink1
+PROGNAME=nand
 
 #
 # Verbose output for Make (Coment to have verbose output}
@@ -109,24 +100,24 @@ GECKOSDKDIR=../../Gecko_SDK
 CMSISDIR=${GECKOSDKDIR}/platform/CMSIS
 CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 
+
 #
 # Commands Linux/Windows
 #
 ifeq (${HOSTOS},Windows)
-# Windows
 RM=rmdir /s /q
 MKDIR=mkdir
 MV=move
 CP=copy
 NOOUT= > NUL
 else
-# Linux
 RM=rm -rf
 MKDIR=mkdir -p
 MV=mv
 CP=cp
 NOOUT=
 endif
+
 
 #
 # When using VSCODE
@@ -388,19 +379,6 @@ CDBGFLAGS=
 KDBG=kdbg
 KDBGFLAGS=
 
-ifneq (${HOSTOS},Windows)
-## Gede
-GEDE=gede
-GEDEFLAGS=
-GEDE=
-endif
-
-ifneq (${HOSTOS},Windows)
-## Seer
-SEER=seergdb
-SEERFLAGS=
-SEERINIT=
-endif
 
 #
 # GUI Editor
@@ -412,7 +390,6 @@ GUIEDITOR=gedit --new-window
 # Doxygen
 #
 DOXYGEN=doxygen
-
 
 #
 # cflow to generate call graphs
@@ -446,6 +423,27 @@ STACKUSAGE=stack-usage
 # Only needed for stack-usage
 CFLAGS += -fstack-usage -fdump-ipa-cgraph
 
+
+
+#
+# Generation of stack usage report
+#
+# There are some options for the generation of the stack usage report
+#
+# 1. puncover:
+# 2. stack-usage:
+#
+# OBS:
+#    stack-usage demands compilation with certain flags for the generation of
+#    auxiliary files
+#
+#
+stack-report=stack-usage
+#stack-report=puncover
+
+
+# Only for stack-usage
+CFLAGS += -fstack-usage -fdump-ipa-cgraph
 
 
 #
@@ -545,6 +543,7 @@ GDBFLAGS=-x ${GDBINIT} -n
 #
 GDBINIT=${OBJDIR}/gdbinit
 
+
 #
 # Linker script
 #
@@ -616,19 +615,14 @@ usage:
 	@echo "Usage:"
 	@echo "make all          generate image file in ${OBJDIR}"
 	@echo "make build        generate .axf file in "
-	@echo "make build        generate .axf file in "
 	@echo "make edit         open files in a editor"
 	@echo "make flash        write to flash using ${FLASHER}"
 	@echo "make clean        delete all generated files"
-	@echo "make debug        creates a debug session with gdb"
-	@echo "make   gdb        creates a debug session with gdb (same as debug}"
-	@echo "make   tui        creates a debug session with gdb text user interface"
-	@echo "make   ddd        creates a debug session with ddd"
-	@echo "make   nemiver    creates a debug session with nemiver"
-ifneq (${HOSTOS},Windows)
-	@echo "make   seer       creates a debug session using seer"
-	@echo "make   gede       creates a debug session using gede"
-endif
+	@echo "make debug        creates debug session with gdb"
+	@echo "make   gdb        creates debug session with gdb (same as debug}"
+	@echo "make   tui        creates debug session with gdb text user interface"
+	@echo "make   ddd        creates debug session with ddd"
+	@echo "make   nemiver    creates debug session with nemiver"
 	@echo "make dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
 	@echo "make dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
 	@echo "make nm           list symbol table in standard output"
@@ -637,6 +631,9 @@ endif
 	@echo "make openocd      start an openocd proxy"
 	@echo "make proxy        start a gdb proxy"
 	@echo "make docs         generates docs using doxygen"
+	@echo "make stack-report generates a stack usage report"
+	@echo "make cflow        generates flow (call) map"
+	@echo "make touch        forces compilation of all modules by next build"
 
 #
 # The default rule, which causes the ${PROGNAME} example to be built
@@ -699,9 +696,8 @@ disassembly: ${OBJDIR}/${PROGNAME}.axf
 dump: ${OBJDIR}/${PROGNAME}.axf
 	@echo   "Dumping ${^} and storing output in ${OBJDIR}/${PROGNAME}.dump"
 	${OBJDUMP} ${ODDUMPFLAGS} $^ > ${OBJDIR}/${PROGNAME}.dump
-
 imagedump: ${OBJDIR}/${PROGNAME}.bin
-	${OBJDUMP}   $\{OBJDUMP} -x $^ > ${OBJDIR}/${PROGNAME}.hexdump
+	  $\{OBJDUMP} -x $^ > ${OBJDIR}/${PROGNAME}.hexdump
 
 #
 # List size
@@ -721,6 +717,7 @@ nm: ${OBJDIR}/${PROGNAME}.axf
 ${OBJDIR}:
 	${MKDIR} ${OBJDIR}
 
+
 #
 # Rules for building the ${PROGNAME} example.
 #
@@ -729,7 +726,7 @@ ${OBJDIR}/${PROGNAME}.axf: ${OBJFILES}
 
 ifeq (${INSIDEVSCODE},no)
 #
-# Open files in editor
+# Open files in editor windows
 #
 edit:
 	${GUIEDITOR} Makefile *.c *.h *.ld &
@@ -765,34 +762,7 @@ cgdb: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 #
 kdbg: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${KDBG}  -r localhost:2331 ${OBJDIR}/${PROGNAME}.axf
-
-#
-# Debug using GEDE GUI
-#
-ifneq (${HOSTOS},Windows)
-gede: ${OBJDIR}/${PROGNAME}.bin
-
-	echo "GdpPath=arm-none-eabi-gdb"              > ${GEDEINIT}
-	echo "LastProgram=${OBJDIR}/${PROGNAME}.bin"  >> ${GEDEINIT}
-	echo "TcpHost=localhost"                      >> ${GEDEINIT}
-	echo "TcpPort=${GDBPORT}"                     >> ${GEDEINIT}
-	echo "InitialBreakpoint=\"main\""             >> ${GEDEINIT}
-	echo "Gede: TBD"
-	gede --projconfig ${GDBINIT}
-	${GEDE}              {OBJDIR}/${PROGNAME}.axf
 endif
-
-#
-# Debug using Seer GUI
-#
-ifneq (${HOSTOS},Windows)
-seer: ${OBJDIR}/${PROGNAME}.bin
-	${SEER} --connect localhost:${GDBPORT} --bf main {OBJDIR}/${PROGNAME}.axf
-endif
-
-## INSIDE_VSCODE
-endif
-
 
 #
 # Start GDB proxy
@@ -822,7 +792,6 @@ gdbproxy:
 	if [ -c ${TTYTERM} ] ; then echo "Starting OpenOCD"; \
 	   ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
 	else echo "Could not open ${GDBPROXY}"; fi
-
 #
 # Create gdbinit
 #
@@ -863,11 +832,12 @@ ${DOXYGENCFG}:
 	-${RM}   ${SEDSCRIPT}
 
 
+
 #
 # Clean the generated documentation
 #
 docs-clean:
-	$(RM) html latex && echo Done.
+	-${RM}  html latex && echo Done.
 
 #
 # Clean out all the generated files
@@ -886,7 +856,7 @@ else
 svd:
 endif
 ${OBJDIR}/${PART}.svd: FORCE
-	-${CP} ${SVCDIR}/${PART}.svd  ${OBJDIR}
+	-${CP} - ${SVCDIR}/${PART}.svd  ${OBJDIR}
 
 #
 # generates a call graph
@@ -894,7 +864,6 @@ ${OBJDIR}/${PART}.svd: FORCE
 cflow:
 	${CFLOW} ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1 \
 	| egrep -v "^cflow"
-
 
 #
 # Generates the stack usage report

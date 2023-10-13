@@ -1,8 +1,9 @@
 ##
 #  @file     Makefile
 #  @brief    General makefile for EMF32GG
-#  @version  v1.3
-#  @date     23/09/2021
+#  @version  v1.4
+#  @date     13/10/2023
+
 #
 #  @note     CMSIS library used
 #
@@ -10,24 +11,34 @@
 #            http://gnuwin32.sourceforge.net/packages/make.htm
 #
 #  @note options
-#  @param all      generate image file
-#  @param build    generate the axf file
-#  @param flash    write image file into microcontroller
-#  @param edit     open source files for editing
-#  @param debug    creates debug session (default: gdb}
-#  @param   gdb        creates debug session with gdb (same as debug}
-#  @param   tui        creates debug session with gdb text user interface
-#  @param   ddd        creates debug session with ddd
-#  @param   nemiver    creates debug session with nemiver
-#  @param openocd  start openocd for debugging
-#  @param proxy    start GDB proxy
-#  @param size     show code size
-#  @param nm       list symbols
-#  @param dump     show object code in assembly format
+#  @param all          generate image file
+#  @param build        generate the axf file
+#  @param flash        write image file into microcontroller
+#  @param edit         open source files for editing
+#  @param debug        creates debug session (default: gdb}
+#  @param   gdb            creates debug session with gdb (same as debug}
+#  @param   tui            creates debug session with gdb text user interface
+#  @param   ddd            creates debug session with ddd
+#  @param   nemiver        creates debug session with nemiver
+#  @param openocd      start openocd for debugging
+#  @param proxy        start GDB proxy
+#  @param size         show code size
+#  @param nm           list symbols
+#  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
+#  @param dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
+#  @param nm           list symbol table in standard output"
+#  @param size         list size of output file"
+#  @param term         open a terminal for serial communication to board"
+#  @param openocd      start an openocd proxy"
+#  @param proxy        start a gdb proxy"
+#  @param docs         generates docs using doxygen"
+#  @param stack-report generates a stack usage report"
+#  @param cflow        generates flow (call) map"
+#  @param touch        forces compilation of all modules by next build"
 #
 #
-#  @note        There is support for JLink and OpenOCD.
-#               The OpenOCD is not fully tested
+#  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully tested.
+
 #
 
 
@@ -144,12 +155,12 @@ default: build
 #   See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
 #   of the GNU ARM installation folder
 #
-#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and 
+#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and
 #   a 128KByte RAM.
 #   It has no FPU!. So it will use a software emulation of the FPU (default)
 #
 #   The default printf and scanf functions do not support floating point data.
-#   In order to use printf and scanf that support floating point, 
+#   In order to use printf and scanf that support floating point,
 #   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
 #
 CPUFLAGS= -mcpu=cortex-m3 -mthumb
@@ -397,6 +408,34 @@ CFLOW=cflow
 CFLOWFLAGS=-l  -b --omit-arguments
 
 #
+# Generation of stack usage report
+#
+# There are some options for the generation of the stack usage report
+#
+# 1. puncover:
+# 2. stack-usage:
+#
+# OBS:
+#    stack-usage demands compilation with certain flags for the generation of
+#    auxiliary files
+#
+#
+stack-report=stack-usage
+#stack-report=puncover
+
+#
+# Programs
+#
+PUNCOVER=puncover
+STACKUSAGE=stack-usage
+
+
+# Only needed for stack-usage
+CFLAGS += -fstack-usage -fdump-ipa-cgraph
+
+
+
+#
 # Options for flash and debug
 #
 
@@ -581,6 +620,9 @@ usage:
 	@echo "make openocd      start an openocd proxy"
 	@echo "make proxy        start a gdb proxy"
 	@echo "make docs         generates docs using doxygen"
+	@echo "make stack-report generates a stack usage report"
+	@echo "make cflow        generates flow (call) map"
+	@echo "make touch        forces compilation of all modules by next build"
 
 #
 # The default rule, which causes the ${PROGNAME} example to be built
@@ -811,13 +853,33 @@ ${OBJDIR}/${PART}.svd: FORCE
 #
 # generates a call graph
 #
-CFLOWFLAGS=-l  -b --omit-arguments
 cflow:
-	{ ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1} | egrep -v "^cflow"
+	${CFLOW} ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1 \
+	| egrep -v "^cflow"
+
+#
+# Generates the stack usage report
+#
+puncover: ${OBJDIR}/${PROGNAME}.axf
+	${PUNCOVER} --elf-file ${OBJDIR}/${PROGNAME}.axf
+	@echo "Open http://localhost:5000"
+
+stack-usage: ${OBJDIR}/${PROGNAME}.axf
+	cd ${OBJDIR} && \
+	find . -name '*.cgraph' | grep -v stack-usage-log | xargs cat > stack-usage-log.cgraph && \
+	find . -name '*.su'     | grep -v stack-usage-log | xargs cat > stack-usage-log.su && \
+	${STACKUSAGE}  --csv stack-usage.csv --json stack-usage.json
+
+
+#
+# Touch: Force compilation of all C modules
+#
+touch:
+	@touch *.c *.h && echo Done.
 
 
 # These symbols are not files (or directories}
-.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow
+.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow touch puncover stack-usage
 .PHONY: all burn clean debug default deploy deploy dis disassembly
 .PHONY: docs docs-clean doxygen dump edit flash gdbproxy proxy
 .PHONY: help imagedump nm size term terminal usage svd
