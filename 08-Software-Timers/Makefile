@@ -412,8 +412,11 @@ CFLOWFLAGS=-l  -b --omit-arguments
 #
 # There are some options for the generation of the stack usage report
 #
-# 1. puncover:
-# 2. stack-usage:
+# 1. puncover:          https://github.com/HBehrens/puncover/     
+# 2. stack-usage:       https://github.com/sharkfox/stack-usage
+# Alternatives not implemented
+# 3. worst-case-stack:  https://github.com/PeterMcKinnis/WorstCaseStack
+# 4. check-stack-usage: https://github.com/ttsiodras/checkStackUsage
 #
 # OBS:
 #    stack-usage demands compilation with certain flags for the generation of
