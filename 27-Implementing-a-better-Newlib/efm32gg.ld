@@ -11,6 +11,16 @@
  * @version 5.1.2
  */
 
+
+/**
+  * @brief   Size of memory area reserved for the heap
+  *
+  * @note    Must be a multiple of 4!!!!
+  *
+  */
+HEAPSIZE = 4096;
+
+
 MEMORY
 {
   FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 1048576
@@ -179,12 +189,13 @@ SECTIONS
 
   .heap (COPY):
   {
+      . = ALIGN(4);
     __HeapBase = .;
     __end__ = .;
     end = __end__;
     _end = __end__;
     KEEP(*(.heap*))
-    __HeapLimit = .;
+    __HeapLimit = . + HEAPSIZE;
   } > RAM
 
   /* .stack_dummy section doesn't contains any symbols. It is only

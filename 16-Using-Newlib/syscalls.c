@@ -56,13 +56,13 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
  *
  */
 //@{
-#include "uart.h"
+#include "uart2.h"
 
-static inline void SerialInit(int chn)           { UART_Init();                }
-static inline void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
-static inline int  SerialRead(int chn)           { return UART_GetChar();      }
-static inline int  SerialStatus(int chn)         { return UART_GetStatus();    }
-static inline int  SerialFlush(int chn)          { return UART_Flush();        }
+static inline void SerialInit(int chn)           { UART_Init(UART0);                }
+static inline void SerialWrite(int chn, char c)  { UART_SendChar(UART0,c);          }
+static inline int  SerialRead(int chn)           { return UART_GetChar(UART0);      }
+static inline int  SerialStatus(int chn)         { return UART_GetStatus(UART0);    }
+static inline int  SerialFlush(int chn)          { return UART_Flush(UART0);        }
 //@}
 
 
@@ -325,6 +325,7 @@ int _read(int file, char *ptr, int len) {
 
 caddr_t _sbrk(int incr) {
 extern char _end;		/* Defined in the linker script */
+extern char __HeapLimit;
 static char *heap_end;
 char *prev_heap_end;
 
@@ -332,7 +333,7 @@ char *prev_heap_end;
         heap_end = &_end;
     }
     prev_heap_end = heap_end;
-    if( (heap_end + incr) > GetStackPointer() ) {
+    if( (heap_end + incr) > &__HeapLimit ) {
         _write(1, "Heap and stack collision\n", 25);
         abort ();
     }

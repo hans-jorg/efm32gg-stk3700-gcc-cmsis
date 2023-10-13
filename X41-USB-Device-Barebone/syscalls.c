@@ -325,6 +325,7 @@ int _read(int file, char *ptr, int len) {
 
 caddr_t _sbrk(int incr) {
 extern char _end;		/* Defined in the linker script */
+extern char __HeapLimit;
 static char *heap_end;
 char *prev_heap_end;
 
@@ -332,7 +333,7 @@ char *prev_heap_end;
         heap_end = &_end;
     }
     prev_heap_end = heap_end;
-    if( (heap_end + incr) > GetStackPointer() ) {
+    if( (heap_end + incr) > &__HeapLimit ) {
         _write(1, "Heap and stack collision\n", 25);
         abort ();
     }
