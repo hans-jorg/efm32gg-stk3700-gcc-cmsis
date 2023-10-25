@@ -191,8 +191,10 @@ struct ChannelConfig {
 
 #define INC_Pos         (3)
 #define NOINC           ((0)<<INC_Pos)
+#define INC0            NOINC
 #define INC1            ((1)<<INC_Pos)
 #define INC2            ((2)<<INC_Pos)
+#define INC3            ((3)<<INC_Pos)
 #define INC4            ((4)<<INC_Pos)
 #define INC_MASK        (0x7<<INC_Pos)
 
@@ -578,10 +580,11 @@ static const struct ChannelConfig channelconfig[] = {
 struct ChannelInfo {
     uint32_t    desccontrol;
     uint32_t    type;
+    uint32_t    size;
     void        *data1;
     void        *data2;
     void        (*callback)(int chn);
-}
+};
 static struct ChannelInfo channelinfo[NDMACHANNELS] = {0};
 
 
@@ -621,8 +624,8 @@ int chn;
     while(pending) {
         if( pending&1 ) {
             DMA->IFC = (1<<chn);
-            if( callbacks[chn] )
-                callbacks[chn](chn);  // Call callback function if defined
+            if( channelinfo[chn].callback )
+                channelinfo[chn].callback(chn);  // Call callback function if defined
         }
         chn++;
         if( chn >= NDMACHANNELS ) {
@@ -682,7 +685,7 @@ const uint32_t channelsmask = (1<<NDMACHANNELS)-1;
         channelinfo[i].data1 = 0;
         channelinfo[i].data2 = 0;
         channelinfo[i].size = 0;
-        channelinfo[i].control = 0;
+        channelinfo[i].desccontrol = 0;
     }
 
     // Clear Descriptor table
@@ -801,11 +804,11 @@ DMA_CH_TypeDef *pchconfig;
     pchconfig = &(DMA->CH[chn]);
 
     // Configure Control in the C region of the DMA registers
-    pchconfig->CTRL = pconfig->chnctrl;
+    pchconfig->CTRL = pchannelconfig->chnctrl;
 
     // Configure Control in the descriptor region
     unsigned ctrl = 0;
-    switch(p->destconfig&SIZE_MASK)& {
+    switch(pchannelconfig->destconfig&SIZE_MASK) {
     case SIZE8:
         ctrl |= DMA_CTRL_DST_SIZE_BYTE;
         break;
@@ -817,7 +820,7 @@ DMA_CH_TypeDef *pchconfig;
         break;
     }
     // Configure dest
-    switch(p->destconfig&INC_MASK)& {
+    switch(pchannelconfig->destconfig&INC_MASK) {
     case INC0:
         ctrl |= DMA_CTRL_DST_INC_NONE;
         break;
@@ -828,11 +831,11 @@ DMA_CH_TypeDef *pchconfig;
         ctrl |= DMA_CTRL_DST_INC_HALFWORD;
         break;
     case INC3:
-        ctrl |= DMA_CTRL_DST_INCR_WORD;
+        ctrl |= DMA_CTRL_DST_INC_WORD;
         break;
     }
     // Configure source
-    switch(p->sourceconfig&SIZE_MASK)& {
+    switch(pchannelconfig->sourceconfig&SIZE_MASK) {
     case SIZE8:
         ctrl |= DMA_CTRL_SRC_SIZE_BYTE;
         break;
@@ -843,7 +846,7 @@ DMA_CH_TypeDef *pchconfig;
         ctrl |= DMA_CTRL_SRC_SIZE_WORD;
         break;
     }
-    switch(p->sourceconfig&INC_MASK)& {
+    switch(pchannelconfig->sourceconfig&INC_MASK) {
     case INC0:
         ctrl |= DMA_CTRL_SRC_INC_NONE;
         break;
@@ -854,14 +857,13 @@ DMA_CH_TypeDef *pchconfig;
         ctrl |= DMA_CTRL_SRC_INC_HALFWORD;
         break;
     case INC3:
-        ctrl |= DMA_CTRL_SRC_INCR_WORD;
+        ctrl |= DMA_CTRL_SRC_INC_WORD;
         break;
     }
 
-    pchannelconfig->desccontrol = c;
-    pdesc->CTRL = c;
+    pdesc->CTRL = ctrl;
 
-    if(pchconfig-> )
+    //if(pchconfig-> )
     return 0;
 }
 
