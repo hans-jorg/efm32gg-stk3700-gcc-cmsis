@@ -10,7 +10,7 @@
 
 #include  <stdint.h>
 #include "em_device.h"
-#include "clock_efm32gg_ext.h"
+#include "clock_efm32gg2.h"
 #include "i2cmaster.h"
 
 
@@ -301,7 +301,7 @@ ClockConfiguration_t clockconf;
 
     ClockGetConfiguration(&clockconf);
 
-    perclk = clockconf.perfreq;
+    perclk = clockconf.hfperclkfreq;
     div    = clockconf.hclkdiv;
 
     t2 = 1000*perclk/speed;

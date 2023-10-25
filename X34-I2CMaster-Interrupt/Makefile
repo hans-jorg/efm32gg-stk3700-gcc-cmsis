@@ -50,7 +50,7 @@
 #
 # Program name
 #
-PROGNAME=i2c
+PROGNAME=i2c-master
 
 #
 # Verbose output for Make (Coment to have verbose output}
@@ -85,8 +85,13 @@ PARTCLASSCMSIS=EFM32GG
 #
 # Source files
 #
-SRCFILES=${wildcard *.c}
+SUBDIRS=peripherals newlib
+SUBSRCFILES=$(foreach d,$(SUBDIRS),$(wildcard $d/*.c))
+#SRCFILES=$(wildcard *.c) $(wildcard peripherals/*.c) $(wildcard newlib/*.c)
+SRCFILES=$(wildcard *.c) $(SUBSRCFILES)
 #SRCFILES= main.c
+
+#VPATH=$(SUBDIRS)
 
 #
 # Include the common make definitions.
@@ -231,7 +236,7 @@ CERRORFLAGS=                                        \
 # Include path
 #
 CMSISINCDIR= ${CMSISDIR}/Include
-INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR}
+INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} ${SUBDIRS} .
 
 
 ###############################################################################
@@ -704,7 +709,14 @@ nm: ${OBJDIR}/${PROGNAME}.axf
 # The rule to create the target directory.
 #
 ${OBJDIR}:
-	${MKDIR} ${OBJDIR}
+ifeq (${HOSTOS},Windows)
+${OBJDIR}:
+	mkdir ${OBJDIR}
+else
+${OBJDIR}:
+	mkdir -p ${OBJDIR}
+	for subdir in $(SUBDIRS); do mkdir -p ${OBJDIR}/$$subdir ; done
+endif
 
 
 #

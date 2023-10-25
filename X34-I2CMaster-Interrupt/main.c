@@ -33,6 +33,12 @@ int i;
     }
 }
 
+/**
+ * I2C address for testing
+ */
+#define VALIDADDR                 0x11
+#define NOTVALIDADDR              0x29
+
 
 /*****************************************************************************
  * @brief  Main function
