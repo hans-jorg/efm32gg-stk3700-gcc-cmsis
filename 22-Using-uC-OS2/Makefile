@@ -451,7 +451,7 @@ CFLOWFLAGS=-l  -b --omit-arguments
 #
 # There are some options for the generation of the stack usage report
 #
-# 1. puncover:          https://github.com/HBehrens/puncover/     
+# 1. puncover:          https://github.com/HBehrens/puncover/
 # 2. stack-usage:       https://github.com/sharkfox/stack-usage
 # Alternatives not implemented
 # 3. worst-case-stack:  https://github.com/PeterMcKinnis/WorstCaseStack
@@ -479,7 +479,7 @@ CFLAGS += -fstack-usage -fdump-ipa-cgraph
 #
 # There are some options for the generation of the stack usage report
 #
-# 1. puncover:          https://github.com/HBehrens/puncover/     
+# 1. puncover:          https://github.com/HBehrens/puncover/
 # 2. stack-usage:       https://github.com/sharkfox/stack-usage
 # Alternatives not implemented
 # 3. worst-case-stack:  https://github.com/PeterMcKinnis/WorstCaseStack
@@ -936,37 +936,6 @@ stack-usage: ${OBJDIR}/${PROGNAME}.axf
 #
 touch:
 	@touch *.c *.h && echo Done.
-
-
-# These symbols are not files (or directories}
-.PHONY: nm edit debug terminal term doxygen docs docs-clean cflow touch puncover stack-usage
-
-#
-# generates a call graph
-#
-cflow:
-	${CFLOW} ${CFLOWFLAGS} -D${PART} ${addprefix -I ,${INCLUDEPATH}} ${SRCFILES} 2>&1 \
-	| egrep -v "^cflow"
-
-#
-# Generates the stack usage report
-#
-puncover: ${OBJDIR}/${PROGNAME}.axf
-	${PUNCOVER} --elf-file ${OBJDIR}/${PROGNAME}.axf
-	echo "Open http://localhost:5000"
-
-stack-usage: ${OBJDIR}/${PROGNAME}.axf
-	cd ${OBJDIR} && \
-	find . -name '*.cgraph' | grep -v stack-usage-log | xargs cat > stack-usage-log.cgraph && \
-	find . -name '*.su'     | grep -v stack-usage-log | xargs cat > stack-usage-log.su && \
-	${STACKUSAGE}  --csv stack-usage.csv --json stack-usage.json
-
-
-#
-# Touch: Force compilation of all C modules
-#
-touch:
-	touch *.c *.h && echo Done.
 
 
 # These symbols are not files (or directories}
