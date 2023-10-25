@@ -3,7 +3,7 @@
 
 /**
  * @file nand-flash.h
- * @brief Interface routine for the NAND256 Flash device in the EFM32GG-STK3700 board
+ * @brief Interface routine for the ST NAND256 Flash device in the EFM32GG-STK3700 board
  *
  * @note
  *      It will be used as the device interface for the FatFS middleware
@@ -15,13 +15,22 @@
  *
  */
 
+#define NAND_CAPACITY              (32*1024L*1024L)
+#define NAND_PAGESIZE              (512L)
+#define NAND_BLOCKSIZE             (32*NAND_PAGESIZE)
+#define NAND_PAGECOUNT             (NAND_CAPACITY/NAND_PAGESIZE)
+#define NAND_PAGEADDRMASK          ((NAND_PAGECOUNT-1)<<9)
+
+
+
+
 
 int NAND_Init(void);
-int NAND_Write(uint32_t address, uint8_t *data, uint32_t size);
-int NAND_Read(uint32_t address, uint8_t *data, uint32_t size);
+int NAND_WritePage(uint32_t pageaddr, uint8_t *data);
+int NAND_ReadPage(uint32_t pageaddr, uint8_t *data);
 
 int NAND_EnableWriteProtect(void);
 int NAND_DisableWriteProtect(void);
 
 
-#end // NAND_FLASH_H
+#endif // NAND_FLASH_H

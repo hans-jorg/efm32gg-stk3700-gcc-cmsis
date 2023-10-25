@@ -9,21 +9,151 @@ There are basically two types of flash memory devices:
 * NAND Flash devices
 * NOR Flash devices
 
-The main difference is the interface. NAND Flash device are suited for parallel access, demanding more pins and delivering higher speed. NOR devices, generally, have a serial interface, typically SD, that is a development of SPI.
+The main difference is the interface. NAND Flash device are suited for parallel access, demanding
+ more pins and delivering higher speed. NOR devices, generally, have a serial interface,
+ typically SD, that is a development of SPI.
+
+Another very important difference is the successibilty of error in NAND Flash devices. Most of them
+come with some regions marked as deffective. In some cases, a test must be done to mark these
+regions at initialization. But it can be worse. Some deffects can appears during the life time, even
+when at a number of write operations below the specified value. This errors must be handled and
+the system must copy its contents to a new region and mark the region with errors as deffective.
+
+Summarizing.
 
 
+| Characteristic      |  NAND flash                          | NOR flash                           |
+|---------------------|--------------------------------------|-------------------------------------|
+| Storage density     | Higher                               | Lower                               |
+| Read performance    | Fast                                 | Fast*                               |
+| Write performance   | Faster                               | Slower*                             |
+| Erase performance   | Faster (low ms typically)            | Slower (possibly seconds)           |
+| Storage reliability | Lower (without management)           | Better                              |
+| Life span           | Higher                               | Lower                               |
+| Price               | Lower                                | Higher                              |
+
+* May be slowed by serial access
+
+
+One feature of Flash devices is that it is possible to change a bit 1 to a 0, but to change from
+0 to 1, an erase operation is needed.
+
+On NAND Flash, the erase operation must be done on a large chunk of bits.
+
+Middleware
+----------
+
+
+So, the driver software for NAND devices must have:
+
+* Bad blocks management
+* Wear Leveling
+* Garbage Collection
+
+There are some FREE middleware options for Flash devices:
+
+* FatFS
+* YaFFS
+* LittleFS
+* SPIFFS
+
+
+FatFS is media agnostic and is not suited for NAND devices since it does not
+have wear leveling and bad block management. FAT file systems were not conceived for storing data
+in devices like NAND flash devices. Another aspect is that the erase operations are done in a
+group of pages. To use FatFS, all these aspects must be considered in the low level firmware driver.
+
+LittleFS is a fail safe filesystem for microcontroller. It has dynamic wear leveling, power loss
+resilience, and has low demand on RAM and ROM.
+
+SPIFFS is used on ESP32 devices. But is slow and has some significant problems. In some cases, it
+is beeing replaced by LittFS.
+
+YaFFs has two versions. The version 2 is faster, support devices with large pages. Both support
+wear leveling and bad block management.
 
 NAND Flash device
 -----------------
+
+### Introduction
 
 The ST NAND256W3A features the following:
 
 * 32 MBytes (=256 Mbit)
 * 538/264 Word Page = (=512+16/256+8). The non power of two sizes area due to the spare area(16/8).
 * Multiplexed Data/Address lines with up to 16 bit width.
-* support to over that 100000 erases cycles.
+* Support to over than 100.000 erases cycles.
 * 8-bit wide data path. Other devices can have 16-bit wide data path.
 * It has at least 2008 valid blocks from 2048.
+
+
+The table below shows some important parameters of the NAND256
+
+| Parameter                       |   Value     |  Unit |
+|---------------------------------|-------------|-------|
+| Page program time               |   200-500   |   us  |
+| Block erase time                |       2-3   |   ms  |
+| Program/Erase cycles            |   100.000   | cycles|
+| Data retention                  |        10   | years |
+
+
+### Organization
+
+The memory array is organized in blocks, and each block has 32 pages. Each page is 528x8 large
+and is divided in three parts:
+* 1st half page (256 bytes)
+* 2nd half page (256 bytes)
+* Spare area (16 bytes)
+
+The spare area can be used to store Error Correction Code (ECC) data, software flags,
+Bad Block identification or just to increase the storage area.
+
+> Read operations can be done on pages, but erase operations can only be done on blocks.
+
+### Errors
+
+
+The NAND Flash can have bad blocks already identified during manufacturing or can develop them
+during its lifetime.
+
+A bad block(page?) does not contain an 0xFF (all ones) value in the 6th byte in the spare area.
+
+> ATTENTION: This value can be overwritten and get lost.
+
+
+The 256 Mbits device should have at least 2008 valid blocks from the 2048 total.
+
+The bad blocks can be managed using Bad Blocks Management, Block Replacement or Error Correction
+Code.
+
+
+### Summary
+
+|  Feature                |   Size     |  Unit   |
+|-------------------------|------------|---------|
+|  1st Half Page          |   256      |  Bytes  |
+|  2st Half Page          |   256      |  Bytes  |
+|  Spare area             |    16      |  Bytes  |
+| Without spare area      |            |         |
+|  Page                   |   512      |  Bytes  |
+|  Block                  |    32      |  Pages  |
+|  Block                  | 16384      |  Bytes  |
+|  Number of blocks       |  2048      |  Blocks |
+|  Maximum Capacity       | 33.554.432 |  Bytes  |
+|  Maximum Capacity       |268.435.456 |  bits   |
+|  Maximum Capacity       |   256      |  Kbits  |
+| Spare area as starage   |            |         |
+|  Page                   |   528      |  Bytes  |
+|  Block                  |    32      |  Pages  |
+|  Block                  | 16896      |  Bytes  |
+|  Number of blocks       |  2048      |  Blocks |
+|  Maximum Capacity       | 34.603.008 |  Bytes  |
+|  Maximum Capacity       |276.824.064 |  bits   |
+|  Maximum Capacity       |   270,336  |  Kbits  |
+
+
+### Pinout
+
 
 The pinout is show below.
 
@@ -43,6 +173,9 @@ The pinout is show below.
 | DU      | Do Not Use                                                |
 
 
+### Operation
+
+
 | Bus Operation | E# | AL | CL | R# | W# | WP# |   IO0-7   |
 |---------------|----|----|----|----|----|-----|-----------|
 | Command input |  0 |  0 |  1 |  1 |Rise|  X  | Command   |
@@ -52,22 +185,12 @@ The pinout is show below.
 | Write protect |  X |  X |  X |  X |  X |  0  |    X      |
 | Standby       |  1 |  X |  X |  X |  X |  X  |    X      |
 
-The memory array is organized in blocks, where each block has 32 pages. Each page is 528x8 large.
 
 
->> The NAND Flash can have bad blocks already identified during manufacturing or can develop them during its lifetime.
+### Commands
 
-
-The 256 Mbits devices has at least 2008 valid blocks from a 2048 blocks. The bad blocks can be managed using Bad Blocks Management, Block Replacement or Error Correction Code.
-
-Each page widht is divided in three parts:
-* 1st half page (256 bytes)
-* 2nd half page (256 bytes)
-* Spare area (15 bytes)
-
-The spare area can be used to store Error Correction Code (ECC) data, software flags, Bad Block identification or just increase the storage area.
-
-The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8), exactly the same width of a page, update it and eventually write it back.
+!!! The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8),
+!!! exactly the same width of a page, update it and eventually write it back.!!!!!!
 
 The operation of the device is controlled by commands, generally a sequence of up to thre bytes.
 
@@ -113,6 +236,9 @@ When reading the spare area, only address bit A3-A0 are used. Address bits A7-A4
 
 > The Read B command in only effective for one operation
 
+
+### Read operation
+
 There are the following types of read operation available.
 
 * Random read. The first read after a command. It tranfers data from page to page buffer.
@@ -127,13 +253,13 @@ The sequence for reading the Area A (1st half page) is
 1. Send command 0x00
 2. Send address
 3. Read data
-4. 
+4.
 
 The Page Program (command 0x80) is the standard way to program data into the memory array.
 
 > There is a limit of three consecutive partial program in the same page. After it, a Block Erase must be issued.
 
-### Programming (Writing) the device
+### Programming (Writing) operation
 
 The sequence for programming the area A (1st half page) is
 
@@ -222,6 +348,59 @@ There are tow wear-level procedures:
 * First Level Wear-Leveling: New data is written to the free blocks that have the fewest writing cycles.
 * Second Level Wear-Leveling: Bkocks with long lived data gives room to new data, after their contents are written to other blocks.
 
+### Timing
+
+From the NAND data sheet
+
+
+| Parameter |  Description                          |  Value   |  Unit    |
+|-----------|---------------------------------------|----------|----------|
+| tADL      | ?                                     |    0     |   ns     |
+| tALS      | AL Setup time                         |    0     |   ns     |
+| tCS       | E# Setup time                         |    0     |   ns     |
+| tCLS      | CL Setup time                         |    0     |   ns     |
+| tDS       | Data Setup time                       |   20     |   ns     |
+| tALH      | AL Hold time                          |   10     |   ns     |
+| tCH       | E Hold time                           |   10     |   ns     |
+| tCLH      | CL Hold time                          |   10     |   ns     |
+| tDH       | Data Hold time                        |   10     |   ns     |
+| tWC       | Write cycle time                      |   50     |   ns     |
+| tWH       | W# High Hold time                     |   15     |   ns     |
+| tWP       | W# Pulse Width                        |   25     |   ns     |
+| tWB       | Write Enable High to Ready/Busy Low   |  100     |   ns     |
+| tCEA      | Chip Enable Low to Output Valid       |   45     |   ns     |
+| tREA      | Read Enable Low to Output             |   35     |   ns     |
+| tRP       | Read Enable Low to Read Enable Low    |   30     |   ns     |
+| tRHZ      | Read Enable High to Output Hi-Z       |   30     |   ns     |
+| tREH      | Read Enable High to Read Enable Low   |   15     |   ns     |
+| tRC       | Read Enable Low to Read Enable Low    |   60     |   ns     |
+| tRR       | Ready/Busy High to Read Enable Low    |   20     |   ns     |
+| tAR       | Address Latch Low to Read Enable Low  |   10     |   ns     |
+| tCLR      | Command Latch Low to Read Enable Low  |   10     |   ns     |
+| tIR       | Data Hi-Z to Read Enable Low          |    0     |   ns     |
+| tWC       | Write Enable Low to Write Enable Low  |   50     |   ns     |
+
+
+### Read sequence
+
+From RM:
+
+A typical 528-byte page read sequence for an 8-bit wide NAND Flash is as follows:
+
+1. Configuration: Enable and select the memory bank connected to the NAND Flash device via the EN and BANKSEL bitfields in the EBI_NANDCTRL register. Set the MODE field of the EBI_CTRL register to D8A8 indicating that the attached device is 8-bit wide. Program the EBI_RDTIMING and EBI_WRTIMING registers to fulfill the NAND timing requirements.
+2. Command and address phase: Program the NAND Command register to the page read command and program the NAND Address register to the required read address. This can be done via Cortex-M3 or DMA writes to the memory mapped NAND Command and Address registers. The automatic data access width conversions described in Section 14.3.11 (p. 188) can be used if desired to for example automatically perform 4 consecutive address byte transactions in response to one 32-bit word AHB write to the NAND Address register (in this case the 2 address LSBs should not be used to map onto the NAND ALE/CLE signals).
+3. Data transfer phase: Wait for the NAND Flash internal data transfer phase to complete as indicated via its ready/busy (R/B) pin. The user can use the GPIO interrupt functionality for this. The 528-byte data is now ready for sequential transfer from the NAND Flash Data register.
+4. Read phase: Clear the ECC_PARITY register and start Error Code Correction (ECC) parity generation by setting both the ECCSTART and ECCCLEAR bitfields in the EBI_CMD register to 1. Now all subsequently transferred data to/from the NAND Flash devices is used to generate the ECC parity code into the EBI_ECCPARITY register. Read 512 subsequent bytes of main area data from the NAND Flash Data register via DMA transfers. This can for example be done via 32-bit word DMA transfers (as long as the two address LSBs are not used to map onto the NAND ALE/CLE signals). Stop ECC parity generation by setting the ECCSTOP bitfield in the EBI_CMD register to 1 so that following transactions will not modify the parity result. Read out the final 16 bytes from the NAND Flash spare data area.
+5. Error correction phase: Compare the ECC code contained in the read spare area data against the computed ECC code from the EBI_ECCPARITY register. The user software can accept, correct, or discard the read data according the comparison result. No automatic correction is performed.
+
+### Program (write) sequence
+
+A typical 528-byte page program sequence for an 8-bit wide NAND Flash is as follows:
+
+1. Configuration: Configure the EBI for NAND Flash support via the EBI_NANDCTRL, EBI_CTRL, EBI_RDTIMING and EBI_WRTIMING registers.
+2. Command and address phase: Program the NAND Command register to command for page programming (serial data input) and program the NAND Address register to the desired write address.
+3. Write phase: Clear the ECC_PARITY register and start Error Code Correction (ECC) parity generation by setting both the ECCSTART and ECCCLEAR bitfields in the EBI_CMD register to 1. Now all subsequently transferred data to/from the NAND Flash devices is used to generate the ECC parity code into the EBI_ECCPARITY register. Write 512 subsequent bytes of user main data to the NAND Flash Data register via for example DMA transfers. Stop ECC parity generation and read out the computed ECC parity data from EBI_ECCPARITY. Write the final 16 bytes of spare data including the computed ECC parity data bytes.
+3. Program phase: Write the auto program command to the NAND Flash Command register after which the NAND Flash will indicate that it is busy via its read/busy (R/B) pin. After read/busy goes high again, the success of the program command can be verified by programming the read status command.
 
 
 NAND Flash on the STK3700
@@ -264,7 +443,7 @@ which pins are used.
     | LOCATION     | 30-28    | LOC# for EBI_IOn pins                  |   0,1,2      |
     | ALB          | 17-16    | EBI_A lower pin enabled (0,8,16,*24*)  |   3          |
     | APEN         | 22-18    | EBI bit field for A A25-A24            |  26          |
-    | NANDPEN      |  12      | NANDREn and NANDWEn pins enabled       |   1          | 
+    | NANDPEN      |  12      | NANDREn and NANDWEn pins enabled       |   1          |
 
 
 
@@ -293,9 +472,10 @@ The External Bus Interface (EBI)
 
 The external bus Interface (EBI) support devices with up to 28 address lines and up to 16-bin data lines in multiplexed and non multiplexed mode.
 
-It supports two kinds of devices:
+It supports four banks of different memory devices, including:
 
-* SRAM/Flash
+* SRAM
+* Flash
 * TFT RGB
 
 
@@ -310,68 +490,113 @@ There are four EBI regions that can be used to access the NAND Flash device.
 |    #3        | 0x8C00_0000 - 0x8FFF_FFFF  |   64 MB    |
 
 
-Pinout
+### Support for NAND Flash devices
+
+NAND Flash devices work using a page access and use and indirect interface. NOR Flash devices supports random read access but are smaller and slower than NAND devices. Another important difference is that NAND devices has more succeptible to errors, and in general, an Error Correction Code (ECC) is used.
+
+The EBI supports 8 and 16-bit wide Flash devices. It is easy (and glueless) to connect a flash device to a EFM32GG.
+A mixed scheme of EBI and GPIO controlled pins is used.
+
+| NAND Signal | Name         |  EFM32GG Signal       |
+|-------------|--------------|-----------------------|
+| R#          | Read         | EBI_NANDREn           |
+| W#          | Write        | EBI_NANDWEn           |
+| CL          | Command latch| EBI_A25               |
+| AL          | Address latch| EBI_A24               |
+| WP#         | Write Protect| GPIO_PORTxy (output)  |
+| I/O7-0      | Bus          | EBI_AD7:0             |
+| E#          | Enable       | GPIO_PORTxy (output)  |
+| R/B         | Ready/Busy   | GPIO_Portxy (input)   |
+
+> There is a class of NAND Flash devices called Chip Enable Don't Care (CEDC), that demands that an EBI Chip Select EBI_CSn is used and controlled by the EBI module. CEDC Flash devices do not support automatic sequential support.
+
+> There are extra lines EBI_AD15_8 that are used in 16 bit wide devices.
+
+The table below shows the mapping when AL is connected to  A24 and CL to A25.
+
+| Address     |  A25   |  A24   |  Flash register                 |
+|-------------|--------|--------|---------------------------------|
+| 0x8000_0000 |   0    |   0    | Data register                   |
+| 0x8100_0000 |   0    |   1    | Address register                |
+| 0x8200_0000 |   1    |   0    | Command register                |
+| 0x8300_0000 |   1    |   1    | Invalid/Undefined               |
 
 
+> The A24 and 25 are interchangable. It only alters the memory mapping.
 
 
-FatFS
------
+### Timing
 
-FatFS is a middleware. It implements a FAT system on a multitude of storage devices, like MMC/SD/TF,U-Disk,NAND Flash).
+Almost all parameters are set as multiple of the HFCORECLOCK clock period. In the worst  case, maximum clock frequency, the clock period is 1/48 MHz = 20,83 ns.
 
-It used a layered approach. FatFS provides an interface to application thru an Application Programming Interface (API). 
+There are four set  of four registers for timing configuration, one for each bank.
 
-    Application:  f_open, f_read, 
-    FatFS:        disk_read, disk_write, get_fattime,
-    Interface:    (SPI,I2C,USB,SD,NAND)
-    Hardware:     (MMC/SD/TF,USB-MSC, NAND-FTL)
+| Register        | Description                        |
+|-----------------|------------------------------------|
+| EBI_ADDRTIMING  | Address Timing Register            |
+| EBI_RDTIMING    | Read Timing Register               |
+| EBI_WRTIMING    | Write Timing Register              |
+| EBI_POLARITY    | Polarity Register                  |
+| EBI_RDTIMING1   | Read Timing Register 1             |
+| EBI_WRTIMING1   | Write Timing Register 1            |
+| EBI_POLARITY1   | Polarity Register 1                |
+| EBI_ADDRTIMING2 | Address Timing Register 2          |
+| EBI_RDTIMING2   | Read Timing Register 2             |
+| EBI_WRTIMING2   | Write Timing Register 2            |
+| EBI_POLARITY2   | Polarity Register 2                |
+| EBI_ADDRTIMING3 | Address Timing Register 3          |
+| EBI_RDTIMING3   | Read Timing Register 3             |
+| EBI_WRTIMING3   | Write Timing Register 3            |
+| EBI_POLARITY3   | Polarity Register 3                |
+
+The fields important for NAND devices are:
+
+| Field    | Description                                                                            |
+|----------|----------------------------------------------------------------------------------------|
+| ADDRHOLD | Number of cycles the address is held after ALE is asserted                             |
+| ADDRSETUP| Number of cycles the address is driven onto the ADDRDAT bus before ALE is asserted     |
+| RDSTRB   | Sets the number of cycles the REn is held active                                       |
+| RDSETUP  | Sets the number of cycles the address setup before REn is asserted                     |
+| WRSTRB   | Sets the number of cycles the WEn is held active                                       |
+| WRSETUP  | Sets the number of cycles the address setup before WEn is asserted                     |
+
+The timing parameters can now be determined. It is easy because most of parameters are minimum values
+and are smaller than the clock period (20,83 ns).
+
+| Parameter| Value    | Requirement                                  |
+|----------|----------|----------------------------------------------|
+| tADL     |          | <= t(WRHOLD) + t(WRSETUP) + t(WRSTRB)        |
+| tALS     |          | <= t(WRSETUP) + t(WRSTRB)                    |
+| tCS      |          | <= t(WRSETUP) + t(WRSTRB)                    |
+| tCLS     |          | <= t(WRSETUP) + t(WRSTRB)                    |
+| tDS      |          | <= t(WRSETUP) + t(WRSTRB)                    |
+| tALH     |          | <= t(WRHOLD)                                 |
+| tCH      |          | <= t(WRHOLD)                                 |
+| tCLH     |          | <= t(WRHOLD)                                 |
+| tDH      |          | <= t(WRHOLD)                                 |
+| tWC      |          | <= t(WRHOLD) + t(WRSETUP) + t(WRSTRB)        |
+| tWH      |          | <= t(WRHOLD) + t(WRSETUP)                    |
+| tWP      |          | <= t(WRSTRB)                                 |
+| tWB      |          |                                              |
+| tCEA     |          | <= t(RDSETUP) + t(RDSTRB)                    |
+| tREA     |          | <= t(RDSTRB)                                 |
+| tRP      |          | <= t(RDSTRB)                                 |
+| tRHZ     |          | <= t(RDHOLD)                                 |
+| tREH     |          | <= t(RDHOLD) + t(RDSETUP)                    |
+| tRC      |          | <= t(RDHOLD) + t(RDSETUP) + t(RDSTRB)        |
+| tRR      |          | <= t(RDSETUP)                                |
+| tAR      |          | <= t(RDSETUP)                                |
+| tCLR     |          | <= t(RDSETUP)                                |
+| tIR      |          | <= t(RDSETUP)                                |
 
 
-
-The API (Application Programming Interface) includes the functions below. Most names are similar to the POSIX
-system calls or POSIX commands. Not all calls are not always available. Some compilation flags can enable or 
-disable them as described below.
-
-    f_mount     f_open      f_close     f_read      f_write     f_sync      f_lseek     f_opendir
-    f_closedir  f_readdir   f_findfirst f_findnext  f_stat      f_getfree   f_truncate  f_unlink
-    f_mkdir     f_rename    f_chdir     f_chdrive   f_getcwd    f_chmod     f_utime     f_getlabel
-    f_setlabel  f_expand    f_forward   f_mkfs      f_fdisk     f_putc      f_puts      f_printf    
-    f_gets
+### Error Correction Code
 
 
-*FatFS* is modular. There is a set of compilation flags:
-
-FF_FS_MINIMIZE	   [0-3] Enable or disable diverse API functions (values can be 0, 1, 2, 3)
-FF_FS_READONLY	   
-FF_USE_STRFUNC	   
-FF_FS_RPATH        [0-2] 
-FF_USE_FIND	       Enable f_findfirst, f_findnext
-FF_USE_CHMOD       Enable f_chmod
-FF_USE_EXPAND	   Enable f_expand
-FF_USE_LABEL       
-FF_USE_MKFS	       Enable f_mkfs
-FF_USE_FORWARD     
-FF_MULTI_PARTITION 
-FF_PRINT_FLOAT     Enable f_printf
-FF_STRF_ENCODE     [0-3]
-FF_PRINT_LLI       Enable long long support in f_printf
-
-
-
-
-To access the hardware, it uses an set of functions. 
-
-    Always                   disk_status, disk_initialize, disk_read
-    FF_FS_READONLY == 0      disk_write, disk_ioctl, get_fattime
-    FF_USE_MKFS == 1         additional functions of disk_ioctl
-    FF_USE_LFN != 0          ff_uni2oem, ff_oem2uni, ff_wtoupper
-    FF_FS_REENTRANT == 1     ff_mutex_create, ff_mutex_delete, ff_mutex_take, ff_mutex_give
-    FF_USE_LFN == 3          ff_mem_alloc, ff_mem_free
 
 
 Annex A - EBI Pin Usage
- 
+
 |  Pin        |LOC0 | LOC1 | LOC2 | Descriptiojn                                                |
 |-------------|-----|------|------|-------------------------------------------------------------|
 | EBI_A00     | PA12| PA12 | PA12 | External Bus Interface (EBI) address output pin 00.         |
@@ -440,5 +665,8 @@ Annex A - EBI Pin Usage
 References
 ----------
 
-1. [FatFS - Generic FAT Filesystem Module](http://elm-chan.org/fsw/ff/)
-2. 
+1. [NAND Flash Memories: Bad Block Management and the YAFFS File System](https://www.eeweb.com/nand-flash-memories-bad-block-management-and-the-yaffs-file-system/)
+2. [FatFS - Generic FAT Filesystem Module](http://elm-chan.org/fsw/ff/)
+3. [A Robust Flash File System Since 2002](https://yaffs.net/)
+4. [LittleFS](https://github.com/littlefs-project/littlefs)
+5. [SPIFFS (SPI Flash File System)](https://github.com/pellepl/spiffs)
