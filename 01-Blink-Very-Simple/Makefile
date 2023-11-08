@@ -798,7 +798,7 @@ endif
 # Start GDB proxy
 #
 ifeq (${USE_JLINK},yes)
-proxy:
+proxy: gdbproxy
 gdbproxy:
 	echo "Starting GDB Proxy"; \
 	echo sh -c \" ${GDBPROXY} ${JLINKPARMS} \"  ; \
@@ -817,7 +817,7 @@ ${GDBINIT}: FORCE
 endif
 
 ifeq (${USE_OPENOCD},yes)
-proxy:
+proxy: gdbproxy
 gdbproxy:
 	if [ -c ${TTYTERM} ] ; then echo "Starting OpenOCD"; \
 	   ${TERMAPP} -- ${GDBPROXY} -f ${OPENOCDBOARD}  ; \
