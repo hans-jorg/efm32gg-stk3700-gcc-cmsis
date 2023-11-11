@@ -1,43 +1,39 @@
 ##
 #  @file     Makefile
 #  @brief    General makefile for EMF32GG
-#  @version  v1.4
-#  @date     13/10/2023
+#  @version  v1.5
+#  @date     10/11/2023
 #
 #  @note     CMSIS library used
 #
 #  @note     It works now with gnuwin32 Make. It can be find in
 #            http://gnuwin32.sourceforge.net/packages/make.htm
 #
-#  @note options
+#  @note Options:
 #  @param all          generate image file
 #  @param build        generate the axf file
 #  @param flash        write image file into microcontroller
 #  @param edit         open source files for editing
 #  @param debug        creates debug session (default: gdb}
-#  @param   gdb            creates debug session with gdb (same as debug}
-#  @param   tui            creates debug session with gdb text user interface
-#  @param   ddd            creates debug session with ddd
-#  @param   nemiver        creates debug session with nemiver
-#  @param openocd      start openocd for debugging
-#  @param proxy        start GDB proxy
+#  @param   gdb        creates debug session with gdb (same as debug}
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
 #  @param size         show code size
 #  @param nm           list symbols
-#  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
-#  @param dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
-#  @param nm           list symbol table in standard output"
-#  @param size         list size of output file"
-#  @param term         open a terminal for serial communication to board"
-#  @param openocd      start an openocd proxy"
-#  @param proxy        start a gdb proxy"
-#  @param docs         generates docs using doxygen"
-#  @param stack-report generates a stack usage report"
-#  @param cflow        generates flow (call) map"
-#  @param touch        forces compilation of all modules by next build"
+#  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S
+#  @param dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump
+#  @param term         open a terminal for serial communication to board
+#  @param openocd      start an openOCD proxy
+#  @param gdbproxy     start a GDB proxy
+#  @param docs         generates docs using doxygen
+#  @param stack-report generates a stack usage report
+#  @param cflow        generates flow (call) map
+#  @param touch        forces compilation of all modules by next build
 #
 #
 #  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully tested.
-
+#               The OpenOCD is not fully tested
 #
 
 
@@ -634,9 +630,11 @@ endif
 	@echo "make nm           list symbol table in standard output"
 	@echo "make size         list size of output file"
 	@echo "make term         open a terminal for serial communication to board"
-	@echo "make openocd      start an openocd proxy"
-	@echo "make proxy        start a gdb proxy"
-	@echo "make docs         generates docs using doxygen"
+	@echo "make openocd      start an openOCD proxy"
+	@echo "make gdbproxy     start a GDB proxy"
+	@echo "make stack-report generates a stack usage report"
+	@echo "make cflow        generates flow (call) map"
+	@echo "make touch        forces compilation of all modules by next build"
 
 #
 # The default rule, which causes the ${PROGNAME} example to be built
@@ -737,23 +735,23 @@ edit:
 #
 # Debug with  gdb
 #
-gdb: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT} gdbproxy
+gdb: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${GDB} ${GDBFLAGS} ${OBJDIR}/${PROGNAME}.axf
 
 #
 # Debug using gdb with tui (text user interface}
 #
-tui: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT} gdbproxy
+tui: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${GDB} --tui ${GDBFLAGS} ${OBJDIR}/${PROGNAME}.axf
 #
 # Debug using ddd
 #
-ddd: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT} gdbproxy
+ddd: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${DDD} ${DDDFLAGS} --debugger "${GDB} ${GDBFLAGS}" ${OBJDIR}/${PROGNAME}.axf
 #
 # Debug using nemiver
 #
-nemiver: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT} gdbproxy
+nemiver: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${NEMIVER} ${NEMIVERFLAGS} --remote=localhost:2331  --gdb-binary=`which ${GDB}`     ${OBJDIR}/${PROGNAME}.axf
 #
 # Debug using cgdb GUI
