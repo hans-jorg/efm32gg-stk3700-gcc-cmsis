@@ -16,10 +16,10 @@
 #  @param flash        write image file into microcontroller
 #  @param edit         open source files for editing
 #  @param debug        creates debug session (default: gdb}
-#  @param   gdb            creates debug session with gdb (same as debug}
-#  @param   tui            creates debug session with gdb text user interface
-#  @param   ddd            creates debug session with ddd
-#  @param   nemiver        creates debug session with nemiver
+#  @param   gdb        creates debug session with gdb (same as debug}
+#  @param   tui        creates debug session with gdb text user interface
+#  @param   ddd        creates debug session with ddd
+#  @param   nemiver    creates debug session with nemiver
 #  @param size         show code size
 #  @param nm           list symbols
 #  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S

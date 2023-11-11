@@ -20,8 +20,6 @@
 #  @param   tui        creates debug session with gdb text user interface
 #  @param   ddd        creates debug session with ddd
 #  @param   nemiver    creates debug session with nemiver
-#  @param openocd      start openocd for debugging
-#  @param proxy        start GDB proxy
 #  @param size         show code size
 #  @param nm           list symbols
 #  @param dump         show object code in assembly format

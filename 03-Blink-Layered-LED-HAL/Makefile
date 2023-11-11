@@ -32,6 +32,7 @@
 #  @param cflow        generates flow (call) map
 #  @param touch        forces compilation of all modules by next build
 #
+#
 #  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully tested.
 #               The OpenOCD is not fully tested
 #
