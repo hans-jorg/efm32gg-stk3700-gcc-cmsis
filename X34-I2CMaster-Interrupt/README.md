@@ -22,7 +22,23 @@ I2C uses two forms of addressing
 * 7-bit addressing. It uses a 7-bit field in the first byte. The 8th bit is the direction bit.
 * 10-bit addressing. It uses 7 bits in a second byte to build a 11 bit addressing field.
 
-Combinations that start with 11110 signal that there are additional address bits in a second byte. There are other reserved address ranges that start with 0000 and 1111.
+Combinations that start with 11110 signal that there are additional address bits in a second byte.
+There are other reserved address ranges that start with 0000 and 1111.
+
+| Address byte   |                              |
+|----------------|------------------------------|
+|   0000000 0    | General call                 |
+|   0000000 1    | Start byte                   |
+|   0000001 X    | CBUS addresses               |
+|   0000010 X    | Reserved (Other bus formats) |
+|   0000011 X    | Reserved                     |
+|   00001XX X    | High Speed Master Code       |
+|   11110XX X    | 10-bit slave                 |
+|   11111XX X    | Reserved                     |
+
+When using 7-bit addressing, only one byte is needed. Valid address range from 0x08 to 0x77. When
+using 10-bit addresses, two bytes are needed. Valid addresses range from 0x708 to 0x7FF.
+
 
 
 ### Velocity

@@ -27,36 +27,48 @@
 #define I2CMASTER_LOC_5          (5)
 #define I2CMASTER_LOC_6          (6)
 
-/* Values returned by I2CMaster_GetState */
-#define I2CMASTER_IDLE           (0)
-#define I2CMASTER_WAIT           (1)
-#define I2CMASTER_START          (2)
-#define I2CMASTER_ADDR           (3)
-#define I2CMASTER_ADDRACK        (4)
-#define I2CMASTER_DATA           (5)
-#define I2CMASTER_DATAACK        (6)
-
-/* Bits in value returned by I2CMaster_GetStatus */
-#define I2CMASTER_RXDATAV        (1<<8)
-#define I2CMASTER_TXBL           (1<<7)
-#define I2CMASTER_TXC            (1<<6)
-#define I2CMASTER_PABORT         (1<<5)
-#define I2CMASTER_PCONT          (1<<4)
-#define I2CMASTER_PNACK          (1<<3)
-#define I2CMASTER_PACK           (1<<2)
-#define I2CMASTER_PSTOP          (1<<1)
-#define I2CMASTER_PSTART         (1<<0)
 
 int I2CMaster_Init(I2C_TypeDef  *unit, uint32_t speed, uint8_t loc);
-int I2CMaster_Send(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
-int I2CMaster_Receive(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t maxsize);
+int I2CMaster_ConfigureSpeed(I2C_TypeDef *unit, uint32_t speed);
 int I2CMaster_GetStatus(I2C_TypeDef *unit);
 int I2CMaster_GetState(I2C_TypeDef *unit);
-int I2CMaster_ConfigureSpeed(I2C_TypeDef *unit, uint32_t speed);
-int I2CMaster_SendAndThenReceive(
+
+/**
+ * @brief  Send routines
+ */
+///@{
+int I2CMaster_Send(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+int I2CMaster_SendStart(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+int I2CMaster_SendClear(I2C_TypeDef *unit);
+int I2CMaster_SendStatus(I2C_TypeDef *unit);
+///@}
+
+/**
+ * @brief  Receive routines
+ */
+///@{
+int I2CMaster_Receive(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+int I2CMaster_ReceiveStart(I2C_TypeDef *unit, uint32_t size);
+int I2CMaster_ReceiveClear(I2C_TypeDef *unit);
+int I2CMaster_ReceiveGetData(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+int I2CMaster_ReceiveStatus(I2C_TypeDef *unit);
+///@}
+
+/**
+ * @brief Send-Receive routines
+ */
+///@{
+int I2CMaster_SendReceive(
                     I2C_TypeDef *unit, uint16_t address,
                     uint8_t *tdata, uint32_t tsize,
-                    uint8_t *rdata, uint32_t *rmaxsize );
+                    uint8_t *rdata, uint32_t rsize);
+int I2CMaster_SendReceiveStart(
+                    I2C_TypeDef *unit, uint16_t address,
+                    uint8_t *tdata, uint32_t tsize);
+int I2CMaster_SendReceiveClear(I2C_TypeDef *unit);
+int I2CMaster_SendReceiveStatus(I2C_TypeDef *unit);
+int I2CMaster_SendReceiveGetData(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+///@}
 
 
 #endif // I2CMASTER_H
