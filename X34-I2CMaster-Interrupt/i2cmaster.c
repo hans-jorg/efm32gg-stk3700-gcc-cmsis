@@ -28,6 +28,56 @@
 
 
 /**
+ * @brief   Structure to store transfer information
+ *
+ * @note    The two additional bytes in the buffers are due to the I2C addresses.
+ *          A retry option is planned when an error occurs.
+ */
+
+///@{
+typedef enum {
+        STATE_IDLE,
+        STATE_ERROR,
+        STATE_TX_SENDDATA,
+        STATE_RX_RECEIVEDATA,
+        STATE_TXRX_SENDADDR1,
+        STATE_TXRX_SENDADDR2,
+        STATE_TXRX_SENDDATA,
+        STATE_TXRX_SENDLAST,
+        STATE_TXRX_RECEIVEDATA
+    } State_t;
+
+typedef enum {
+        OP_NONE,
+        OP_SEND,
+        OP_RECEIVE,
+        OP_SENDRECEIVE,
+        OP_TEST
+    } Operation_t;
+
+typedef enum {
+        STATUS_STOPPED,
+        STATUS_RUN
+    } Status_t;
+
+typedef struct {
+    uint8_t                 *inpointer;
+    uint8_t                 *outpointer;
+    uint8_t                 *inlimit;
+    uint8_t                 *outlimit;
+    uint16_t                insize;
+    uint16_t                outsize;
+    uint8_t                 inbuffer[I2C_INPUT_BUFFER_SIZE+2];
+    uint8_t                 outbuffer[I2C_OUTPUT_BUFFER_SIZE+2];
+    Status_t                status;
+    Operation_t             operation;
+    State_t                 state;
+    uint8_t                 addressbytes;
+} TransferInfo;
+///@}
+
+
+/**
  * @brief A reasonable fast copy routine for small amounts of data
  *
  * @note  a KISS (Keep it simple) approach
@@ -50,52 +100,20 @@ const uint8_t *lim = dest+count;
  *
  * @note    The first address byte for a 10-bit address is 11110XX. The
  */
-static int DecomposeAddress(uint16_t address, uint8_t a[2]) {
+static int DecomposeAddress(uint16_t address, uint8_t *pa) {
 
     if( address <= 0x77 ) {
-        a[0] = (uint8_t) address;
+        *pa = (uint8_t) address;
         return 1;
     }
     if( address <= 1023 ) {
-        a[0] = ((address&0x300)>>7)|0xF8;
-        a[1] = address&0xFF;
+        *pa++ = ((address&0x300)>>7)|0xF8;
+        *pa   = address&0xFF;
         return 2;
     }
 
     return 0;
 }
-
-
-/**
- * @brief   Structure to store transfer information
- *
- * @note    The two additional bytes in the buffers are due to the I2C addresses.
- *          A retry option is planned when an error occurs.
- */
-
-///@{
-typedef enum {
-        STATE_IDLE, STATE_ERROR,
-        STATE_TX_SENDADDRESS, STATE_TX_SENDDATA, STATE_TX_SENDLAST,
-        STATE_RX_RECEIVEDATA,
-        STATE_TXRX_SENDADDRESS, STATE_TXRX_SENDDATA, STATE_TXRX_SENDLAST,STATE_TXRX_RECEIVEDATA
- } State_t;
-typedef enum { NONE, SENDING, RECEIVING, SENDRECEIVING, TEST } Operation_t;
-
-typedef enum { STOPPED, RUN } Status_t;
-
-typedef struct {
-    uint16_t                incounter;
-    uint16_t                outcounter;
-    uint8_t                 inpointer;
-    uint8_t                 outpointer;
-    uint8_t                 inbuffer[I2C_INPUT_BUFFER_SIZE+2];
-    uint8_t                 outbuffer[I2C_OUTPUT_BUFFER_SIZE+2];
-    Status_t                status;
-    Operation_t             operation;
-    State_t                 state;
-} TransferInfo;
-///@}
 
 
 /**
@@ -132,9 +150,9 @@ void I2C1_IRQHandler(void) {
 TransferInfo *GetTransferInfo(I2C_TypeDef *unit) {
 
     if( unit == I2C0 ) {
-        return transferinfo;
+        return &transferinfo[0];
     } else if (unit == I2C1 ) {
-        return transferinfo + 1;
+        return &transferinfo[1];
     } else {
         return 0;
     }
@@ -151,20 +169,108 @@ TransferInfo *ti;
 
     ti = GetTransferInfo(i2c);
     if( ti == 0 ) {
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         return;
     }
 
-    // Process interrupt
-    // TODO
+    // Process interrupt according state
+    switch(ti->state) {
+    case STATE_IDLE:
+        // Nothing to do. Just clear interrupts
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
+        break;
+    case STATE_ERROR:
+        // Nothing to do. Just clear interrupts
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
+        break;
+    // Transmitting data
+    case STATE_TX_SENDDATA:
+        if( i2c->IF&I2C_IF_NACK ) {
+            ti->state = STATE_ERROR;
+        }
+        // Data was transmitted. Send next data
+        if( i2c->IF&I2C_IF_TXBL ) {
+            // if it is the last data, send STOP
+            if( ti->outpointer > ti->outlimit ) {
+                i2c->CMD = I2C_CMD_STOP;
+            } else {
+                i2c->TXDATA = *(ti->outpointer++);
+            }
+        }
+        if( i2c->IF&I2C_IF_SSTOP ) {
+            // if it is the last data, send STOP
+            ti->state = STATE_IDLE;
+        }
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
+        break;
+    // Receiving data
+    case STATE_RX_RECEIVEDATA:
+        // TODO
+        break;
+    // Sending and then receiving data
+    case STATE_TXRX_SENDADDR1:
+        // TODO
+        break;
+    case STATE_TXRX_SENDADDR2:
+        // TODO
+        break;
+    case STATE_TXRX_SENDDATA:
+        // TODO
+        break;
+    case STATE_TXRX_SENDLAST:
+        // TODO
+        break;
+    case STATE_TXRX_RECEIVEDATA:
+        // TODO
+        break;
+    }
 
     return;
 }
 
 
 /**
- * @brief   Get status from I2C transfer
+ * @brief   Initialize TransferInfo
+ */
+static void TransferInfoInit(TransferInfo *ti, uint16_t isize, uint16_t osize) {
+
+    ti->inpointer    = ti->inbuffer;
+    ti->outpointer   = ti->outbuffer;
+    ti->inlimit      = ti->inbuffer+isize-1;
+    ti->outlimit     = ti->outbuffer+osize-1;
+    ti->insize       = isize;
+    ti->outsize      = osize;
+    ti->status       = STATUS_STOPPED;
+    ti->operation    = OP_NONE;
+    ti->state        = STATE_IDLE;
+    ti->addressbytes = 1;
+}
+
+/**
+ * @brief   Clear current transfer and reset the TransferInfo structure
  *
  * @note
+ */
+int I2CMaster_Clear(I2C_TypeDef *i2c) {
+TransferInfo *ti;
+
+    ti = GetTransferInfo(i2c);
+    if( ti == 0 ) {
+        return 0;
+    }
+
+    TransferInfoInit(ti,0,0);
+
+    /* Clear transmission */
+    i2c->CMD = I2C_CMD_CLEARPC|I2C_CMD_CLEARTX;
+
+    //
+    return 1;
+}
+
+
+/**
+ * @brief   Get status from I2C transfer
  */
 inline int I2CMaster_Status(I2C_TypeDef *i2c) {
 TransferInfo *ti;
@@ -181,8 +287,6 @@ TransferInfo *ti;
 
 /**
  * @brief   Get state from I2C transfer
- *
- * @note
  */
 inline int I2CMaster_State(I2C_TypeDef *i2c) {
 TransferInfo *ti;
@@ -203,7 +307,6 @@ TransferInfo *ti;
  *
  * @return 0: OK. Negative: Error
  */
-
 static int I2CMaster_EnableClock(I2C_TypeDef *i2c) {
 
     if( i2c == I2C0 ) {
@@ -215,6 +318,8 @@ static int I2CMaster_EnableClock(I2C_TypeDef *i2c) {
     }
     return 0;
 }
+
+
 /**
  * @brief   Initialize I2C unit as master
  *
@@ -263,61 +368,85 @@ int I2CMaster_Init(I2C_TypeDef *i2c, uint32_t speed, uint8_t loc) {
  *
  * @note    Data should not be changed until transmission ends
  */
-int I2CMaster_Send(I2C_TypeDef *i2c, uint16_t address, uint8_t *data, uint32_t size) {
-int i;
-uint32_t nmb = size-1;  /* Middle bytes */
-uint8_t c;
-uint32_t timecnt;
-const uint32_t TIMEOUT = 1000000; // TODO: Must be adjusted!!!!!
+int I2CMaster_SendStart(I2C_TypeDef *i2c, uint16_t address, uint8_t *data, uint32_t size) {
+int nab;                // number of address bytes
+TransferInfo *ti;
 
-    /* Clear transmission */
-    i2c->CMD = I2C_CMD_CLEARPC|I2C_CMD_CLEARTX;
+    // Test state from
+    if( (i2c->STATE&_I2C_STATE_STATE_MASK) != I2C_STATE_STATE_IDLE )
+        return -1;
 
-    /* Send address and direction */
-    c = (uint8_t) (address<<1);    // R/W* = 0 means transmit
+    // Test state from TransferInfo
+    ti = GetTransferInfo(i2c);
+
+    if( ti->status == STATUS_RUN )
+        return -2;
+
+    if( ti->state != STATE_IDLE && ti->state != STATE_ERROR )
+        return -3;
+
+    // Initialize TransferInfo struct
+    TransferInfoInit(ti,0,0);
+
+    nab = DecomposeAddress(address, ti->outbuffer);
+    ti->outpointer   = ti->outbuffer;
+    ti->outlimit     = ti->outpointer+nab+size-1;
+    ti->operation    = OP_SEND;
+    ti->addressbytes = nab;
+
+    // Copy data to local buffer
+    Copy(ti->outpointer+nab,data,size);
+
+
     // Wait until TXDATA is empty. Just in case */
-    timecnt = TIMEOUT;
-    if( timecnt == 0 )
-        goto error;
-    if( i2c->STATE&I2C_STATE_NACKED )
-        goto error;
+    ti->state = STATE_TX_SENDDATA;
+
+    // Enable interrupts
+    i2c->IEN |= I2C_IEN_ACK|I2C_IEN_TXBL|I2C_IEN_NACK;
+
+    // Send first byte (it is the address or part of it)
     i2c->CMD = I2C_CMD_START;
-    i2c->TXDATA = c;
-
-    /* Send middle bytes */
-    for(i=0;i<nmb;i++) {
-        // Wait until transmission completed */
-        timecnt = TIMEOUT;
-        while( (timecnt--) && ((i2c->STATUS&I2C_STATUS_TXBL) == 0) ) {}
-        if( timecnt == 0 )
-            goto error;
-        if( i2c->STATE&I2C_STATE_NACKED )
-            goto error;
-        i2c->TXDATA = data[i];
-    }
-
-    /* Send last byte with a STOP signal after it */
-    i2c->CMD = I2C_CMD_STOP;
-    i2c->TXDATA = data[i];
-
-    /* Wait until transmission completed */
-    timecnt = TIMEOUT;
-    while( (timecnt--) && ((i2c->STATUS&I2C_STATUS_TXC) == 0) ) {}
-    if( timecnt == 0 )
-        goto error;
-    if( i2c->STATE&I2C_STATE_NACKED )
-        goto error;
+    i2c->TXDATA = *(ti->outpointer++);
 
     return 0;
 
-    /* Error handling */
-error:
-    /* Abort */
-    i2c->CMD = I2C_CMD_ABORT;
-    /* Clear transmission */
-    i2c->CMD = I2C_CMD_CLEARPC|I2C_CMD_CLEARTX;
-    return -1;
 }
+
+
+/**
+ * @brief   Polling like send routine
+ *
+ * @note
+ */
+int I2CMaster_Send(I2C_TypeDef *i2c, uint16_t address, uint8_t *data, uint32_t size) {
+int rc;
+TransferInfo *ti;
+
+    ti = GetTransferInfo(i2c);
+
+
+    rc = I2CMaster_SendStart(i2c,address,data,size);
+
+    while (ti->state==STATE_TX_SENDDATA) {}
+
+    return 0;
+}
+
+
+/**
+ * @brief
+ *
+ * @note
+ */
+int I2CMaster_SendGetStatus(I2C_TypeDef *i2c) {
+TransferInfo *ti;
+
+    // Test state from TransferInfo
+    ti = GetTransferInfo(i2c);
+
+    return ti->state == STATE_IDLE;
+}
+
 
 
 /**
@@ -325,55 +454,53 @@ error:
  *
  * @note
  */
-int I2CMaster_Receive(I2C_TypeDef *i2c, uint16_t address, uint8_t *data, uint32_t size) {
-int cnt;
-uint8_t c;
-uint32_t timecnt;
-const uint32_t TIMEOUT = 1000000; // TODO: Must be adjusted!!!!!
+int I2CMaster_ReceiveStart(I2C_TypeDef *i2c, uint16_t address, uint32_t size) {
+int nab;                // number of address bytes
+TransferInfo *ti;
 
-    /* Clear transmission */
-    i2c->CMD = I2C_CMD_CLEARPC|I2C_CMD_CLEARTX;
+    // Test state from
+    if( (i2c->STATE&_I2C_STATE_STATE_MASK) != I2C_STATE_STATE_IDLE )
+        return -1;
 
-    /* Send address and direction */
-    c = (uint8_t) (address<<1)|1;    // R/W* = 1 means receive
+    // Test state from TransferInfo
+    ti = GetTransferInfo(i2c);
+
+    if( ti->status == STATUS_RUN )
+        return -2;
+
+    if( ti->state != STATE_IDLE && ti->state != STATE_ERROR )
+        return -3;
+
+    // Initialize TransferInfo struct
+    TransferInfoInit(ti,0,0);
+
+    nab = DecomposeAddress(address, ti->outbuffer);
+    ti->outpointer   = ti->outbuffer;
+    ti->outlimit     = ti->outpointer+nab+size-1;
+    ti->operation    = OP_RECEIVE;
+    ti->addressbytes = nab;
+
+
     // Wait until TXDATA is empty. Just in case */
-    timecnt = TIMEOUT;
-    if( timecnt == 0 )
-        goto error;
-    if( i2c->STATE&I2C_STATE_NACKED )
-        goto error;
+    ti->state = STATE_RX_RECEIVEDATA;
+
+    // Enable interrupts
+    i2c->IEN |= I2C_IEN_ACK|I2C_IEN_RXDATAV|I2C_IEN_NACK|I2C_IEN_MSTOP|I2C_IEN_START;
+
+    // Send first byte (it is the address or part of it)
     i2c->CMD = I2C_CMD_START;
-    i2c->TXDATA = c;
+    i2c->TXDATA = *(ti->outpointer++);
 
-    /* Receive data until the data array is full */
-    cnt=0;
-    while( cnt < size ) {
-        // Wait until transmission completed */
-        timecnt = TIMEOUT;
-        while( (timecnt--)
-            && ((i2c->STATUS&I2C_STATUS_RXDATAV) == 0)
-            && ((i2c->STATE&I2C_STATE_NACKED)) ) {}
-        if( timecnt == 0 )
-            goto error;
-        data[cnt] = i2c->RXDATA;
-        cnt++;
-    }
+    return 0;
 
-    /* Send a byte with a STOP signal after it */
-    i2c->CMD = I2C_CMD_STOP;
-    i2c->TXDATA = 0;
-
-    return cnt;
-
-    /* Error handling */
-error:
-    /* Abort */
-    i2c->CMD = I2C_CMD_ABORT;
-    /* Clear transmission */
-    i2c->CMD = I2C_CMD_CLEARPC|I2C_CMD_CLEARTX;
-    return -1;
 }
 
+
+/**
+ * @brief
+ *
+ * @note
+ */
 
 /**
  * @brief   Configure I2C unit according to the actual clock
