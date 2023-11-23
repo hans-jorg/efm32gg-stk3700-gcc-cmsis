@@ -31,30 +31,71 @@
  * @brief  Send routines
  */
 ///@{
-int I2CMaster_Init(I2C_TypeDef  *unit, uint32_t speed, uint8_t loc);
-int I2CMaster_ConfigureSpeed(I2C_TypeDef *unit, uint32_t speed);
-int I2CMaster_GetStatus(I2C_TypeDef *unit);
-int I2CMaster_GetState(I2C_TypeDef *unit);
-int I2CMaster_Clear(I2C_TypeDef *unit);
+int I2CMaster_Init(
+                    I2C_TypeDef  *unit,
+                    uint32_t speed,
+                    uint8_t loc
+                );
+int I2CMaster_ConfigureSpeed(
+                    I2C_TypeDef *unit,
+                    uint32_t speed
+                );
+int I2CMaster_GetStatus(
+                    I2C_TypeDef *unit
+                );
+int I2CMaster_GetState(
+                    I2C_TypeDef *unit
+                );
+int I2CMaster_Clear(
+                    I2C_TypeDef *unit
+                );
 ///@}
 
 /**
  * @brief  Send routines
  */
 ///@{
-int I2CMaster_Send(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
-int I2CMaster_SendStart(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
-int I2CMaster_SendGetStatus(I2C_TypeDef *unit);
+int I2CMaster_Send(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *data,
+                    uint32_t size
+                );
+int I2CMaster_SendStart(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *data,
+                    uint32_t size
+                );
+int I2CMaster_SendGetStatus(
+                    I2C_TypeDef *unit
+                );
 ///@}
 
 /**
  * @brief  Receive routines
  */
 ///@{
-int I2CMaster_Receive(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
-int I2CMaster_ReceiveStart(I2C_TypeDef *unit, uint16_t address, uint32_t size);
-int I2CMaster_ReceiveGetData(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
-int I2CMaster_ReceiveGetStatus(I2C_TypeDef *unit);
+int I2CMaster_Receive(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *data,
+                    uint32_t rsize
+                );
+int I2CMaster_ReceiveStart(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint32_t rsize
+                );
+int I2CMaster_ReceiveGetData(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *data,
+                    uint32_t size
+                );
+int I2CMaster_ReceiveGetStatus(
+                    I2C_TypeDef *unit
+                );
 ///@}
 
 /**
@@ -62,14 +103,29 @@ int I2CMaster_ReceiveGetStatus(I2C_TypeDef *unit);
  */
 ///@{
 int I2CMaster_SendReceive(
-                    I2C_TypeDef *unit, uint16_t address,
-                    uint8_t *tdata, uint32_t tsize,
-                    uint8_t *rdata, uint32_t rsize);
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *tdata,
+                    uint32_t tsize,
+                    uint8_t *rdata,
+                    uint32_t rsize
+                );
 int I2CMaster_SendReceiveStart(
-                    I2C_TypeDef *unit, uint16_t address,
-                    uint8_t *tdata, uint32_t tsize);
-int I2CMaster_SendReceiveGetStatus(I2C_TypeDef *unit);
-int I2CMaster_SendReceiveGetData(I2C_TypeDef *unit, uint16_t address, uint8_t *data, uint32_t size);
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *tdata,
+                    uint32_t tsize,
+                    uint32_t rsize
+                );
+int I2CMaster_SendReceiveGetStatus(
+                    I2C_TypeDef *unit
+                );
+int I2CMaster_SendReceiveGetData(
+                    I2C_TypeDef *unit,
+                    uint16_t address,
+                    uint8_t *data,
+                    uint32_t rsize
+                );
 ///@}
 
 

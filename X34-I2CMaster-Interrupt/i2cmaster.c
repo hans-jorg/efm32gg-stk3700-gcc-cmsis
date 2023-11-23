@@ -39,12 +39,17 @@ typedef enum {
         STATE_IDLE,
         STATE_ERROR,
         STATE_TX_SENDDATA,
+        STATE_TX_STOP,
+        STATE_RX_SENDADDR1,
+        STATE_RX_SENDADDR2,
         STATE_RX_RECEIVEDATA,
+        STATE_RX_STOP,
         STATE_TXRX_SENDADDR1,
         STATE_TXRX_SENDADDR2,
         STATE_TXRX_SENDDATA,
         STATE_TXRX_SENDLAST,
-        STATE_TXRX_RECEIVEDATA
+        STATE_TXRX_RECEIVEDATA,
+        STATE_TXRX_STOP,
     } State_t;
 
 typedef enum {
@@ -125,18 +130,18 @@ static TransferInfo         transferinfo[2];
 
 
 /* Forward definition of ProcessInterrupt routine */
-static void ProcessInterrupt(I2C_TypeDef *i2c);
+static void ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti);
 
 
 
 /** Interrupt Handlers */
 ///@{
 void I2C0_IRQHandler(void) {
-    ProcessInterrupt(I2C0);
+    ProcessInterrupt(I2C0,&transferinfo[0]);
 }
 
 void I2C1_IRQHandler(void) {
-    ProcessInterrupt(I2C1);
+    ProcessInterrupt(I2C1,&transferinfo[1]);
 }
 ///@}
 
@@ -164,14 +169,7 @@ TransferInfo *GetTransferInfo(I2C_TypeDef *unit) {
  * @note    Common routine for processing interrupt from I2C
  */
 static void
-ProcessInterrupt(I2C_TypeDef *i2c) {
-TransferInfo *ti;
-
-    ti = GetTransferInfo(i2c);
-    if( ti == 0 ) {
-        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
-        return;
-    }
+ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti) {
 
     // Process interrupt according state
     switch(ti->state) {
@@ -191,11 +189,10 @@ TransferInfo *ti;
         // Data was transmitted. Send next data
         if( i2c->IF&I2C_IF_TXBL ) {
             // if it is the last data, send STOP
-            if( ti->outpointer > ti->outlimit ) {
-                i2c->CMD = I2C_CMD_STOP;
-            } else {
-                i2c->TXDATA = *(ti->outpointer++);
+            if( ti->outpointer == ti->outlimit ) {
+                ti->state = STATE_TX_STOP;
             }
+            i2c->TXDATA = *(ti->outpointer++);
         }
         if( i2c->IF&I2C_IF_SSTOP ) {
             // if it is the last data, send STOP
@@ -203,8 +200,25 @@ TransferInfo *ti;
         }
         i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         break;
+    case STATE_TX_STOP:
+        i2c->CMD = I2C_CMD_STOP;
+        ti->state = STATE_IDLE;
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
+        break;
     // Receiving data
+    case STATE_RX_SENDADDR1:
+        // TODO
+        break;
+    case STATE_RX_SENDADDR2:
+        // TODO
+        break;
     case STATE_RX_RECEIVEDATA:
+        // TODO
+        break;
+    case STATE_RX_STOP:
+        i2c->CMD = I2C_CMD_STOP;
+        ti->state = STATE_IDLE;
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         // TODO
         break;
     // Sending and then receiving data
@@ -221,6 +235,12 @@ TransferInfo *ti;
         // TODO
         break;
     case STATE_TXRX_RECEIVEDATA:
+        // TODO
+        break;
+    case STATE_TXRX_STOP:
+        i2c->CMD = I2C_CMD_STOP;
+        ti->state = STATE_IDLE;
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         // TODO
         break;
     }
