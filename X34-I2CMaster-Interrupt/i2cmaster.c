@@ -194,10 +194,6 @@ ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti) {
             }
             i2c->TXDATA = *(ti->outpointer++);
         }
-        if( i2c->IF&I2C_IF_SSTOP ) {
-            // if it is the last data, send STOP
-            ti->state = STATE_IDLE;
-        }
         i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         break;
     case STATE_TX_STOP:
@@ -208,6 +204,7 @@ ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti) {
     // Receiving data
     case STATE_RX_SENDADDR1:
         // TODO
+        if( )
         break;
     case STATE_RX_SENDADDR2:
         // TODO
