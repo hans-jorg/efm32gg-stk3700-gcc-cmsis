@@ -204,7 +204,6 @@ ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti) {
     // Receiving data
     case STATE_RX_SENDADDR1:
         // TODO
-        if( )
         break;
     case STATE_RX_SENDADDR2:
         // TODO
