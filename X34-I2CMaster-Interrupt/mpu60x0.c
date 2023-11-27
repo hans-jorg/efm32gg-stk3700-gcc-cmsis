@@ -218,7 +218,28 @@ int MPU60x0_ReadGyro(MPU60x0_Type *mpu, MPU60x0_GyroType *pgyro) {
  *
  */
 int MPU60x0_ReadAccelX(MPU60x0_Type *mpu, uint16_t *paccel) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = MPU_ACCEL_XOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
+
+    while( MPU60x0_GetStatus(mpu) == 0 ) {}
+
+    rc = I2CMaster_SendReceiveGetData(
+                    mpu->i2c,
+                    mpu->addr,
+                    data.b,
+                    2
+                );
+    *paccel = REVBYTES16(data.w);
     return 0;
 }
 
@@ -228,7 +249,28 @@ int MPU60x0_ReadAccelX(MPU60x0_Type *mpu, uint16_t *paccel) {
  *
  */
 int MPU60x0_ReadAccelY(MPU60x0_Type *mpu, uint16_t *paccel) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = MPU_ACCEL_YOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
+
+    while( MPU60x0_GetStatus(mpu) == 0 ) {}
+
+    rc = I2CMaster_SendReceiveGetData(
+                    mpu->i2c,
+                    mpu->addr,
+                    data.b,
+                    2
+                );
+    *paccel = REVBYTES16(data.w);
     return 0;
 }
 
@@ -238,7 +280,28 @@ int MPU60x0_ReadAccelY(MPU60x0_Type *mpu, uint16_t *paccel) {
  *
  */
 int MPU60x0_ReadAccelZ(MPU60x0_Type *mpu, uint16_t *paccel) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = MPU_ACCEL_ZOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
+
+    while( MPU60x0_GetStatus(mpu) == 0 ) {}
+
+    rc = I2CMaster_SendReceiveGetData(
+                    mpu->i2c,
+                    mpu->addr,
+                    data.b,
+                    2
+                );
+    *paccel = REVBYTES16(data.w);
     return 0;
 }
 
@@ -264,7 +327,19 @@ int MPU60x0_StartWriteMultipleRegisters( MPU60x0_Type *mpu, uint8_t startreg, in
  *   @brief  Start writiing to multiple registers
  */;
 int MPU60x0_StartReadRegister(MPU60x0_Type *mpu, uint8_t reg) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = reg;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    1
+                );
+    return 0;
     return 0;
 }
 
@@ -273,7 +348,18 @@ int MPU60x0_StartReadRegister(MPU60x0_Type *mpu, uint8_t reg) {
  *   @brief  Start writiing to multiple registers
  */;
 int MPU60x0_StartReadMultipleRegisters(MPU60x0_Type *mpu, uint8_t startreg, int count) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = startreg;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    count
+                );
     return 0;
 }
 
@@ -282,6 +368,18 @@ int MPU60x0_StartReadMultipleRegisters(MPU60x0_Type *mpu, uint8_t startreg, int 
  *   @brief  Start writiing to multiple registers
  */;
 int MPU60x0_StartReadAccel(MPU60x0_Type *mpu) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
+
+    outdata[0] = MPU_ACCEL_XOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    6
+                );
 
     return 0;
 }
@@ -291,7 +389,18 @@ int MPU60x0_StartReadAccel(MPU60x0_Type *mpu) {
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadGyro(MPU60x0_Type *mpu) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
 
+    outdata[0] = MPU_GYRO_XOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    6
+                );
     return 0;
 }
 
@@ -300,6 +409,18 @@ int MPU60x0_StartReadGyro(MPU60x0_Type *mpu) {
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelX(MPU60x0_Type *mpu) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
+
+    outdata[0] = MPU_ACCEL_XOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
 
     return 0;
 }
@@ -309,6 +430,18 @@ int MPU60x0_StartReadAccelX(MPU60x0_Type *mpu) {
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelY(MPU60x0_Type *mpu) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
+
+    outdata[0] = MPU_ACCEL_YOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
 
     return 0;
 }
@@ -318,6 +451,18 @@ int MPU60x0_StartReadAccelY(MPU60x0_Type *mpu) {
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelZ(MPU60x0_Type *mpu) {
+AllignedValue data;
+int rc;
+uint8_t outdata[1];
+
+    outdata[0] = MPU_ACCEL_ZOUT_H;
+    rc = I2CMaster_SendReceiveStart(
+                    mpu->i2c,
+                    mpu->addr,
+                    outdata,
+                    1,
+                    2
+                );
 
     return 0;
 }
@@ -330,6 +475,7 @@ int MPU60x0_StartReadAccelZ(MPU60x0_Type *mpu) {
 /* Status call */
 int MPU60x0_GetStatus(MPU60x0_Type *mpu) {
 
+    // TODO
     return 0;
 }
 
