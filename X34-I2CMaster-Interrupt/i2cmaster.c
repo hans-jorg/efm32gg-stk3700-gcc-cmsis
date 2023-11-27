@@ -203,13 +203,41 @@ ProcessInterrupt(I2C_TypeDef *i2c, TransferInfo *ti) {
         break;
     // Receiving data
     case STATE_RX_SENDADDR1:
+        if( i2c->IF&I2C_IF_NACK ) {
+            // No slave responded. Abort
+            i2c->CMD = I2C_CMD_STOP;
+            ti->state = STATE_ERROR;
+            i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
+        }
+        if( i2c->IF&I2C_IF_ACK ) {
+            if( ti->addressbytes == 2 ) {
+                i2c->TXDATA = *(ti->inpointer++);
+                ti->state = STATE_RX_SENDADDR2;
+            } else {
+                i2c->CMD = I2C_CMD_START; // Repeated start
+                ti->state = STATE_RX_RECEIVEDATA;
+            }
+        }
         // TODO
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         break;
     case STATE_RX_SENDADDR2:
-        // TODO
+        if( i2c->IF&I2C_IF_ACK ) {
+            i2c->CMD = I2C_CMD_START; // Repeated start
+            ti->state = STATE_RX_RECEIVEDATA;
+        }
         break;
     case STATE_RX_RECEIVEDATA:
+        if( i2c->IF&I2C_IF_RXDATAV ) {
+            i2c->CMD = I2C_CMD_ACK;
+            if( ti->inpointer == ti->inlimit ) {
+                i2c->CMD = I2C_CMD_STOP;
+                ti->state = STATE_IDLE;
+            }
+            *(ti->inpointer++) = i2c->RXDATA;
+        }
         // TODO
+        i2c->IFC = _I2C_IFC_MASK;   // Clear all interrupts
         break;
     case STATE_RX_STOP:
         i2c->CMD = I2C_CMD_STOP;
