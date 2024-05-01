@@ -48,6 +48,12 @@
 
 /**
  * @brief Pin Configuration for GPIO
+ *
+ * @note
+ *        WP:  Write protect
+ *        CE:
+ *        RB:  Ready=0/Busy=0
+ *        PWR: Enable power to the nand device
  */
 ///@{
 #define WP_GPIO                             GPIOD
@@ -68,7 +74,18 @@
 ///@}
 
 
-/// The pins below will be controlled by EBI
+/**
+ *  @brief  The pins below are be controlled by EBI
+ *
+ *  @note
+ *                AD:  Address/Data pins
+ *                ALE: Address Latch Enable
+ *                CLE: Command Latch Enable
+ *                WE:  Write enable
+ *                RE:  Read enable
+ *
+ *     ALE and CLE are set when writing to an address, whose 24th or 25th bit is set
+ */
 ///@{
 #define AD_GPIO                             GPIOE
 #define AD_PINS                             ( BIT(15)|BIT(14)|BIT(13)|BIT(12) \
@@ -91,44 +108,52 @@
 
 /// Setting timing parameters (unit is HFPERCLK period)
 ///@{
-#define ADDR_SETUPTIME                  (0)
-#define ADDR_HOLDTIME                   (0)
-#define RD_SETUPTIME                    (0)
-#define RD_HOLDTIME                     (1)
-#define RD_STROBETIME                   (2)
-#define WR_SETUPTIME                    (0)
-#define WR_HOLDTIME                     (1)
-#define WR_STROBETIME                   (2)
+#define ADDR_SETUPTIME                      (0)
+#define ADDR_HOLDTIME                       (0)
+#define RD_SETUPTIME                        (0)
+#define RD_HOLDTIME                         (1)
+#define RD_STROBETIME                       (2)
+#define WR_SETUPTIME                        (0)
+#define WR_HOLDTIME                         (1)
+#define WR_STROBETIME                       (2)
 ///@}
 
 
 /// NAND Flash commands
 ///@{
-#define CMD_READ_A                      (0x00)
-#define CMD_READ_B                      (0x01)
-#define CMD_READ_C                      (0x50)
-#define CMD_READ_SIGNATURE              (0x90)
-#define CMD_READ_STATUS                 (0x70)
-#define CMD_PROGRAM_1                   (0x80)
-#define CMD_PROGRAM_2                   (0x10)
-#define CMD_COPY_BACK_1                 (0x00)
-#define CMD_COPY_BACK_2                 (0x8A)
-#define CMD_COPY_BACK_3                 (0x10)
-#define CMD_BLOCK_ERASE_1               (0x60)
-#define CMD_BLOCK_ERASE_2               (0xD0)
-#define CMD_RESET                       (0xFF)
+#define CMD_READ_A                          (0x00)
+#define CMD_READ_B                          (0x01)
+#define CMD_READ_C                          (0x50)
+#define CMD_READ_SIGNATURE                  (0x90)
+#define CMD_READ_STATUS                     (0x70)
+#define CMD_PROGRAM_1                       (0x80)
+#define CMD_PROGRAM_2                       (0x10)
+#define CMD_COPY_BACK_1                     (0x00)
+#define CMD_COPY_BACK_2                     (0x8A)
+#define CMD_COPY_BACK_3                     (0x10)
+#define CMD_BLOCK_ERASE_1                   (0x60)
+#define CMD_BLOCK_ERASE_2                   (0xD0)
+#define CMD_RESET                           (0xFF)
 ///@}
 
 /**
  * @brief  Status bits of Status Data
  */
 ///@{
-#define STATUS_WP                       BIT(7)
-#define STATUS_READY                    BIT(6)
-#define STATUS_ERROR                    BIT(0)
+#define STATUS_WP                           BIT(7)
+#define STATUS_READY                        BIT(6)
+#define STATUS_ERROR                        BIT(0)
 ///@}
 
+/**
+ *  @brief  Signature
+ */
+///@{
+#define MFG_CODE                            0x20
+#define DEV_CODE                            0x75
 
+
+///@}
 /**
  * @brief  Adresses used to access NAND Flash
  */
@@ -146,9 +171,11 @@ static       uint8_t * const pntCommand  = (uint8_t *) 0x82000000;
  *  @brief  Spare Area (Area C)
  */
 ///@{
-#define SPARESIZE      (16)
-#define ERRORBYTE      (5)
-#define OKVALUE        '\xFF'
+#define BADBLOCKFLAG                     (5)
+#define OKVALUE                         '\xFF'
+#define ECC0_POS                         (6)
+#define ECC1_POS                         (7)
+#define ECC2_POS                         (8)
 
 static uint8_t spare[SPARESIZE];
 ///@}
@@ -160,26 +187,26 @@ static uint8_t spare[SPARESIZE];
 ///@{
 
 static inline void EnableNANDPower(void) {
-    GPIO_WritePins(PWR_GPIO, 0, PWR_PINMASK);        // Set to High (positive logic)
+    GPIO_WritePins(PWR_GPIO, 0, PWR_PINMASK);           // Set to High (positive logic)
 }
 
 static inline void DisableNANDPower(void) {
-    GPIO_WritePins(PWR_GPIO, PWR_PINMASK, 0);        // Set to  Low (positive logic)
+    GPIO_WritePins(PWR_GPIO, PWR_PINMASK, 0);           // Set to  Low (positive logic)
 }
 
 static inline void EnableNANDDevice(void) {
-    GPIO_WritePins(CE_GPIO, 0, CE_PINMASK);            // Set to High
+    GPIO_WritePins(CE_GPIO, 0, CE_PINMASK);             // Set to High
 }
 
 static inline void DisableNANDDevice(void) {
-    GPIO_WritePins(CE_GPIO, 0, CE_PINMASK);            // Set to High
+    GPIO_WritePins(CE_GPIO, 0, CE_PINMASK);             // Set to High
 }
 
 static inline void EnableWriteProtect(void) {
-    GPIO_WritePins(WP_GPIO, WP_PINMASK, 0);         // Set to Low due to the negative logic
+    GPIO_WritePins(WP_GPIO, WP_PINMASK, 0);             // Set to Low due to the negative logic
 }
 static inline void DisableWriteProtect(void) {
-    GPIO_WritePins(WP_GPIO,  0, WP_PINMASK);        // Set to High due to the negative logic
+    GPIO_WritePins(WP_GPIO,  0, WP_PINMASK);            // Set to High due to the negative logic
 }
 ///@}
 
@@ -187,8 +214,8 @@ static inline void DisableWriteProtect(void) {
  *  @brief  Enable EBI clock
  */
 static inline void EnableEBIClock(void) {
-    CMU->HFPERCLKDIV  |= CMU_HFPERCLKDIV_HFPERCLKEN;// Enable HFPERCLK
-    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_EBI;      // Enable EBI Clock
+    CMU->HFPERCLKDIV  |= CMU_HFPERCLKDIV_HFPERCLKEN;    // Enable HFPERCLK
+    CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_EBI;          // Enable EBI Clock
 }
 
 /**
@@ -279,6 +306,42 @@ void ConfigEBI(void) {
                      |EBI_NANDCTRL_EN;
 
 }
+
+
+/**
+ * @brief   Copy bach programm
+ *
+ * @note    Copy from one page to another without external access
+ *
+ * @note    It uses a 4-step procedure
+ *
+ *          1. Use READ_A command ot get a certain page to the Page Buffer;
+ *             Address must be written into the NAND device
+               It will copy 528 bytes to the Page Buffer
+ *          2. Wait until device is ready (RB=0)
+ *          3. Send the COPY_BACK command (0x8A).
+ *             Send the address.
+ *             Send command 0x10
+ *          4. Send command 0x70 to get SR0
+ *          5. Confirm operation by sending CONFIRM command ????!??!??!
+ *
+ *  @note
+ *          In a 256 Mbyte device the 24th bit must be the same
+ *
+ *          | Density   |   Same address bit   |
+ *          |-----------|----------------------|
+ *          |  128 MB   |       A23            |
+ *          |  256 MB   |       A24            |
+ *          |  512 MB   |       A25            |
+ *          | 1024 MB   |       A25,A26        |
+ */
+static int
+Copyback(int param) {
+
+
+    return 0;
+}
+
 
 /**
  *  @brief  Get ECC Error Information
@@ -390,7 +453,6 @@ int NAND_Init(void) {
     EnableNANDPower();
     EnableNANDDevice();
 
-
     return 0;
 
 }
@@ -405,7 +467,6 @@ int NAND_Init(void) {
 int NAND_WritePage(uint32_t pageaddr, uint8_t *data) {
 
     DisableWriteProtect();
-
     EnableWriteProtect();
 
     return 0;
@@ -422,4 +483,97 @@ int NAND_ReadPage(uint32_t pageaddr, uint8_t *data) {
 
 
     return 0;
+}
+
+
+/**
+ * @brief  YAFFS Hardware Interface
+ */
+
+
+/**
+ * @brief  Write a chunk into flash
+ *
+ * @note   This function writes the specified chunk data and oob/spare data to flash.
+ *         This function should return YAFFS_OK on success or YAFFS_FAIL on failure.
+ *         If this is a Yaffs2 device, or Yaffs1 with use_nand_ecc set, then this function
+ *         must take care of any ECC that is required.
+ */
+int DRIVE_write_chunk(struct yaffs_dev *dev, int nand_chunk,
+            const u8 *data, int data_len,
+            const u8 *oob, int oob_len) {
+
+    return YAFFS_OK;
+}
+
+/**
+ *  @brief  Read function
+ *
+ *  @note  This function reads the specified chunk data and oob/spare data from flash.
+ *         This function should return YAFFS_OK on success or YAFFS_FAIL on failure.
+ *         If this is a Yaffs2 device, or Yaffs1 with use_nand_ecc set, then this function
+ *         must take care of any ECC that is required and set the ecc_result.
+ */
+int DRIVE_read_chunk(struct yaffs_dev *dev, int nand_chunk,
+            u8 *data, int data_len,
+            u8 *oob, int oob_len,
+            enum yaffs_ecc_result *ecc_result) {
+
+    return YAFFS_OK;
+}
+
+
+/**
+ *  @brief  Erase function
+ *
+ *  @note   This function erases the specified block. This function should return YAFFS_OK
+ *          on success or AFFS_FAIL on failure.
+ */
+int DRIVE_erase(struct yaffs_dev *dev, int block_no) {
+
+    return YAFFS_OK;
+}
+
+
+/**
+ *  @brief  Mark a bad block
+ *
+ *  @note   This function is only required for Yaffs2 mode. It marks a block bad.
+ */
+int DRIVE_mark_bad(struct yaffs_dev *dev, int block_no) {
+
+    return YAFFS_OK;
+}
+
+
+/**
+ *  @brief  Check is a sector is a a bad block
+ *
+ *  @note   This function is only required for Yaffs2 mode. It check if it is bad.block.
+ */
+int DRIVE_check_bad(struct yaffs_dev *dev, int block_no) {
+
+    return YAFFS_OK;
+}
+
+
+/**
+ *  @brief  Initialization
+ *
+ *  @note   This function provides hooks for initialising the flash driver
+ */
+int DRIVE_initialise(struct yaffs_dev *dev) {
+
+    return YAFFS_OK;
+}
+
+
+/**
+ *  @brief  De-initialization
+ *
+ *  @note   This function provides hooks for deinitialising the flash driver
+ */
+int DRIVE_deinitialise(struct yaffs_dev *dev) {
+
+    return YAFFS_OK;
 }

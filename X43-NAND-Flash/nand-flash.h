@@ -15,11 +15,16 @@
  *
  */
 
-#define NAND_CAPACITY              (32*1024L*1024L)
-#define NAND_PAGESIZE              (512L)
-#define NAND_BLOCKSIZE             (32*NAND_PAGESIZE)
-#define NAND_PAGECOUNT             (NAND_CAPACITY/NAND_PAGESIZE)
-#define NAND_PAGEADDRMASK          ((NAND_PAGECOUNT-1)<<9)
+
+/**
+ *  @brief  NAND features
+ */
+#define NAND_CAPACITY                           (32*1024L*1024L)
+#define NAND_PAGESIZE                           (512L)
+#define NAND_SPARESIZE                          (16L)
+#define NAND_BLOCKSIZE                          (32*NAND_PAGESIZE)
+#define NAND_PAGECOUNT                          (NAND_CAPACITY/NAND_PAGESIZE)
+#define NAND_PAGEADDRMASK                       ((NAND_PAGECOUNT-1)<<9)
 
 
 
