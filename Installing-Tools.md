@@ -308,10 +308,11 @@ for example, $HOME/Downloads. Linux distributions have an special
 directory for the installation of packages outside the package manager
 used by the distribution. Generally it is the /opt directory.
 
-    # Unpack int cd /opt/ tar -xvJf
-    $HOME/Downloads/gcc-arm-none-eabi-XXXXX-x86_64-linux.tar.bz2
-    # Change name to a name without version information mv
-    gcc-arm-none-eabi-XXXXX-x86_64 /opt/gcc-arm-none-eabi
+    # Unpack int
+    cd /opt/
+    tar -xvJf #DOWNLOADDIR/arm-gnu-toolchain-<Release Version>-<Host>-<Target Triple>.tar.xz
+    # Change name to a name without version information
+    mv g arm-gnu-toolchain-<Release Version>-<Host>-<Target Triple> /opt/gcc-arm-none-eabi
 
 The name was change to a name without version information, in order to
 avoid extra work, when upgrading the toolchain.
@@ -354,10 +355,9 @@ correct folder to PATH.
 The files needed for development for a specific microcontroller are:
 
     • headers: that define the registers to access the hardware.
-    • library files: libraries needed by gcc (can be superseded by
-    the ones in the toolchain) • start files: contains initialization
-    routines and interrupt vectors.  • linker script: instructs the
-    gcc how to correctly build the program
+    • library files: libraries needed by gcc (can be superseded by the ones in the toolchain)
+    • start files: contains initialization routines and interrupt vectors.
+    • linker script: instructs the gcc how to correctly build the program
 
 They are contained (and a lot more) in a Software Development Kit
 (SDK), called *Gecko_SDK*, provided the Silicon Labs. For a while,
@@ -420,7 +420,7 @@ parameter. During compilation the correct file will be included. This
 is the approach followed in the projects.
 
 There is other header file, called em_chip.h locate in the
-Gecko_SDK/platform/emlib/inc folder that defines the CHIP_Init
+Gecko\_SDK/platform/emlib/inc folder that defines the CHIP_Init
 function. This function must be called at the very beginning and it
 corrects some bugs in core implementation. Since it calls other header
 files from the same folder, a better idea is to add this folder to the
@@ -473,9 +473,9 @@ create a debug session.
 
 In Windows, there is always the possibility to
 
-* Install all packages directy in Windows * Use a virtual machine with a
-Linux distribution and install the linux packages * Install the Windows
-Subsystem for Linux (WSL/WSL2)
+* Install all packages directy in Windows
+* Use a virtual machine with a Linux distribution and install the linux packages
+* Install the Windows Subsystem for Linux (WSL/WSL2)
 
 The approach shown here, is to install Windows versions of the different
 tools.
@@ -483,8 +483,7 @@ tools.
 Recent version of the GNU Arm Toolchain demands the installation
 of the [mingW-64](https://www.mingw-w64.org/) package.  Them *mingw-64*
 is a successor of an old package called [mingw](https://mingw.osdn.io),
-that adds to windows machines
-  support for GNU tools. It includes
+that adds to windows machines support for GNU tools. It includes
 
 ## 9.2 Install MingW-64
 
@@ -514,14 +513,12 @@ variable and select it. Click Edit. If the PATH environment variable does
 not exist, click New.
 4.  In the Edit System Variable (or New System Variable) window, clock the New button (or if it
 is wrong defined, Edit button).
-5.  Enter the full path of the folder where the software was
-installed and click the OK button.
+5.  Enter the full path of the folder where the software was installed and click the OK button.
 6.	Close all windows opened for the editing and all command prompt windows.
 7.  Open a command prompt window and enter the program name and press Enter. This command prompt
 window must be open AFTER the change of the PATH variable, so it can get the new value.
-9.	A message like “program is not recognized as
-an internal or external program.” shows that the PATH is not correctly
-defined and the procedure must be repeated with the correct path.
+9.	A message like “program is not recognized as an internal or external program.” shows that
+the PATH is not correctly defined and the procedure must be repeated with the correct path.
 
 
 ## 9.4 Installing make
