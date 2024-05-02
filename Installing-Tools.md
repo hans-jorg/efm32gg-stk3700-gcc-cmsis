@@ -19,6 +19,7 @@ INSTALLING TOOLS TO COMPILE AND RUN THE PROJECTS
 12. [Debug Session](#debug-session)
 A. [Determining stack usage](#determining-stack-usage)
 
+\pagebreak
 
 # 1 Introduction
 
