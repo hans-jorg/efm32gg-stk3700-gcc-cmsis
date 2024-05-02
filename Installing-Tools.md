@@ -227,7 +227,7 @@ metal systems, the prefix is *arm-none-eabi-*
 | strings         | print the sequences of printable characters in files |
 | strip           | discard symbols and other data from object files     |
 
-## 7. Application Binary Interface (ABI)
+## 7.3 Application Binary Interface (ABI)
 
 There are many ABIs sponsored by ARM:
 
@@ -239,6 +239,26 @@ In the EABI, the parameters in and out of a function are in the integer register
 When a processor has a hardware floating point unit, optionally the parameter can be passed using
 the floating point registers.
 
+## Contents
+
+The toolchain is built of the packages listed below.
+
+
+|  Package     | Description                                                    |
+|--------------|----------------------------------------------------------------|
+| GCC          | GNU C compiler suite                                           |
+| glibc        | glibc for Linux                                                |
+| newlib       | libc for embedded systems                                      |
+| newlib-nano  | Smaller version of newlib                                      |
+| binutils     | Utilities for GCC                                              |
+| GDB          | GNU Debugger                                                   |
+| libexpat     | ML parsing C library                                           |
+| Linux Kernel | Linux kernel                                                   |
+| libgmp       | Multiprecision arithmetic library                              |
+| libisl       | manipulating sets and relations of integer points bounded      |
+| libmpfr      | multiple precision floating-point computation                  |
+| libmpc       | multiple precision complex floating-point library              |
+| libiconv     | library for managing character encoding                        |
 
 
 # 8 Installing procedure for Linux machines
@@ -259,9 +279,12 @@ it is needed to install the xz-utils package.
 
     sudo apt install xz-utils
 
-TODO : liblzma Unpacker tool XZ files for Linux.  Python v3.8 is needed
-by GDB M
+Two additional packages are needed too: liblzma and Python3.8 (for GDB).
 
+    sudo apt install liblzma5 iblzma-dev
+    sudo apt install python3
+
+[//] TODO: How to install a specific version (3.8)of Python???
 
 ## 8.2 Installing the compiler toolchain
 
@@ -285,7 +308,7 @@ for example, $HOME/Downloads. Linux distributions have an special
 directory for the installation of packages outside the package manager
 used by the distribution. Generally it is the /opt directory.
 
-    # Unpack int cd /opt/ tar -xvf
+    # Unpack int cd /opt/ tar -xvJf
     $HOME/Downloads/gcc-arm-none-eabi-XXXXX-x86_64-linux.tar.bz2
     # Change name to a name without version information mv
     gcc-arm-none-eabi-XXXXX-x86_64 /opt/gcc-arm-none-eabi
@@ -298,7 +321,10 @@ the need of a full path. This is done by editing the $HOME/.bashrc file
 and adding the following lines to the end.
 
 
-    # # Embedded ARM GCC # ARMGCC_HOME=/opt/gcc-arm-none-eabi
+    #
+    # Embedded ARM GCC
+    #
+    ARMGCC_HOME=/opt/gcc-arm-none-eabi
     PATH=$ARMGCC_HOME/bin:$PATH
 
 After installing the toolchain, the following applications are available
