@@ -71,14 +71,14 @@ The EMF32GG-STK3700 Development Board
 
 The EMF32GG-STK3700 is a development board featuring a EFM32GG990F1024 MCU (a Giant Gecko microcontroller) with 1 MB Flash memory and 128 kB RAM. It has also the following peripherals:
 
--   160 segment LCD
--   2 user buttons
--   2 user LEDs
--   1 Touch slider
--   Ambient Light Sensor and inductive-capacitive metal sensor
--   EFM32 OPAMP footprint
--   32 MB NAND flash
--   USB interface for Host/Device/OTG
+*   160 segment LCD
+*   2 user buttons
+*   2 user LEDs
+*   1 Touch slider
+*   Ambient Light Sensor and inductive-capacitive metal sensor
+*   EFM32 OPAMP footprint
+*   32 MB NAND flash
+*   USB interface for Host/Device/OTG
 
 It has a 20 pin expansion header, breakout pads for easy access to I/O pins, different alternatives for power sources including USB and a 0.03 F Super Capacitor for backup power domain.
 
@@ -153,7 +153,7 @@ In all examples, a direct access to registers approach was used. It means that n
 -    12-UART-Polling: Simple UART interface using polling
 -    13-UART-Interrupt: Advanced UART interface using interrupts and buffers
 -    14-Mini-stdio: A simple and small module with some stdio routines
--    15-Using-Newlib: Using the newlib (part of ARM GNU C Compiler) 
+-    15-Using-Newlib: Using the newlib (part of ARM GNU C Compiler)
 -    16-Using-a-Time-Triggered-Approach: Using Pont [PTTES](https://www.safetty.net/publications/pttes) approach
 -    17-Using-a-Better-Time-Triggered-Approach: Using Pont [ERES](https://www.safetty.net/publications/the-engineering-of-reliable-embedded-systems-second-edition) approach
 -    18-Using-Protothreads: Using [Dunkels](http://dunkels.com/adam/pt/) protothreads
@@ -179,5 +179,5 @@ OBS:
 1.   The hardware decoding in 29-Hardware-based-Quadrature-Decoding is
      not working well. Probably the encoder is too noisy. I will try with
      a better one.
-2.    **Projects marked with an asterisk are unfinished!!!** 
+2.    **Projects marked with an asterisk are unfinished!!!**
 3.    **Projects marked with a double asterisk are in a very initial stage**
