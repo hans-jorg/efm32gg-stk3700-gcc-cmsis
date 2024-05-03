@@ -142,10 +142,23 @@ Highly recommended are the following tools:
 3. An text editor like gedit (Linux), Notepad++(Windows).
 
 
-To debug an application, a debugger is needed and it is part of the
-GNU C toolchain. It has a very crude CLI (Command Line Interface (CLI).
-So, an interface with a graphic User Interface (GUI) for the debugger
-is more comfortable.
+To debug an application, a debugger is needed and one is part of the
+GNU ARM toolchain. It is called GDB and has a very crude command line interface (CLI).
+It has also a Text User Interface (TUI), that is better, but there are some Graphic User
+Interface (GUI) for the GDB. A list of free graphic user interface for GDB is shown in the table
+ below.
+
+| Application         | OS               | Latest |  Obs                                          |
+|---------------------|------------------|--------|-----------------------------------------------|
+| GNU ddd             | Linux            | 2023   | Old style but it works                        |
+| Nemiver             | Linux            | 2015   | https://wiki.gnome.org/Apps/Nemiver           |
+| Gede                | Linux/Mac/BSD    | 2024   | https://gede.dexar.se/                        |
+| Seer                | Linux            | 2024   | https://sourceforge.net/projects/seer-gdb     |
+| gdbgui              | Browser based    |    ?   | https://www.gdbgui.com/                       |
+| WinGDB              | Windows          |    ?   | At Visual Studio Marketplace                  |
+| Ozone               | Windows/Linux    | 2024   | At [Segger](www.segger.com)                   |
+
+
 
 Optionally, one can use an Integrated Developing Environments (IDE)
 instead of an text editor.
@@ -236,9 +249,9 @@ There are many ABIs sponsored by ARM:
 * EABI (Embedded Application Binary Interface):
 * EABIHF (Application Binary Interface for devices with hardware floating point)
 
-In the EABI, the parameters in and out of a function are in the integer registers.
-When a processor has a hardware floating point unit, optionally the parameter can be passed using
-the floating point registers.
+In case of the EABI, the parameters in and out of a function are  transfered in the integer
+ registers. When a processor has a hardware floating point unit, by using the EABIHF ABI optionally
+  the parameter can be passed using the floating point registers.
 
 ## Contents
 
@@ -601,6 +614,9 @@ configuration.
 
 The next step is to add the folder to the PATH as described in section
 9.2.
+
+> There is a script file *gccvars.bat*  that sets the environment variables.
+
 
 ## 9.6 Files specific to the EFM32
 
@@ -990,5 +1006,214 @@ It is possible to generate the callgraph using cflow
     ,${INCLUDEPATH}) $(SRCFILES) 2>&1) | egrep -v "^cflow"
 
 And the use the cflow.py to generate the report.
+
+
+# Annex B - Architecture options
+
+Cortex-A
+Cortex-M
+Cortex-R
+
+> Not all combinations CPU, EXT and FPU are valid.
+
+
+| Parameters                   |                                                                   |
+|------------------------------|-------------------------------------------------------------------|
+| -mthumb                      | Generate code for Thumb state                                     |
+| -mcpu=CPU+EXT                |                                                                   |
+| -mfpu=FPU                    |                                                                   |
+| -mfloat-abi=                 |                                                                   |
+|
+
+
+| CPU options                  |                                                                   |
+|------------------------------|-------------------------------------------------------------------|
+| cortex-a5                    |
+| cortex-a7                    |
+| cortex-a8                    |
+| cortex-a9                    |
+| cortex-a12                   |
+| cortex-a15                   |
+| cortex-a17                   |
+| cortex-a32                   |
+| cortex-a35                   |
+| cortex-a53                   |
+| cortex-a55                   |
+| cortex-a57                   |
+| cortex-a72                   |
+| cortex-a73                   |
+| cortex-a75                   |
+| cortex-a76                   |
+| cortex-a76ae                 |
+| cortex-a77                   |
+| cortex-a78                   |
+| cortex-a78ae                 |
+| cortex-a78c                  |
+| cortex-a710                  |
+| cortex-r4                    |
+| cortex-r4f                   |
+| cortex-r5                    |
+| cortex-r7                    |
+| cortex-r8                    |
+| cortex-r52                   |
+| cortex-r52plus               |
+| cortex-m0                    |
+| cortex-m0plus                |
+| cortex-m1                    |
+| cortex-m3                    |
+| cortex-m4                    |
+| cortex-m7                    |
+| cortex-m23                   |
+| cortex-m33                   |
+| cortex-m35p                  |
+| cortex-m55                   |
+| cortex-m85                   |
+| cortex-x1                    |
+| cortex-x1c                   |
+| cortex-m1.small-multiply     |
+| cortex-m0.small-multiply     |
+| cortex-m0plus.small-multiply |
+
+OBS: Obsolete versions are ommitted.
+
+| float-ABI options            |                                                                                     |
+|------------------------------|-------------------------------------------------------------------------------------|
+| soft                         |                                                                                     |
+| softfp                       |                                                                                     |
+| hard                         |                                                                                     |
+
+
+| FPU options                  |                                                                                     |
+|------------------------------|-------------------------------------------------------------------------------------|
+| auto                         |
+| vfpv2                        |
+| vfpv3                        |
+| vfpv3-fp16                   |
+| vfpv3-d16                    |
+| vfpv3-d16-fp16               |
+| vfpv3xd                      |
+| vfpv3xd-fp16                 |
+| neon-vfpv3                   |
+| neon-fp16                    |
+| vfpv4                        |
+| vfpv4-d16                    |
+| fpv4-sp-d16                  |
+| neon-vfpv4                   |
+| fpv5-d16                     |
+| fpv5-sp-d16                  |
+| fp-armv8                     |
+| neon-fp-armv8                |
+| crypto-neon-fp-armv8         |
+|                              | OBS: Note that ‘neon’ is an alias for ‘neon-vfpv3’ and ‘vfp’ is an alias for ‘vfpv2’ |
+
+
+| EXT options   | Description                                                                                  |
+|---------------|----------------------------------------------------------------------------------------------|
+| ‘+nodsp’      | Disable the DSP instructions. Also disable the M-Profile Vector Extension (MVE) integer and single precision floating-point instructions  |
+| ‘+nopacbti’   | Disable the Pointer Authentication and Branch Target Identification Extension                |
+| ‘+nomve’      | Disable the M-Profile Vector Extension (MVE) integer and single precision floating-point instructions |
+| ‘+nomve.fp’   | Disable the M-Profile Vector Extension (MVE) single precision floating-point instructions    |
+
+| ‘+nofp’       | Disables the floating-point instructions                                                     |
+| ‘+nofp.dp’    | Disables the double-precision component of the floating-point instructions                   |
+| ‘+nosimd’     | Disables the SIMD (but not floating-point) instructions                                      |
+
+Examples with no floating-point and Advanced SIMD instructions
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m7+nofp
+    $ arm-none-eabi-gcc -mcpu=cortex-r5+nofp -mthumb
+    $ arm-none-eabi-gcc -mcpu=cortex-a53+nofp -mthumb
+    $ arm-none-eabi-gcc -mcpu=cortex-a57 -mfloat-abi=soft -mthumb
+
+Examples with single-precision floating-point with soft-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m7+nofp.dp -mfloat-abi=softfp
+    $ arm-none-eabi-gcc -mcpu=cortex-r5+nofp.dp -mfloat-abi=softfp -mthumb
+
+Examples with single-precision floating-point with hard-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m7+nofp.dp -mfloat-abi=hard
+    $ arm-none-eabi-gcc -mcpu=cortex-r5+nofp.dp -mfloat-abi=hard -mthumb
+
+Examples with double-precision floating-point with soft-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m7 -mfloat-abi=softfp
+    $ arm-none-eabi-gcc -mcpu=cortex-r5 -mfloat-abi=softfp -mthumb
+
+Examples with double-precision floating-point with hard-float ABI
+    $ arm-none-eabi-gcc -mcpu=cortex-m7 -mfloat-abi=hard
+    $ arm-none-eabi-gcc -mcpu=cortex-r5 -mfloat-abi=hard -mthumb
+
+Example with floating-point and Advanced SIMD instructions with soft-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-a53 -mfloat-abi=softfp -mthumb
+
+Example with floating-point and Advanced SIMD instructions with hard-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-a53 -mfloat-abi=hard -mthumb
+
+Example with MVE and floating-point with soft-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m55 -mfloat-abi=softfp
+
+Example with MVE and floating-point with hard-float ABI
+
+    $ arm-none-eabi-gcc -mcpu=cortex-m55 -mfloat-abi=hard
+
+
+# Annex C - Libraries supported
+
+There are many versions of the library
+
+| M | ARM version              |  EABI   |                                                                                               |
+|---|--------------------------|---------|-----------------------------------------------------------------------------------------------|
+| A | v5te                     | softfp  | -marm     -march=armv5te+fp                   -mfloat-abi=softfp                              |
+| A | v5te                     | hard    | -marm     -march=armv5te+fp                   -mfloat-abi=hard                                |
+| T |                          | nofp    | -mthumb                                       -mfloat-abi=soft                                |
+| T | v7                       | nofp    | -mthumb   -march=armv7                        -mfloat-abi=soft                                |
+| T | v7+fp                    | softfp  | -mthumb   -march=armv7+fp                     -mfloat-abi=softfp                              |
+| T | v7+fp                    | hard    | -mthumb   -march=armv7+fp                     -mfloat-abi=hard                                |
+| T | v7-r+fp.sp               | softfp  | -mthumb   -march=armv7-r+fp.sp                -mfloat-abi=softfp                              |
+| T | v7-r+fp.sp               | hard    | -mthumb   -march=armv7-r+fp.sp                -mfloat-abi=hard                                |
+| T | v7-a                     | nofp    | -mthumb   -march=armv7-a                      -mfloat-abi=soft                                |
+| T | v7-a+fp                  | softfp  | -mthumb   -march=armv7-a+fp                   -mfloat-abi=softfp                              |
+| T | v7-a+fp                  | hard    | -mthumb   -march=armv7-a+fp                   -mfloat-abi=hard                                |
+| T | v7-a+simd                | softfp  | -mthumb   -march=armv7-a+simd                 -mfloat-abi=softfp                              |
+| T | v7-a+simd                | hard    | -mthumb   -march=armv7-a+simd                 -mfloat-abi=hard                                |
+| T | v7ve+simd                | softfp  | -mthumb   -march=armv7ve+simd                 -mfloat-abi=softfp                              |
+| T | v7ve+simd                | hard    | -mthumb   -march=armv7ve+simd                 -mfloat-abi=hard                                |
+| T | v8-a                     | nofp    | -mthumb   -march=armv8-a                      -mfloat-abi=soft                                |
+| T | v8-a+simd                | softfp  | -mthumb   -march=armv8-a+simd                 -mfloat-abi=softfp                              |
+| T | v8-a+simd                | hard    | -mthumb   -march=armv8-a+simd                 -mfloat-abi=hard                                |
+| T | v6-m                     | nofp    | -mthumb   -march=armv6s-m                     -mfloat-abi=soft                                |
+| T | v7-m                     | nofp    | -mthumb   -march=armv7-m                      -mfloat-abi=soft                                |
+| T | v7e-m                    | nofp    | -mthumb   -march=armv7e-m                     -mfloat-abi=soft                                |
+| T | v7e-m+fp                 | softfp  | -mthumb   -march=armv7e-m+fp                  -mfloat-abi=softfp                              |
+| T | v7e-m+fp                 | hard    | -mthumb   -march=armv7e-m+fp                  -mfloat-abi=hard                                |
+| T | v7e-m+dp                 | softfp  | -mthumb   -march=armv7e-m+fp.dp               -mfloat-abi=softfp                              |
+| T | v7e-m+dp                 | hard    | -mthumb   -march=armv7e-m+fp.dp               -mfloat-abi=hard                                |
+| T | v8-m.base                | nofp    | -mthumb   -march=armv8-m.base                 -mfloat-abi=soft                                |
+| T | v8-m.main                | nofp    | -mthumb   -march=armv8-m.main                 -mfloat-abi=soft                                |
+| T | v8-m.main+fp             | softfp  | -mthumb   -march=armv8-m.main+fp              -mfloat-abi=softfp                              |
+| T | v8-m.main+fp             | hard    | -mthumb   -march=armv8-m.main+fp              -mfloat-abi=hard                                |
+| T | v8-m.main+dp             | softfp  | -mthumb   -march=armv8-m.main+fp.dp           -mfloat-abi=softfp                              |
+| T | v8-m.main+dp             | hard    | -mthumb   -march=armv8-m.main+fp.dp           -mfloat-abi=hard                                |
+| T | v8.1-m.main+mve          | hard    | -mthumb   -march=armv8.1-m.main+mve           -mfloat-abi=hard                                |
+| T | v8.1-m.main+pacbti/bp    | nofp    | -mthumb   -march=armv8.1-m.main+pacbti        -mfloat-abi=soft   -mbranch-protection=standard |
+| T | v8.1-m.main+pacbti+fp/bp | softfp  | -mthumb   -march=armv8.1-m.main+pacbti+fp     -mfloat-abi=softfp -mbranch-protection=standard |
+| T | v8.1-m.main+pacbti+fp/bp | hard    | -mthumb   -march=armv8.1-m.main+pacbti+fp     -mfloat-abi=hard   -mbranch-protection=standard |
+| T | v8.1-m.main+pacbti+dp/bp | softfp  | -mthumb   -march=armv8.1-m.main+pacbti+fp.dp  -mfloat-abi=softfp -mbranch-protection=standard |
+| T | v8.1-m.main+pacbti+dp/bp | hard    | -mthumb   -march=armv8.1-m.main+pacbti+fp.dp  -mfloat-abi=hard   -mbranch-protection=standard |
+| T | v8.1-m.main+pacbti+mve/bp| hard    | -mthumb   -march=armv8.1-m.main+pacbti+mve    -mfloat-abi=hard   -mbranch-protection=standard |
+
+
+For bare-metal there are two versions of the newlib library:
+
+* newlib:
+* newlib-nano: Smaller version without support for floating point data
+
+To use the *newlib-nano* the library libc.a must be replaced by libc_nano.a and libg.a to
+libg_nano.a. This can be done by adding --specs=nano.specs in the command line.
+
 
 # References
