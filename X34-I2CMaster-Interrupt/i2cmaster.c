@@ -10,8 +10,12 @@
 #include  <stdint.h>
 #include "em_device.h"
 #include "clock_efm32gg2.h"
+#include "gpio.h"
 #include "i2cmaster.h"
 
+#ifndef I2CINTLEVEL
+#define I2CINTLEVEL    (5)
+#endif
 
 /**
  * @brief Data is transfered initially to a static are. So the original data can be free'd
@@ -25,6 +29,11 @@
 #ifndef I2C_OUTPUT_BUFFER_SIZE
 #define I2C_OUTPUT_BUFFER_SIZE              (20)
 #endif
+
+/**
+ * @brief   BIT macro generates a bitmask from a given bit number
+ */
+#define BIT(N)                          (1UL<<(N))
 
 
 /**
@@ -353,6 +362,11 @@ TransferInfo *ti;
  */
 static int I2CMaster_EnableClock(I2C_TypeDef *i2c) {
 
+    /* Enable peripheral clock and GPIO clock (needed for the I/O pins) */
+    CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCLK for GPIO
+
+    /* Enable specific I2C unit */
     if( i2c == I2C0 ) {
         CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_I2C0;
     } else if ( i2c == I2C1 ) {
@@ -363,6 +377,72 @@ static int I2CMaster_EnableClock(I2C_TypeDef *i2c) {
     return 0;
 }
 
+/**
+ *  @brief  Configuration table
+ *  @note   Pins selection for EFM32GG990F1024
+ *
+ * | Signal     | #0  | #1  | #2  | #3  | #4  | #5  | #6  |                                        |
+ * |------------|-----|-----|-----|-----|-----|-----|-----|----------------------------------------|
+ * | I2C0_SCL   | PA1 | PD7 | PC7 | PD15| PC1 | PF1 | PE13| I2C0 Serial Clock Line input / output  |
+ * | I2C0_SDA   | PA0 | PD6 | PC6 | PD14| PC0 | PF0 | PE12| I2C0 Serial Data input / output        |
+ * | I2C1_SCL   | PC5 | PB12| PE1 |     |     |     |     | I2C1 Serial Clock Line input / output  |
+ * | I2C1_SDA   | PC4 | PB11| PE0 |     |     |     |     | I2C1 Serial Data input / output        |
+ *
+ *  @note  It uses a very simple and unefficient linear table
+ */
+
+typedef struct {
+    I2C_TypeDef     *i2c;
+    uint8_t         loc;
+    GPIO_t          gpio;
+    uint8_t  sclpin;
+    uint8_t  sdapin;
+}   I2C_PinConfig_t;
+
+static I2C_PinConfig_t pinconf[] = {
+    /* I2C0 */
+    {   I2C0,   0,  GPIOA,  1,  0   },
+    {   I2C0,   1,  GPIOD,  7,  6   },
+    {   I2C0,   2,  GPIOC,  7,  6   },
+    {   I2C0,   3,  GPIOD, 15, 14   },
+    {   I2C0,   4,  GPIOC,  1,  0   },
+    {   I2C0,   5,  GPIOF,  1,  0   },
+    {   I2C0,   6,  GPIOE, 13, 12   },
+    /* I2C1 */
+    {   I2C1,   0,  GPIOC,  5,  4   },
+    {   I2C1,   1,  GPIOB, 12,  4   },
+    {   I2C1,   2,  GPIOE,  1,  0   },
+    /* End of table */
+    {      0,   0,      0,  0,  0   }
+};
+
+
+
+
+/**
+ * @brief   Configure pins according *loc* parameter
+ *
+ * @parms
+ *    i2c:     I2C unit
+ *    loc:     Location code for both (SCL and SDA) pins (See above)
+ *
+ */
+
+static int
+I2CMaster_ConfigPins(I2C_TypeDef *i2c,uint8_t loc) {
+I2C_PinConfig_t *p = pinconf;
+
+    while ( p->i2c ) {
+        if( p->i2c == i2c && p->loc == loc ) {
+            GPIO_ConfigPins(        p->gpio,
+                                    BIT(p->sdapin)|BIT(p->sclpin),
+                                    GPIO_MODE_WIREDANDDRIVEPULLUPFILTER);
+            return 0;
+        }
+
+    }
+    return -1;
+}
 
 /**
  * @brief   Initialize I2C unit as master
@@ -381,9 +461,20 @@ static int I2CMaster_EnableClock(I2C_TypeDef *i2c) {
  *
  */
 int I2CMaster_Init(I2C_TypeDef *i2c, uint32_t speed, uint8_t loc) {
+uint32_t irqn;
 
+    if( i2c == I2C0 ) {
+        irqn = I2C0_IRQn;
+    } else if ( i2c == I2C1 ) {
+        irqn = I2C1_IRQn;
+    } else {
+        return -1;
+    }
     // Enable clock for I2C peripheral
     I2CMaster_EnableClock(i2c);
+
+    /* Enable I2C Pins */
+    I2CMaster_ConfigPins(i2c,loc);
 
     /* Enable I2C_TypeDef peripheral */
     i2c->CTRL |= I2C_CTRL_EN;
@@ -402,6 +493,14 @@ int I2CMaster_Init(I2C_TypeDef *i2c, uint32_t speed, uint8_t loc) {
     /* Additional configuration */
     i2c->CTRL |= I2C_CTRL_AUTOSN;         /* Automatic STOP on NACK (Master only) */
     i2c->CTRL |= I2C_CTRL_AUTOACK;        /* Automatic STOP on NACK (Master only) */
+
+    /* Clear all interrupts */
+    i2c->IFC = (uint32_t) (-1);
+
+    /* Configure interrupts */
+    NVIC_SetPriority(irqn,I2CINTLEVEL);
+    NVIC_ClearPendingIRQ(irqn);
+    NVIC_EnableIRQ(irqn);
 
     return 0;
 }
