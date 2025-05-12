@@ -152,32 +152,35 @@ In all examples, a direct access to registers approach was used. It means that n
 -    11-Implementing-Debounce: Debouncing buttons
 -    12-UART-Polling: Simple UART interface using polling
 -    13-UART-Interrupt: Advanced UART interface using interrupts and buffers
--    14-Mini-stdio: A simple and small module with some stdio routines
--    15-Using-Newlib: Using the newlib (part of ARM GNU C Compiler)
--    16-Using-a-Time-Triggered-Approach: Using Pont [PTTES](https://www.safetty.net/publications/pttes) approach
--    17-Using-a-Better-Time-Triggered-Approach: Using Pont [ERES](https://www.safetty.net/publications/the-engineering-of-reliable-embedded-systems-second-edition) approach
--    18-Using-Protothreads: Using [Dunkels](http://dunkels.com/adam/pt/) protothreads
--    19-Using-FreeRTOS: Using [FreeRTOS](https://www.freertos.org/)
--    20-Using-FreeRTOS-with-Interrupts: Using [FreeRTOS](https://www.freertos.org/) and interrupts
--    21-Using-uC-OS2: Using [uc/OS2](https://github.com/weston-embedded/uC-OS2)
--    22-Using-uC-OS2-with-Interrupts:
--    23-Using-uC-OS3:
--    24-Using-uC-OS3-with-Interrupts:
--    25-Using-the-LCD: Using the onboard LCD (with a simple module)
--    26-Implementing-a-better-Newlib: More advanced implementation of newlib interface
--    27-Getting-Temperature: Showing the temperature from internal sensor
--    28-Software-based-Quadrature-Decoding: Reading the encoder with a state machine
--    29-Hardware-based-Quadrature-Decoding: Reading the encoder using HW timer
--    30-Using-the-Slider-Control: Using the on board slider
--    31-Generating-PWM-Signal: Generating PWM signals using HW timer
--    **X32-USB-Device-Barebone: USB interface using a register based API
--    **X33-Cleaning X33-USB-Device-TinyUSB: USB interface using a middleware
+-    \*\*X14-UART-DMA: UART using DMA
+-    15-Mini-stdio: A simple and small module with some stdio routines
+-    16-Using-Newlib: Using the newlib (part of ARM GNU C Compiler)
+-    17-Using-a-Time-Triggered-Approach: Using Pont [PTTES](https://www.safetty.net/publications/pttes) approach
+-    18-Using-a-Better-Time-Triggered-Approach: Using Pont [ERES](https://www.safetty.net/publications/the-engineering-of-reliable-embedded-systems-second-edition) approach
+-    19-Using-Protothreads: Using [Dunkels](http://dunkels.com/adam/pt/) protothreads
+-    20-Using-FreeRTOS: Using [FreeRTOS](https://www.freertos.org/)
+-    21-Using-FreeRTOS-with-Interrupts: Using [FreeRTOS](https://www.freertos.org/) and interrupts
+-    22-Using-uC-OS2: Using [uc/OS2](https://github.com/weston-embedded/uC-OS2)
+-    23-Using-uC-OS2-with-Interrupts:
+-    24-Using-uC-OS3:
+-    25-Using-uC-OS3-with-Interrupts:
+-    26-Using-the-LCD: Using the onboard LCD (with a simple module)
+-    27-Implementing-a-better-Newlib: More advanced implementation of newlib interface
+-    28-Getting-Temperature: Showing the temperature from internal sensor
+-    29-Software-based-Quadrature-Decoding: Reading the encoder with a state machine
+-    30-Hardware-based-Quadrature-Decoding: Reading the encoder using HW timer
+-    31-Using-the-Slider-Control: Using the on board slider
+-    32-Generating-PWM-Signal: Generating PWM signals using HW timer
+-    \*\*X33-I2CMaster-Polling
+-    \*\*X34-I2CMaster-Interrupt
+-    \*\*X41-USB-Device-Barebone
+-    \*\*X42-USB-Device-TinyUSB: USB interface using a middleware
+-    \*\*X43-NAND-Flash
 
-
-OBS:
+Notes:
 
 1.   The hardware decoding in 29-Hardware-based-Quadrature-Decoding is
      not working well. Probably the encoder is too noisy. I will try with
      a better one.
-2.    **Projects marked with an asterisk are unfinished!!!**
-3.    **Projects marked with a double asterisk are in a very initial stage**
+2.    Projects marked with an asterisk are unfinished!!!
+3.    Projects marked with a double asterisk are in a very initial stage
