@@ -108,7 +108,7 @@ PROTOTHREADDIR=../../../pt-1.4
 # CMSIS header files folders (ARM and manufacturer specific)
 #
 # Use CMSIS inside Gecko SDK
-CMSISDIR=${GECKOSDKDIR}/platform/CMSIS
+CMSISDIR=${GECKOSDKDIR}/platform/CMSIS/Core
 CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 
 
