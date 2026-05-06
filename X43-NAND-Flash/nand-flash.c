@@ -124,12 +124,25 @@
  *
  *  @note  A8 is defined by the command READ A (A8=0)
  *         and READ B (A8=1)
+ *
+ *  @note  They should be defined as function of the parameters in nand-flash.h
  */
+///@{
+#define HALFPAGEMASK                (0xFF)
+#define PAGEMASK                    (0x1FF)
+#define BLOCKMASK                   (0x3FFF)
+#define ADDRESSMASK                 NAND_MAXADDRESS
+#define GETCOLUMNADDRESS(A)         ((A)&0x1FF)
 
-#define GETCOLADDRESS(A)   ((A)&0x1FF)
-#define XGETROWADDRESS(A)   ((A)&0x7FFFE00)
-#define XGETBLOCKADDRESS(A) ((A)&0x7FFC000)
-#define IsRowAddress(A)    (GETCOLADDRESS(A)==0)
+#define ALIGNTOHALFPAGEADDRESS(A)   ((A)&0x1FFFF00)
+#define ALIGNTOPAGEADDRESS(A)       ((A)&0x1FFFE00)
+//#define ALIGNTOROWADDRESS(A)        ((A)&0x1FFFE00)
+#define ALIGNSHORTADDRESS(A)        ((A)&0x1FFC000)
+
+#define IsPageAddress(A)             (((A)&PAGEMASK)==0)
+#define IsBlockAddress(A)           (((A)&BLOCKMASK)==0)
+///@}
+
 /**
  * @brief Pin Configuration for GPIO
  *
@@ -217,7 +230,12 @@
  *
  *  @note   There are two place holders in the table.
  *          * FULLADDRESS
- *          * BLOCKADDRESS
+ *          * SHORTADDRESS
+ *          They shows how to send the address. The short address
+ *          is used to address a block. Important note: The A8
+ *          bit is not sent, because the command used already informs
+ *          its value. *Read A* means A8=0, *Read B* means A8=1. For
+ *          *Read C* it is a don't care.
  *
  *  @note   They must be set to values not used by the NAND Flash
  *          as command
@@ -233,18 +251,22 @@
 #define CMD_READC                               2
 #define CMD_READSIGNATURE                       3
 #define CMD_READSTATUS                          4
-#define CMD_PROGRAM                             5
-#define CMD_COPYBACK                            6
-#define CMD_BLOCKERASE                          7
-#define CMD_RESET                               8
+#define CMD_PROGRAMA                            5
+#define CMD_PROGRAMB                            6
+#define CMD_PROGRAMC                            7
+#define CMD_COPYBACK1                           8
+#define CMD_COPYBACK2                           9
+#define CMD_ERASEBLOCK                         10
+#define CMD_RESET                              11
+#define CMD_CONFIRM                            12
 
 ///@{
 /*
  *  @note  These symbols are used as place holders.
  *         They must be different from the any code used by the DEVICE
  */
-#define FULLADDRESS    (0xFA)
-#define BLOCKADDRESS   (0xBA)
+#define FULLADDRESS                          (0xFA)
+#define SHORTADDRESS                         (0x5A)
 ///@}
 
 typedef struct {
@@ -255,15 +277,19 @@ typedef struct {
 
 /// NAND Flash commands table
 const Command_TypeDef CommandList[] = {
-    {   2, (uint8_t []) {0x00, FULLADDRESS } },// Read A
-    {   2, (uint8_t []) {0x01, FULLADDRESS } },// Read B
-    {   2, (uint8_t []) {0x50, FULLADDRESS } },// Read C/Spare
-    {   1, (uint8_t []) {0x90} },              // Read Signature
-    {   1, (uint8_t []) {0x70} },              // Read Status
-    {   2, (uint8_t []) {0x80, 0x10} },        // ??Program
-    {   3, (uint8_t []) {0x00, 0x8A, 0x10} },  // ??Copy back
-    {   2, (uint8_t []) {0x60, 0xD0} },        // ??Block erase
-    {   1, (uint8_t []) {0xFF} },              // Reset
+    {   2, (uint8_t []) {0x00, FULLADDRESS } },          //  0: Read A
+    {   2, (uint8_t []) {0x01, FULLADDRESS } },          //  1: Read B
+    {   2, (uint8_t []) {0x50, FULLADDRESS } },          //  2: Read C/Spare
+    {   1, (uint8_t []) {0x90} },                        //  3: Read Signature
+    {   1, (uint8_t []) {0x70} },                        //  4 Read Status
+    {   2, (uint8_t []) {0x00, 0x80, FULLADDRESS} },     //  5: Program A
+    {   2, (uint8_t []) {0x01, 0x80, FULLADDRESS} },     //  6: Program B
+    {   2, (uint8_t []) {0x50, 0x80, FULLADDRESS} },     //  7: Program C
+    {   3, (uint8_t []) {0x00, FULLADDRESS, 0x8A} },     //  8: Copy back 1
+    {   2, (uint8_t []) {FULLADDRESS, 0x10} },           //  9: Copy back 2
+    {   3, (uint8_t []) {0x60, SHORTADDRESS, 0xD0} },    // 10: Erase block
+    {   1, (uint8_t []) {0xFF} },                        // 11: Reset
+    {   1, (uint8_t []) {0x10} }                         // 12: Confirm
 };
 
 ///@}
@@ -312,6 +338,7 @@ void nano_delay(uint32_t n) {
     }
 }
 
+/*********************** Command routine **************************************/
 
 /**
  *  @brief  Send Command
@@ -329,7 +356,7 @@ SendCommand(int32_t cmd, uint32_t address) {
             // Only for 512 MB and 1 GB devices
             // address >>= 8;
             // NAND_ADDRESS = address&0xFF;
-        } else if ( command == BLOCKADDRESS ) {
+        } else if ( command == SHORTADDRESS ) {
             address >>= 9;
             NAND_ADDRESS = address&0xFF;
             address >>= 8;
@@ -340,6 +367,7 @@ SendCommand(int32_t cmd, uint32_t address) {
         } else {
             NAND_COMMAND = command;
         }
+
     }
 
     int32_t rc = NAND_WaitUntilReadyPin();
@@ -348,86 +376,7 @@ SendCommand(int32_t cmd, uint32_t address) {
     return rc; // Nonzero if OK
 }
 
-
-///@{
-/**
- * @brief  Ready/Busy functions
- *
- * @note
- */
-
-int32_t  NAND_Ready(void) {
-
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)!=0;
-}
-
-int32_t  NAND_Busy(void) {
-
-    return !NAND_Ready();
-}
-
-/**
- *  @brief  Wait until Ready/Busy bit in Status Register indicates Ready
- *
- *  @note   Bit R/B# is 1 when device is ready and 0 when busy
- *
- *  @returns 0 when error!
- */
-int32_t  NAND_WaitUntilReadyStatus(void) {
-
-    nano_delay(NANO_DELAY);
-    uint32_t timeout = NAND_TIMEOUT;
-    do {
-        NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
-    } while ( --timeout && (NAND_DATA&NAND_STATUS_READY) );
-    return NAND_DATA&NAND_STATUS_READY;
-}
-
-/**
- *  @brief  Wait until Ready/Busy Pin indicates Ready
- *
- *  @note   Pin R/B# is 1 when device is ready and 0 when busy
- *
- *  @returns 0 when error!
- */
-int32_t  NAND_WaitUntilReadyPin(void) {
-
-    nano_delay(NANO_DELAY);
-    uint32_t timeout = NAND_TIMEOUT;
-    while ( --timeout && ( (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)==0) )
-        {}
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
-}
-
-/**
- *  @brief  Check if Ready using R/B# pin
- *
- *  @note   Pin R/B# is 1 when device is ready and 0 when busy
- *
- *  @returns 0 when Busy
- */
-int32_t  NAND_CheckReadyPin(void) {
-
-    nano_delay(NANO_DELAY);
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
-}
-
-/**
- *  @brief  Check if Ready using Status Register
- *
- *  @note   Pin R/B# is 1 when device is ready and 0 when busy
- *
- *  @returns 0 when Busy
- */
-int32_t  NAND_CheckReadyStatus(void) {
-
-    nano_delay(NANO_DELAY);
-    NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
-    return NAND_DATA&NAND_STATUS_READY;
-}
-
-///@}
-
+/*********************** Pin control routines *********************************/
 
 ///@{
 /**
@@ -472,14 +421,18 @@ static inline void DisableWP(void) {
 
 // For debug mainly
 void  NAND_EnableWriteProtect(void) {
+    // Enable Write Protect using the WP pin
     EnableWP();
 }
 
 // For debug mainly
 void  NAND_DisableWriteProtect(void) {
+    // Disable Write Protect using the WP pin
     DisableWP();
 }
 ///@}
+
+/*********************** Initialization routines ******************************/
 
 /**
  *  @brief  Enable EBI clock
@@ -510,7 +463,6 @@ static inline void ConfigGPIOPins(void) {
     DisableWP();
     EnablePWR();
 }
-
 
 /**
  *  @brief  Configure pins directly controlled by EBI
@@ -634,7 +586,6 @@ static inline void ConfigEBI(void) {
                          |(EBI_NANDCTRL_BANKSEL_BANK0|EBI_NANDCTRL_EN);
 }
 
-
 /**
  * @brief  Initialize NAND device including EBI
  *
@@ -656,10 +607,11 @@ int32_t NAND_Init(void) {
     return 0;
 }
 
+/*********************** Status routines **************************************/
+
 /**
  *  @brief  Return status from device using command status
  */
-
 uint32_t NAND_Status(void) {
 uint8_t status;
 
@@ -672,21 +624,235 @@ uint8_t status;
 }
 
 /**
+ *  @brief  Wait until Ready/Busy bit in Status Register indicates Ready
+ *
+ *  @note   Bit R/B# is 1 when device is ready and 0 when busy
+ *
+ *  @returns 0 when error!
+ */
+int32_t  NAND_WaitUntilReadyStatus(void) {
+
+    nano_delay(NANO_DELAY);
+    uint32_t timeout = NAND_TIMEOUT;
+    do {
+        NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
+    } while ( --timeout && (NAND_DATA&NAND_STATUS_READY) );
+    return NAND_DATA&NAND_STATUS_READY;
+}
+
+/**
+ *  @brief  Check if Ready using Status Register
+ *
+ *  @note   Pin R/B# is 1 when device is ready and 0 when busy
+ *
+ *  @returns 0 when Busy
+ */
+int32_t  NAND_CheckReadyStatus(void) {
+
+    nano_delay(NANO_DELAY);
+    NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
+    return NAND_DATA&NAND_STATUS_READY;
+}
+
+///@{
+/**
+ * @brief  Ready/Busy functions
+ *
+ * @note
+ */
+
+int32_t  NAND_Ready(void) {
+
+    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)!=0;
+}
+
+int32_t  NAND_Busy(void) {
+
+    return !NAND_Ready();
+}
+
+/**
+ *  @brief  Wait until Ready/Busy Pin indicates Ready
+ *
+ *  @note   Pin R/B# is 1 when device is ready and 0 when busy
+ *
+ *  @returns 0 when error!
+ */
+int32_t  NAND_WaitUntilReadyPin(void) {
+
+    nano_delay(NANO_DELAY);
+    uint32_t timeout = NAND_TIMEOUT;
+    while ( --timeout && ( (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)==0) )
+        {}
+    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
+}
+
+/**
+ *  @brief  Check if Ready using R/B# pin
+ *
+ *  @note   Pin R/B# is 1 when device is ready and 0 when busy
+ *
+ *  @returns 0 when Busy
+ */
+int32_t  NAND_CheckReadyPin(void) {
+
+    nano_delay(NANO_DELAY);
+    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
+}
+///@}
+
+/*********************** Copy routines ****************************************/
+
+/**
+ *  @brief  Copy data from Flash device into memory
+ *
+ *  @note   Preparation to use DMA
+ */
+static void CopyFromFlash(uint8_t *data, uint16_t n) {
+
+    for(uint16_t i=0;i<n;i++) {
+        data[i] = NAND_DATA;
+    }
+}
+
+/**
+ *  @brief  Copy data from memory to Flash device
+ *
+ *  @note   Preparation to use DMA
+ */
+static void CopyToFlash(uint8_t *data, uint16_t n) {
+
+    for(uint16_t i=0;i<n;i++) {
+        NAND_DATA = data[i];
+    }
+}
+
+/*********************** Read Routines ****************************************/
+
+/**
  *  @brief  Return signature of device
  */
 
-int32_t  NAND_ReadSignature(uint8_t *data, uint16_t n) {
+int32_t  NAND_ReadSignature(uint8_t *data) {
+int32_t rc;
 
     EnableCE();
     SendCommand(CMD_READSIGNATURE,0);
-    int32_t rc = NAND_WaitUntilReadyPin();
-    (void) rc;
+    rc = NAND_WaitUntilReadyPin();
 
-    for(int i=0;i<n;i++) {
-        data[i] = NAND_DATA;
-    }
+    CopyFromFlash(data,2);
+
     DisableCE();
-    return 0;
+    rc = NAND_Status();
+
+    return rc;
+}
+
+/**
+  * @brief   NAND_ReadSpare
+  *
+  * @note    Read a 16 byte from NAND device
+  */
+int32_t NAND_ReadSpare(uint32_t addr, uint8_t *data) {
+int32_t rc;
+
+    if( !IsPageAddress(addr)) {
+        return -1;
+    }
+
+    EnableCE();
+    SendCommand(CMD_READC,addr);
+
+    rc = NAND_WaitUntilReadyPin();
+
+    if( rc != 0 ) {
+        CopyFromFlash(data,NAND_SPARESIZE);
+    }
+
+    DisableCE();
+    rc = NAND_Status();
+
+    return rc;
+}
+
+/**
+  * @brief   NAND_ReadPage
+  *
+  * @note    Read a page (512 bytes) from NAND device starting at a given
+  *          page aligned address
+  */
+int32_t NAND_ReadPage(uint32_t addr, uint8_t *data) {
+int32_t rc;
+
+    if( !IsPageAddress(addr)) {
+        return -1;
+    }
+
+    EnableCE();
+    SendCommand(CMD_READA,addr);
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != 0 ) {
+        CopyFromFlash(data,NAND_PAGESIZE);
+    }
+
+    DisableCE();
+    rc = NAND_Status();
+
+    return rc;
+}
+
+/**
+  * @brief   NAND_ReadFullPage
+  *
+  * @note    Read a page (528 bytes) from NAND device starting at a given
+  *          page address
+  */
+int32_t NAND_ReadFullPage(uint32_t addr, uint8_t *data) {
+int32_t rc;
+
+    if( !IsPageAddress(addr)) {
+        return -1;
+    }
+
+    EnableCE();
+    SendCommand(CMD_READA,addr);
+    rc = NAND_WaitUntilReadyPin();
+
+    if( rc != 0 ) {
+        CopyFromFlash(data,NAND_FULLPAGESIZE);
+    }
+
+    DisableCE();
+    rc = NAND_Status();
+
+    return rc;
+}
+
+/*********************** Write Routines ***************************************/
+
+/**
+  * @brief   NAND_WriteSpare
+  *
+  * @note    Write a 16 bytes onto NAND device
+  */
+int32_t NAND_WriteSpare(uint32_t addr, uint8_t *data) {
+int32_t rc;
+
+    if( !IsPageAddress(addr)) {
+        return -1;
+    }
+
+    EnableWP();
+    SendCommand(CMD_PROGRAMA,addr);
+    rc = NAND_WaitUntilReadyPin();
+
+    CopyToFlash(data, NAND_SPARESIZE);
+
+    EnableWP();
+    DisableCE();
+    rc = NAND_Status();
+
+    return rc;
 }
 
 /**
@@ -695,47 +861,22 @@ int32_t  NAND_ReadSignature(uint8_t *data, uint16_t n) {
   * @note    Write a page (512 bytes) into NAND device starting at given page
   *          address
   */
-int32_t NAND_WritePage(uint32_t pageaddr, uint8_t *data, uint16_t n) {
+int32_t NAND_WritePage(uint32_t addr, uint8_t *data) {
+int32_t rc;
 
-    if( !IsRowAddress(pageaddr)) {
+    if( !IsPageAddress(addr)) {
         return -1;
     }
-    DisableWP();
-    // TODO
+
     EnableWP();
-
-    return 0;
-}
-
-/**
-  * @brief   NAND_ReadPage
-  *
-  * @note    Read a page (512 bytes) from NAND device starting at a given
-  *          page address
-  */
-int32_t NAND_ReadPage(uint32_t pageaddr, uint8_t *data, uint16_t n) {
-
-
-    if( !IsRowAddress(pageaddr)) {
-        return -1;
-    }
-
-    if( n > NAND_PAGESIZE )
-        n = NAND_PAGESIZE;
-
-    EnableCE();
-    SendCommand(CMD_READA,0);
-
-    int32_t rc = NAND_WaitUntilReadyPin();
-
-    if( rc != 0 ) {
-        for(int i=0;i<n;i++) {
-            data[i] = NAND_DATA;
-        }
-    }
-
-    DisableCE();
+    SendCommand(CMD_PROGRAMA,addr);
     rc = NAND_WaitUntilReadyPin();
+
+    CopyToFlash(data, NAND_PAGESIZE);
+
+    EnableWP();
+    DisableCE();
+    rc = NAND_Status();
 
     return rc;
 }
@@ -743,103 +884,84 @@ int32_t NAND_ReadPage(uint32_t pageaddr, uint8_t *data, uint16_t n) {
 /**
   * @brief   NAND_WriteFullPage
   *
-  * @note    Write a page (512 bytes) into NAND device starting at given page
-  *          address
-  */
-int32_t NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data, uint16_t n) {
-
-    if( !IsRowAddress(pageaddr)) {
-        return -1;
-    }
-    DisableWP();
-    // TODO
-    EnableWP();
-
-    return 0;
-}
-
-
-/**
-  * @brief   NAND_ReadFullPage
+  * @note    Write a full page (528 bytes) into NAND device starting at given
+  *          address. The address must be aligned to a page address.
   *
-  * @note    Read a page (512 bytes) from NAND device starting at a given
-  *          page address
+  * @note    A confirm command is needed after a half page
   */
-int32_t NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data, uint16_t n) {
+int32_t NAND_WriteFullPage(uint32_t addr, uint8_t *data) {
+int32_t rc;
 
-    if( !IsRowAddress(pageaddr)) {
+    if( !IsPageAddress(addr)) {
         return -1;
     }
 
-    if( n > NAND_FULLPAGESIZE )
-        n = NAND_FULLPAGESIZE;
-
-    EnableCE();
-    SendCommand(CMD_READA,0);
-
-    int32_t rc = NAND_WaitUntilReadyPin();
-
-    if( rc != 0 ) {
-        for(int i=0;i<n;i++) {
-            data[i] = NAND_DATA;
-        }
-    }
-
-    DisableCE();
+    EnableWP();
+    SendCommand(CMD_PROGRAMA,addr);
     rc = NAND_WaitUntilReadyPin();
+
+    CopyToFlash(data, NAND_FULLPAGESIZE);
+
+    EnableWP();
+    DisableCE();
+    rc = NAND_Status();
 
     return rc;
 }
-/**
-  * @brief   NAND_WriteSpare
-  *
-  * @note    Write a 16 bytes onto NAND device
-  */
-int32_t NAND_WriteSpare(uint32_t pageaddr, uint8_t *data, uint16_t n) {
 
-    if( !IsRowAddress(pageaddr)) {
-        return -1;
-    }
-    DisableWP();
-    // TODO
-    EnableWP();
-
-    return 0;
-}
+/*********************** Erase Routines ***************************************/
 
 /**
-  * @brief   NAND_ReadSpare
+  * @brief   NAND_BlockErase
   *
-  * @note    Read a 16 byte from NAND device
+  * @note    Erase a full block of 32 pages
   */
-int32_t NAND_ReadSpare(uint32_t pageaddr, uint8_t *data, uint16_t n) {
+int32_t NAND_EraseBlock(uint32_t addr) {
+    int32_t rc;
 
-    if( !IsRowAddress(pageaddr)) {
+    if( !IsBlockAddress(addr)) {
         return -1;
     }
-
-    if( n > NAND_SPARESIZE )
-        n = NAND_SPARESIZE;
 
     EnableCE();
-    SendCommand(CMD_READC,0);
-
-    int32_t rc = NAND_WaitUntilReadyPin();
-
-    if( rc != 0 ) {
-        for(int i=0;i<n;i++) {
-            data[i] = NAND_DATA;
-        }
-    }
+    SendCommand(CMD_ERASEBLOCK,addr);
+    rc = NAND_WaitUntilReadyPin();
 
     DisableCE();
-    rc = NAND_WaitUntilReadyPin();
+    rc = NAND_Status();
 
     return rc;
 }
+
+/*********************** Copy Back Routine ************************************/
+/**
+  * @brief   NAND_CopyBack
+  *
+  * @note    Copy the page at *srcaddr* to the page addressed by *dstaddr*
+  */
+int32_t  NAND_CopyBack(uint32_t srcaddr, uint32_t dstaddr) {
+int32_t rc;
+
+    if( ! (IsPageAddress(srcaddr)&&IsPageAddress(dstaddr)) ) {
+        return -1;
+    }
+
+    EnableCE();
+    SendCommand(CMD_COPYBACK1 ,srcaddr);
+    rc = NAND_WaitUntilReadyPin();
+
+    SendCommand(CMD_COPYBACK2 ,dstaddr);
+    rc = NAND_WaitUntilReadyPin();
+
+    DisableCE();
+    rc = NAND_Status();
+
+    return rc;
+}
+
+/*********************** ECC Routines *****************************************/
 
 #ifdef USE_ECC_ROUTINES
-
 /**
  *  @brief  Get ECC Error Information
  *
@@ -872,8 +994,8 @@ int32_t NAND_ReadSpare(uint32_t pageaddr, uint8_t *data, uint16_t n) {
  *
  *
  *
- * @note To correct use the index. The 3 lowest order bit gives the bit index (0 to 7)
- *       The 19 high order bit give the byte index.
+ * @note To correct use the index. The 3 lowest order bit gives the bit index
+ *       (0 to 7). The 19 high order bit give the byte index.
  *       Data[index>>3] ^= (1<<(index&0x7));
  *
  */

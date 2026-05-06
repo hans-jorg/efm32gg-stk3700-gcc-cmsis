@@ -103,7 +103,7 @@ uint32_t s;
     printf("Status = %02lX\n",s);
 
 
-    rc = NAND_ReadSignature(signature, 4);
+    rc = NAND_ReadSignature(signature);
     if( rc != 0 ) {
         printf("Error when reading signature\n");
        // goto error;
@@ -115,7 +115,7 @@ uint32_t s;
     for(addr=0;addr<NAND_MAXADDRESS;addr+=NAND_PAGESIZE) {
         printf("\rReading spare at address %08lX",addr);
         memset(spare,0xAA,NAND_SPARESIZE);
-        rc = NAND_ReadSpare(addr, spare, NAND_SPARESIZE);
+        rc = NAND_ReadSpare(addr, spare);
         if( rc == 0 ) {
             printf("\nError when reading spare area\n");
             //goto error;

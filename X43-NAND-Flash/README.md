@@ -125,13 +125,15 @@ Except for NAND Flash, the EDI can handle the Wait/Acknowledge pin of an externa
 
 There are four sets of registers as show below, one for each region.
 But it is possible to use the parameters of Region 0 for all other regions
-when the ITS bit is set to 0.
+when the ITS bit in the CTRL register is set to 0.
 
 | Bank 0 or all    | Bank 1           | Bank 2            | Bank 3            |
 |------------------|------------------|-------------------|-------------------|
 | EBI_ADDRTIMING   | EBI_ADDRTIMING1  | EBI_ADDRTIMING2   | EBI_ADDRTIMING3   |
 | EBI_RDTIMING     | EBI_RDTIMING1    | EBI_RDTIMING2     | EBI_RDTIMING3     |
 | EBI_WRTIMING     | EBI_WRTIMING1    | EBI_WRTIMING2     | EBI_WRTIMING3     |
+| EBI_POLARITY     | EBI_POLARITY1    | EBI_POLARITY2     | EBI_POLARITY3     |
+
 
 
 ### NAND Flash Support
@@ -160,8 +162,7 @@ The typical connection is (14.3.14)
     |---------------------|                        |-----------------------|
 
 Note:  
-1 - The R/B signal can be handled by the EBI. The remaining GPIO must be
-handled explicitly.
+1 - The R/B signal must be handled by software using GPIO as Write Protect and the Chip Enable pins.
 2 - It is possible to the EBI to handle the Chip Select signal (connected to 
 the Chip Enable) of non standard NAND flash devices.
 
