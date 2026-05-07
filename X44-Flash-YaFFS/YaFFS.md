@@ -3,6 +3,50 @@ YaFFS
 
 Introduction
 ------------
+YaFFS
+-----
+
+YAFFS is a middleware that implements an interface to NAND devices. It features:
+
+* Open source/Commercial license. Closed source projects must pay for a license.
+* Wear leveling by avoiding repeated erases/writes on the same place.
+* Bad blocks management.
+
+
+There are two versions of YAFFS:
+
+* version 1: Supports 512-byte pages. In maintenance mode. Uses deletion markers.
+* version 2: Supports 512 and 2k pages. Active.
+
+
+         |-----------------------------------------------|
+         |               Application                     |
+         |-----------------------------------------------|
+         |           POSIX Interface                     |
+         |-----------------------------------------------|
+         |           YAFFS Direct Interface              |
+         |-----------------------------------------------|
+         |           YAFFS Core Filesystem               |
+         |-----------------------------------------------|
+         | RTOS interface |            | Flash interface |
+         |----------------|            |-----------------|
+         |     RTOS       |            |      Flash      |
+         |----------------|            |-----------------|
+
+
+YaFFS store objects in a NAND device. Objects can be:
+
+* Data files
+* Directories
+* Hand-links
+* Symbolic-links
+* Special objects (pipes, devices, etc.)
+
+All objects have an **obj_id**, an unique integer.
+
+YaFFS handles the objects in **chunks**, an unit of allocation, that is typically the NAND page
+size.  It also handles bad blocks (old and new) and ECC.
+
 
 YaFFS (Yet another Flash File System) is a open source middleware for NAND and NOR Flash devices.
 It has a dual license (GPL or commercial). Closed source projects must pay a royalty-free

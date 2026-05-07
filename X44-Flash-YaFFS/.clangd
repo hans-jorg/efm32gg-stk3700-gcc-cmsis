@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clangd.json
+CompileFlags:
+  # only C files
+  # Define PART used in project
+  # enable more warnings
+  # Include Path to Gecko (must be absolute)
+  Add:
+    [
+      -xc,
+      -DEFM32GG990F1024,
+      -Wall,
+      -I /home/hans/Work/Embedded/SiliconLabs/EFM32GG/Include/,
+    ]

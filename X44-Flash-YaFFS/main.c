@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdnoreturn.h>
-
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
