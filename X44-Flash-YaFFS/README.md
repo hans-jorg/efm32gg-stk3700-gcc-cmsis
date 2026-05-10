@@ -3,6 +3,36 @@
 
 Introduction
 ------------
+Middleware
+----------
+
+So, the driver software for NAND devices must have:
+
+* Bad blocks management
+* Wear Leveling
+* Garbage Collection
+
+There are some FREE middleware options for Flash devices:
+
+* FatFS
+* YaFFS
+* LittleFS
+* SPIFFS
+
+
+FatFS is media agnostic and is not suited for NAND devices since it does not
+have wear leveling and bad block management. FAT file systems were not conceived
+for storing data in devices like NAND flash devices. Another aspect is that the erase operations are done in a group of pages. To use FatFS, all these aspects must be considered in the low level firmware driver.
+
+LittleFS is a fail safe filesystem for microcontroller. It has dynamic wear leveling, power loss resilience, and has low demand on RAM and ROM.
+
+SPIFFS is used on ESP32 devices. But is slow and has some significant problems. In some cases, it is beeing replaced by LittFS.
+
+YaFFs has two versions. The version 2 is faster, support devices with large pages. Both support wear leveling and bad block management.
+
+
+
+
 
 There are basically two types of flash memory devices:
 
@@ -41,7 +71,7 @@ memories.
 
 On NAND Flash, the erase operation must be done on a large chunk of bits, generally called block.
 
-There are many categories of the NAND flash devices. An important category is 
+There are many categories of the NAND flash devices. An important category is
 the classic one, with page size in the range 256 to 512 and modern ones, with page size in the range 1024 to 2048, or even larger.
 
 Middleware
@@ -76,7 +106,7 @@ YaFFs has two versions. The version 2 is faster, support devices with large page
 Extended Bus Interface (EBI)
 ----------------------------
 
-Suport to external devices in the EFM32 Giant Gecko family is done by the 
+Suport to external devices in the EFM32 Giant Gecko family is done by the
 Extended Bus Interface (EBI) peripheral. It enables an external device to appear in the memory map.
 
 The devices supported are:
@@ -85,10 +115,10 @@ The devices supported are:
 * Flash
 * TFT
 
-The support for NAND devices is partial. Their ports appears in the memory 
+The support for NAND devices is partial. Their ports appears in the memory
 space but the addressing inside the device must be done explicitely.
 
-The EBI handles the data and address pins, the read and write pins, the latch 
+The EBI handles the data and address pins, the read and write pins, the latch
 signal pins and the acknowledge pins, including timing.
 
 The EBI support many data and addressing modes:
@@ -106,19 +136,19 @@ There are four memory regions used by the EBI.
   * Region 3: 0x8C00_0000-0x8CFF_FFFF - 64 MByte
 
   These regions are not cacheable. To run code, these regions can appear at the address ranges below
-  
+
   * Region 0: 0x1200_0000-0x13FF_FFFF - 32 MByte
   * Region 1: 0x1400_0000-0x15FF_FFFF - 32 MByte
   * Region 2: 0x1600_0000-0x17FF_FFFF - 32 MByte
   * Region 3: 0x1800_0000-0x1FFF_FFFF - 128 MByte
 
-  Alternatively, 
-  
+  Alternatively,
+
   * Region 0: 0x8000_0000-0x8FFF_FFFF - 256 MByte
   * Region 1: 0x9000_0000-0x9FFF_FFFF - 256 MByte
   * Region 2: 0xA000_0000-0xAFFF_FFFF - 256 MByte
   * Region 3: 0xB000_0000-0xBFFF_FFFF - 256 MByte
-    
+
 The corresponding code regions are the same as above.
 
 Except for NAND Flash, the EDI can handle the Wait/Acknowledge pin of an external device. This is configured in the EBI_CTRL register.
@@ -139,7 +169,7 @@ when the ITS bit in the CTRL register is set to 0.
 ### NAND Flash Support
 
 It supports partially NAND Flash devices, because these devices do not have
-address pins. These device have generally 8 or 16-bin data bus. The Error 
+address pins. These device have generally 8 or 16-bin data bus. The Error
 Correction Code can be generated/verified by the EBI.
 
 The typical connection is (14.3.14)
@@ -161,18 +191,18 @@ The typical connection is (14.3.14)
     |               GPIO  |------------------------| CE                    |
     |---------------------|                        |-----------------------|
 
-Note:  
+Note:
 1 - The R/B signal must be handled by software using GPIO as Write Protect and the Chip Enable pins.
-2 - It is possible to the EBI to handle the Chip Select signal (connected to 
+2 - It is possible to the EBI to handle the Chip Select signal (connected to
 the Chip Enable) of non standard NAND flash devices.
 
 The ARDY signal can not be used for NAND Flash because the bus access can be blocked for a large amount of time.
 
-The timing information is critical for the working of the EBI. This is 
-configured in the EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn  registers. Additionally, there are also EBI_POLARITYn registers. The ITS bit in the 
+The timing information is critical for the working of the EBI. This is
+configured in the EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn  registers. Additionally, there are also EBI_POLARITYn registers. The ITS bit in the
 EBI_CTRL register is 0, the values in these register are used in all regions.
-If it is 1, these values are used only in Region 0. The other regions use 
-the values in EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn, where n is 
+If it is 1, these values are used only in Region 0. The other regions use
+the values in EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn, where n is
 the number of the region.
 
 Their important fields for timing include:
@@ -500,7 +530,7 @@ The A24 and A25 signals are connected to Address Strobe (ALE) and Command Strobe
 
 
 > Note: Only address bits 25 to 24 are used by the EBI to interface the Flash device. The address bis 31 to 26 are used internally. The remaining are don't
-care. It is recommended to be used as zero. Do not confuse these address to the 
+care. It is recommended to be used as zero. Do not confuse these address to the
 internal address used to access a specific data inside the NAND Flash device.
 
 
@@ -516,7 +546,7 @@ Additionally, some signals are controlled thru the GPIO.
 
 ### Timing
 
-Configuration for the maximal clock frequency (48 MHz). This corresponds to 
+Configuration for the maximal clock frequency (48 MHz). This corresponds to
 a period of 20.8 ns.
 
 | Parameter | NAND256W3A | W29N01HVDINA | NAND256W3A | W29N01HVDINA  |
@@ -687,9 +717,9 @@ The pins used for this interface are show below.
 NOTES:
 1 - The Address Latch Enable is configured to output the A24 signal
 2 - The Command Latch Enable is configured to output the A25 signal
-3 - The power circuite to the NAND flash is a TS5A3166 switch or a SiP32431DN 
+3 - The power circuite to the NAND flash is a TS5A3166 switch or a SiP32431DN
     on newer board versions.
-    
+
 
 Some pins are controlled directly by the GPIO module. Others by the EBI module. The EBI_ROUTE register controls which pins are used.
 
@@ -981,7 +1011,7 @@ Each channel structure is 16 bytes long and has the following format.
 
 The pointer fields are not written by the controller.
 
-The control word is the only field updated by the controller 
+The control word is the only field updated by the controller
 and has the following format
 
 | Bit field | Description                                    |

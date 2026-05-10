@@ -24,7 +24,7 @@ errors as defective.
 Summarizing, the table below show the main features of both types of Flash
 memories.
 
-| Characteristic      |  NAND flash                | NOR flash                 |
+| Characteristic      | NAND flash                 | NOR flash                 |
 |---------------------|----------------------------|---------------------------|
 | Storage density     | Higher                     | Lower                     |
 | Read performance    | Fast                       | Fast*                     |
@@ -36,42 +36,19 @@ memories.
 
 * May be slowed by serial access
 
+The main features of a NAND Flash are:
 
-> One feature of Flash devices is that it is possible to change a bit from 1 to a 0, but to change from 0 to 1, an erase operation is needed and it generally erase a large ares..
+* It is divided in blocks, that contains a certain number of pages. Each page has extra cells called spare cells, that are used to store information about the validity of the data stored in that page.
+* Normal programming can only change a bit from 0 to 1. To change a 1 to 0, is needed to erase a full block.
+* It is possible to get defective cells. Actually, it is possible to have some defective cells in a new device.
+* The maximum number of consecutive partial page program operations allowed in the same page is very small (about 3). After exceeding this, a Block Erase command must be issued before any further program operations can take place in that page.
 
-On NAND Flash, the erase operation must be done on a large chunk of bits, generally called block.
+> One feature of Flash devices is that it is possible to change a bit from 1 to a 0, but to change from 0 to 1, an erase operation is needed and it generally erase a large area.
+
+On NAND Flash, the erase operation must be done on a large chunk of bits, generally called a block.
 
 There are many categories of the NAND flash devices. An important category is 
 the classic one, with page size in the range 256 to 512 and modern ones, with page size in the range 1024 to 2048, or even larger.
-
-Middleware
-----------
-
-So, the driver software for NAND devices must have:
-
-* Bad blocks management
-* Wear Leveling
-* Garbage Collection
-
-There are some FREE middleware options for Flash devices:
-
-* FatFS
-* YaFFS
-* LittleFS
-* SPIFFS
-
-
-FatFS is media agnostic and is not suited for NAND devices since it does not
-have wear leveling and bad block management. FAT file systems were not conceived
-for storing data in devices like NAND flash devices. Another aspect is that the erase operations are done in a group of pages. To use FatFS, all these aspects must be considered in the low level firmware driver.
-
-LittleFS is a fail safe filesystem for microcontroller. It has dynamic wear leveling, power loss resilience, and has low demand on RAM and ROM.
-
-SPIFFS is used on ESP32 devices. But is slow and has some significant problems. In some cases, it is beeing replaced by LittFS.
-
-YaFFs has two versions. The version 2 is faster, support devices with large pages. Both support wear leveling and bad block management.
-
-
 
 Extended Bus Interface (EBI)
 ----------------------------
@@ -91,7 +68,7 @@ space but the addressing inside the device must be done explicitely.
 The EBI handles the data and address pins, the read and write pins, the latch 
 signal pins and the acknowledge pins, including timing.
 
-The EBI support many data and addressing modes:
+The EBI in the EFM32 Giant Geckt supports many data and addressing modes:
 
 * D8A8: 8-bin non-multiplexed data bus, 8-bit addressing mode
 * D16A16ALE: 16-bit multiplexed data and address mode
@@ -112,7 +89,7 @@ There are four memory regions used by the EBI.
   * Region 2: 0x1600_0000-0x17FF_FFFF - 32 MByte
   * Region 3: 0x1800_0000-0x1FFF_FFFF - 128 MByte
 
-  Alternatively, 
+  Alternatively, these regions can be mapped into larger areas.
   
   * Region 0: 0x8000_0000-0x8FFF_FFFF - 256 MByte
   * Region 1: 0x9000_0000-0x9FFF_FFFF - 256 MByte
@@ -121,7 +98,7 @@ There are four memory regions used by the EBI.
     
 The corresponding code regions are the same as above.
 
-Except for NAND Flash, the EDI can handle the Wait/Acknowledge pin of an external device. This is configured in the EBI_CTRL register.
+Except for NAND Flash, the EBI can handle the Wait/Acknowledge pin of an external device. This is configured in the EBI_CTRL register.
 
 There are four sets of registers as show below, one for each region.
 But it is possible to use the parameters of Region 0 for all other regions
@@ -133,7 +110,6 @@ when the ITS bit in the CTRL register is set to 0.
 | EBI_RDTIMING     | EBI_RDTIMING1    | EBI_RDTIMING2     | EBI_RDTIMING3     |
 | EBI_WRTIMING     | EBI_WRTIMING1    | EBI_WRTIMING2     | EBI_WRTIMING3     |
 | EBI_POLARITY     | EBI_POLARITY1    | EBI_POLARITY2     | EBI_POLARITY3     |
-
 
 
 ### NAND Flash Support
@@ -162,6 +138,7 @@ The typical connection is (14.3.14)
     |---------------------|                        |-----------------------|
 
 Note:  
+
 1 - The R/B signal must be handled by software using GPIO as Write Protect and the Chip Enable pins.
 2 - It is possible to the EBI to handle the Chip Select signal (connected to 
 the Chip Enable) of non standard NAND flash devices.
@@ -198,7 +175,7 @@ The EMF32GG-STK3700 depending on the board version has
 * an ST NAND256W3A with 8-bit parallel data interface with 256 Mb (=32 MBytes)
 * an Winbond W29N01HVDINA with 1 Mb (=128 MBytes).
 
-So both use an 8-bit parallel data interface.
+Both use an 8-bit parallel data interface.
 
 There are differences in capacity, page size and command formats.
 
@@ -269,10 +246,10 @@ The addresses are input by an up to four bytes (bug generally, only three are us
 |    3rd        | A24  | A23  | A22  | A21  | A20  | A19  | A18  | A17  |
 |    4th        |  -   |  -   |  -   |  -   |  -   |  -   | A26  | A25  |
 
+>> NOTE: Is is not needed to sent A8, because A8 is defined by the halfpage accessed. 
 ## Commands
 
-!!! The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8),
-!!! exactly the same width of a page, update it and eventually write it back.!!!!!!
+!!! The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8), exactly the same width of a page plus its spare area, update it and eventually write it back.!!!!!!
 
 The operation of the device is controlled by commands, generally a sequence of up to three bytes.
 
@@ -295,8 +272,7 @@ The operation of the device is controlled by commands, generally a sequence of u
 > NOTE 2: The 4th byte is optional for device with 256 MBytes or less.
 
 
-The bit A8 of the address is used to specify which Area (A or B) to access. When 0, access is done
-starting at Area A. When 1, Area B. When reading the spare area, only address bit A3-A0 are used.
+The bit A8 of the address is used to specify which Area (A or B) to access. When 0, access is done starting at Area A. When 1, Area B. When reading the spare area, only address bit A3-A0 are used.
 Address bits A7-A4 are ignored.
 
 > The device defaults to Area A after power up or a reset.
@@ -475,9 +451,7 @@ Both device share the same connections.
 | Write protect |  X |  X |  X |  X |  X |  0  |    X      |
 | Standby       |  1 |  X |  X |  X |  X |  X  |    X      |
 
-
-
-### Device operation
+### Memory map
 
 The interface to the NAND device is built on the use of three ports and pins.
 The ports are implemented by the EBI (External Bus Interface).
@@ -503,7 +477,6 @@ The A24 and A25 signals are connected to Address Strobe (ALE) and Command Strobe
 care. It is recommended to be used as zero. Do not confuse these address to the 
 internal address used to access a specific data inside the NAND Flash device.
 
-
 Additionally, some signals are controlled thru the GPIO.
 
 | Signal      | GPIO pin | Direction| Active|Description                       |
@@ -512,6 +485,10 @@ Additionally, some signals are controlled thru the GPIO.
 | NAND_WP#    | MCU_PD13 | Output   | Low   | Enable program and eraserations  |
 | NAND_RB#    | MCU_PD15 | Input    | High  | Status: Ready (1)/Busy(0)        |
 | NAND_CE#    | MCU_PD14 | Output   | Low   | Enable device                    |
+
+They all use negative logic (active low) except the PWR_EN signal.
+
+### Device operation
 
 
 ### Timing
@@ -584,77 +561,6 @@ cycles.
 * Second Level Wear-Leveling: Bkocks with long lived data gives room to new data, after their
 contents are written to other blocks.
 
-### Read sequence
-
-From RM:
-
-AA typical 528-byte page read sequence for an 8-bit wide NAND Flash is
-as follows:
-
-1. Configuration: Enable and select the memory bank connected to the NAND
-Flash device via the EN and BANKSEL bitfields in the EBI_NANDCTRL register. Set
-the MODE field of the EBI_CTRL register to D8A8 indicating that the attached
-device is 8-bit wide. Program the EBI_RDTIMING and EBI_WRTIMING registers
-to fulfill the NAND timing requirements.
-
-2. Command and address phase: Program the NAND Command register to the
-page read command and program the NAND Address register to the required read
-address. This can be done via Cortex-M3 or DMA writes to the memory mapped NAND
-Command and Address registers. The automatic data access width conversions
-described in Section 14.3.11 (p. 188) can be used if desired to for example
-automatically perform 4 consecutive address byte transactions in response
-to one 32-bit word AHB write to the NAND Address register (in this case the
-2 address LSBs should not be used to map onto the NAND ALE/CLE signals).
-
-3. Data transfer phase: Wait for the NAND Flash internal data transfer phase
-to complete as indicated via its ready/busy (R/B) pin. The user can use the
-GPIO interrupt functionality for this. The 528-byte data is now ready for
-sequential transfer from the NAND Flash Data register.
-
-4. Read phase: Clear the ECC_PARITY register and start Error Code Correction
-(ECC) parity generation by setting both the ECCSTART and ECCCLEAR bitfields
-in the EBI_CMD register to 1. Now all subsequently transferred data to/from
-the NAND Flash devices is used to generate the ECC parity code into the
-EBI_ECCPARITY register. Read 512 subsequent bytes of main area data from
-the NAND Flash Data register via DMA transfers. This can for example be
-done via 32-bit word DMA transfers (as long as the two address LSBs are not
-used to map onto the NAND ALE/CLE signals). Stop ECC parity generation by
-setting the ECCSTOP bitfield in the EBI_CMD register to 1 so that following
-transactions will not modify the parity result. Read out the final 16 bytes
-from the NAND Flash spare data area.
-
-5. Error correction phase: Compare the ECC code contained in the read spare
-area data against the computed ECC code from the EBI_ECCPARITY register. The
-user software can accept, correct, or discard the read data according the
-comparison result. No automatic correction is performed.
-
-### Program (write) sequence
-
-A typical 528-byte page program sequence for an 8-bit wide NAND Flash is
-as follows:
-
-1. Configuration: Configure the EBI for NAND Flash support via the
-EBI_NANDCTRL, EBI_CTRL, EBI_RDTIMING and EBI_WRTIMING registers.
-
-2. Command and address phase: Program the NAND Command register to command
-for page programming (serial data input) and program the NAND Address register
-to the desired write address.
-
-3. Write phase: Clear the ECC_PARITY register and start Error Code Correction
-(ECC) parity generation by setting both the ECCSTART and ECCCLEAR bitfields
-in the EBI_CMD register to 1. Now all subsequently transferred data to/from
-the NAND Flash devices is used to generate the ECC parity code into the
-EBI_ECCPARITY register. Write 512 subsequent bytes of user main data to
-the NAND Flash Data register via for example DMA transfers. Stop ECC parity
-generation and read out the computed ECC parity data from EBI_ECCPARITY. Write
-the final 16 bytes of spare data including the computed ECC parity data bytes.
-
-3. Program phase: Write the auto program command to the NAND Flash Command
-register after which the NAND Flash will indicate that it is busy via its
-read/busy (R/B) pin. After read/busy goes high again, the success of the
-program command can be verified by programming the read status command.
-
-
 NAND Flash on the STK3700
 -------------------------
 
@@ -700,10 +606,6 @@ Some pins are controlled directly by the GPIO module. Others by the EBI module. 
     | APEN     | 22-18 | EBI bit field for A A25-A24     |  26          |
     | NANDPEN  |  12   | NANDREn and NANDWEn pins enabled|   1          |
 
-
-
-
-
 Address map
 
  |31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|19|09|08|07|06|05|04|03|02|01|00|
@@ -711,11 +613,7 @@ Address map
  |     BYTE #3           |     BYTE #2           |     BYTE #1           |     BYTE #0           |
  |                 |CL|AL|                    Address                                            |
 
-A 256 Mbit/32MByte device needs 24 bits (A0 to A23) to address the full capacity of the device.
-This corresponds to three bytes. The next address bits, A24 and A25, are used to drive the Address
-Latch Enable (ALE) and command Latch Enable (CLE) lines. So, when addressing memory with the A24
-bit set, the ALE line is set and the data transmitted is interpreted as an address.
-Similarly, when addressing with the A25 bit set, the CLE line is set.
+A 256 Mbit/32MByte device needs 24 bits (A0 to A23) to address the full capacity of the device. This corresponds to three bytes. The next address bits, A24 and A25, are used to drive the Address Latch Enable (ALE) and command Latch Enable (CLE) lines. So, when addressing memory with the A24 bit set, the ALE line is set and the data transmitted is interpreted as an address. Similarly, when addressing with the A25 bit set, the CLE line is set.
 
 The device registers are mapped into the MCU memory map.
 
@@ -724,30 +622,6 @@ The device registers are mapped into the MCU memory map.
 | Data         | 0x8000_0000                |
 | Address      | 0x8100_0000                |
 | Command      | 0x8200_0000                |
-
-
-The External Bus Interface (EBI)
---------------------------------
-
-The external bus Interface (EBI) support devices with up to 28 address lines and up to 16-bin
-data lines in multiplexed and non multiplexed mode.
-
-It supports four banks of different memory devices, including:
-
-* SRAM
-* Flash
-* TFT RGB
-
-
-
-There are four EBI regions that can be used to access the NAND Flash device.
-
-| EBI Region   |  Address Range             |    Size    |
-|--------------|----------------------------|------------|
-|    #0        | 0x8000_0000 - 0x83FF_FFFF  |   64 MB    |
-|    #1        | 0x8400_0000 - 0x87FF_FFFF  |   64 MB    |
-|    #2        | 0x8800_0000 - 0x8BFF_FFFF  |   64 MB    |
-|    #3        | 0x8C00_0000 - 0x8FFF_FFFF  |   64 MB    |
 
 
 ### Support for NAND Flash devices
@@ -811,17 +685,16 @@ There are four set  of four registers for timing configuration, one for each ban
 
 The fields important for NAND devices are:
 
-| Field    | Description                                                                            |
-|----------|----------------------------------------------------------------------------------------|
-| ADDRHOLD | Number of cycles the address is held after ALE is asserted                             |
-| ADDRSETUP| Number of cycles the address is driven onto the ADDRDAT bus before ALE is asserted     |
-| RDSTRB   | Sets the number of cycles the REn is held active                                       |
-| RDSETUP  | Sets the number of cycles the address setup before REn is asserted                     |
-| WRSTRB   | Sets the number of cycles the WEn is held active                                       |
-| WRSETUP  | Sets the number of cycles the address setup before WEn is asserted                     |
+| Field    | Description                                                       |
+|----------|-------------------------------------------------------------------|
+| ADDRHOLD | Number of cycles the address is held after ALE is asserted        |
+| ADDRSETUP| Number of cycles the address is driven onto the ADDRDAT bus <br/> before ALE is asserted|
+| RDSTRB   | Sets the number of cycles the REn is held active                  |
+| RDSETUP  | Sets the number of cycles the address setup before REn is asserted|
+| WRSTRB   | Sets the number of cycles the WEn is held active                  |
+| WRSETUP  | Sets the number of cycles the address setup before WEn is asserted|
 
-The timing parameters can now be determined. It is easy because most of parameters are minimum values
-and are smaller than the clock period (20,83 ns).
+The timing parameters can now be determined. It is easy because most of parameters are minimum values and are smaller than the clock period (20,83 ns).
 
 | Parameter| Value    | Requirement                                  |
 |----------|----------|----------------------------------------------|
@@ -853,57 +726,11 @@ and are smaller than the clock period (20,83 ns).
 ### Error Correction Code
 
 
-
-YaFFS
------
-
-YAFFS is a middleware that implements an interface to NAND devices. It features:
-
-* Open source/Commercial license. Closed source projects must pay for a license.
-* Wear leveling by avoiding repeated erases/writes on the same place.
-* Bad blocks management.
-
-
-There are two versions of YAFFS:
-
-* version 1: Supports 512-byte pages. In maintenance mode. Uses deletion markers.
-* version 2: Supports 512 and 2k pages. Active.
-
-
-         |-----------------------------------------------|
-         |               Application                     |
-         |-----------------------------------------------|
-         |           POSIX Interface                     |
-         |-----------------------------------------------|
-         |           YAFFS Direct Interface              |
-         |-----------------------------------------------|
-         |           YAFFS Core Filesystem               |
-         |-----------------------------------------------|
-         | RTOS interface |            | Flash interface |
-         |----------------|            |-----------------|
-         |     RTOS       |            |      Flash      |
-         |----------------|            |-----------------|
-
-
-YaFFS store objects in a NAND device. Objects can be:
-
-* Data files
-* Directories
-* Hand-links
-* Symbolic-links
-* Special objects (pipes, devices, etc.)
-
-All objects have an **obj_id**, an unique integer.
-
-YaFFS handles the objects in **chunks**, an unit of allocation, that is typically the NAND page
-size.  It also handles bad blocks (old and new) and ECC.
-
-
 Direct Memory Access
 --------------------
 
-Direct Memory Access (DMA) is a mechanism for transfering data between a peripheral and memory
-without demanding the processor to handle the transfer.
+Direct Memory Access (DMA) is a mechanism for transfering data between a
+peripheral and memory without demanding the processor to handle the transfer.
 
 The DMA controller in the EFM32GG is an licensed implementation of the PL230 uDMA developed by ARM.
 
@@ -931,13 +758,9 @@ The DMA controller is configured by:
 
 There must be a contiguous area that both the DMA controller and the host processor can access.
 
-This area must start at an address multiple of 256.
-The controller uses the lower 8 address bits to enable it to access all of the elements
-in the structure and therefore the base address must be at 0xXXXXXX00. It address must be written to
-the DMA_CTRLBASE register.
+This area must start at an address multiple of 256. The controller uses the lower 8 address bits to enable it to access all of the elements in the structure and therefore the base address must be at 0xXXXXXX00. It address must be written to the DMA_CTRLBASE register.
 
-Its size must lie between 16 bytes, when using only Channel 0, to 384 when using all primary and
-alternate channels. For example, when using Channels 0 to 3, only 64 bytes are needed.
+Its size must lie between 16 bytes, when using only Channel 0, to 384 when using all primary and alternate channels. For example, when using Channels 0 to 3, only 64 bytes are needed.
 
 
 | Offset  | Description                                      |
@@ -1022,12 +845,12 @@ The increments are defined by respective source or destination filter.
 
 Calculation of source address and destination address
 
-| src_inc  | dst_inc | Source Address                    | Destination Address                |
-|----------|---------|-----------------------------------|------------------------------------|
-|  0b00    |  0b00   | src_data_end_ptr - n_minus_1      | dst_data_end_ptr - n_minus_1       |
-|  0b01    |  0b01   | src_data_end_ptr - (n_minus_1<<1) | dst_data_end_ptr - (n_minus_1<<1)  |
-|  0b10    |  0b10   | src_data_end_ptr - (n_minus_1<<2) | dst_data_end_ptr - (n_minus_1<<2)  |
-|  0b11    |  0b11   | src_data_end_ptr                  | dst_data_end_ptr                   |
+|src_inc|dst_inc| Source Address                  | Destination Address                |
+|-------|-------|-----------------------------------|------------------------------------|
+| 0b00  | 0b00  | src_data_end_ptr-n_minus_1      | dst_data_end_ptr - n_minus_1      |
+| 0b01  | 0b01  | src_data_end_ptr-(n_minus_1<<1) | dst_data_end_ptr - (n_minus_1<<1) |
+| 0b10  | 0b10  | src_data_end_ptr-(n_minus_1<<2) | dst_data_end_ptr - (n_minus_1<<2) |
+| 0b11  | 0b11  | src_data_end_ptr                | dst_data_end_ptr                   |
 
 
 References

@@ -72,10 +72,11 @@
  *
  */
 
-#include <em_device.h>
+
 #include <stdint.h>
 #include "gpio3.h"
 #include "nand-flash.h"
+#include "em_device.h"
 
 #ifndef BIT
 #define BIT(N)  (1U<<(N))
@@ -131,13 +132,9 @@
 #define HALFPAGEMASK                (0xFF)
 #define PAGEMASK                    (0x1FF)
 #define BLOCKMASK                   (0x3FFF)
+#define COPYREGIONMASK              (0x1000000)
 #define ADDRESSMASK                 NAND_MAXADDRESS
-#define GETCOLUMNADDRESS(A)         ((A)&0x1FF)
-
-#define ALIGNTOHALFPAGEADDRESS(A)   ((A)&0x1FFFF00)
-#define ALIGNTOPAGEADDRESS(A)       ((A)&0x1FFFE00)
-//#define ALIGNTOROWADDRESS(A)        ((A)&0x1FFFE00)
-#define ALIGNSHORTADDRESS(A)        ((A)&0x1FFC000)
+#define GETCOLUMNADDRESS(A)         ((A)&0xPAGEMASK)
 
 #define IsPageAddress(A)             (((A)&PAGEMASK)==0)
 #define IsBlockAddress(A)           (((A)&BLOCKMASK)==0)
@@ -282,9 +279,9 @@ const Command_TypeDef CommandList[] = {
     {   2, (uint8_t []) {0x50, FULLADDRESS } },          //  2: Read C/Spare
     {   1, (uint8_t []) {0x90} },                        //  3: Read Signature
     {   1, (uint8_t []) {0x70} },                        //  4 Read Status
-    {   2, (uint8_t []) {0x00, 0x80, FULLADDRESS} },     //  5: Program A
-    {   2, (uint8_t []) {0x01, 0x80, FULLADDRESS} },     //  6: Program B
-    {   2, (uint8_t []) {0x50, 0x80, FULLADDRESS} },     //  7: Program C
+    {   3, (uint8_t []) {0x00, 0x80, FULLADDRESS} },     //  5: Program A
+    {   3, (uint8_t []) {0x01, 0x80, FULLADDRESS} },     //  6: Program B
+    {   3, (uint8_t []) {0x50, 0x80, FULLADDRESS} },     //  7: Program C
     {   3, (uint8_t []) {0x00, FULLADDRESS, 0x8A} },     //  8: Copy back 1
     {   2, (uint8_t []) {FULLADDRESS, 0x10} },           //  9: Copy back 2
     {   3, (uint8_t []) {0x60, SHORTADDRESS, 0xD0} },    // 10: Erase block
@@ -460,7 +457,7 @@ static inline void ConfigGPIOPins(void) {
 
     // The default values for output pins
     DisableCE();
-    DisableWP();
+    EnableWP();
     EnablePWR();
 }
 
@@ -604,7 +601,8 @@ int32_t NAND_Init(void) {
     DisableCE();
     EnableWP();
 
-    return 0;
+    int32_t rc = NAND_Status();
+    return rc;
 }
 
 /*********************** Status routines **************************************/
@@ -796,6 +794,7 @@ int32_t rc;
     }
 
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -823,6 +822,7 @@ int32_t rc;
     }
 
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -842,14 +842,18 @@ int32_t rc;
         return -1;
     }
 
-    EnableWP();
+    EnableCE();
+    DisableWP();
     SendCommand(CMD_PROGRAMA,addr);
     rc = NAND_WaitUntilReadyPin();
 
     CopyToFlash(data, NAND_SPARESIZE);
 
+    SendCommand(CMD_CONFIRM,addr);
+
     EnableWP();
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -867,15 +871,19 @@ int32_t rc;
     if( !IsPageAddress(addr)) {
         return -1;
     }
+    EnableCE();
+    DisableWP();
 
-    EnableWP();
     SendCommand(CMD_PROGRAMA,addr);
     rc = NAND_WaitUntilReadyPin();
 
     CopyToFlash(data, NAND_PAGESIZE);
 
+    SendCommand(CMD_CONFIRM,addr);
+
     EnableWP();
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -896,14 +904,19 @@ int32_t rc;
         return -1;
     }
 
-    EnableWP();
+    EnableCE();
+    DisableWP();
+
     SendCommand(CMD_PROGRAMA,addr);
     rc = NAND_WaitUntilReadyPin();
 
     CopyToFlash(data, NAND_FULLPAGESIZE);
 
+    SendCommand(CMD_CONFIRM,addr);
+
     EnableWP();
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -924,10 +937,14 @@ int32_t NAND_EraseBlock(uint32_t addr) {
     }
 
     EnableCE();
+    DisableWP();
+
     SendCommand(CMD_ERASEBLOCK,addr);
     rc = NAND_WaitUntilReadyPin();
 
+    EnableWP();
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
@@ -946,14 +963,23 @@ int32_t rc;
         return -1;
     }
 
+    // They must have the same value for
+    if( ((srcaddr^dstaddr)&NAND_COPYREGIONMASK) != 0 ) {
+        return -2;
+    }
+
     EnableCE();
+    DisableWP();
+
     SendCommand(CMD_COPYBACK1 ,srcaddr);
     rc = NAND_WaitUntilReadyPin();
 
     SendCommand(CMD_COPYBACK2 ,dstaddr);
     rc = NAND_WaitUntilReadyPin();
 
+    EnableWP();
     DisableCE();
+
     rc = NAND_Status();
 
     return rc;
