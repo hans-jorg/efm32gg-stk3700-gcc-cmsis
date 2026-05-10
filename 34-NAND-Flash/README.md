@@ -856,18 +856,11 @@ Calculation of source address and destination address
 References
 ----------
 
-1. [NAND Flash Memories: Bad Block Management and the YAFFS File System](https://www.eeweb.com/nand-flash-memories-bad-block-management-and-the-yaffs-file-system/)
-2. [A Robust Flash File System Since 2002](https://yaffs.net/)
-2. [FatFS - Generic FAT Filesystem Module](http://elm-chan.org/fsw/ff/)
-3. [A Robust Flash File System Since 2002](https://yaffs.net/)
-4. [LittleFS](https://github.com/littlefs-project/littlefs)
-5. [SPIFFS (SPI Flash File System)](https://github.com/pellepl/spiffs)
-6. [PrimeCell DMA Controller (PL230) Technical Reference Manual ](https://developer.arm.com/documentation/ddi0417/a/?lang=en)
-7. [NAND FLASH ECC verification principle and implementation](https://en.eeworld.com.cn/news/mcu/eic312689.html)
-8. [Micron AN1819 Bad Block Management in NAND Flash Memory
+1. [PrimeCell DMA Controller (PL230) Technical Reference Manual ](https://developer.arm.com/documentation/ddi0417/a/?lang=en)
+2. [NAND FLASH ECC verification principle and implementation](https://en.eeworld.com.cn/news/mcu/eic312689.html)
+3. [Micron AN1819 Bad Block Management in NAND Flash Memory
 Introductio](https://d1.amobbs.com/bbs_upload782111/files_46/ourdev_684398U97OG3.pdf)
-9. [NAND Flash ECC Algorithm (Error Checking & Correction)](https://www.elnec.com/sw/samsung_ecc_algorithm_for_256b.pdf)
-10. [NAND flash replacement on EFM32GG starter kit](https://community.silabs.com/s/question/0D51M00007xeRcrSAE/nand-flash-replacement-on-efm32gg-starter-kit?language=sv)
-11. [NAND128-A NAND256-A](https://www.mouser.com/catalog/specsheets/stmicroelectronics_xxx-a.pdf)
-12. [NAND128-A, NAND256-A, NAND512-A, NAND01G-A](https://www.jotrin.com/product/parts/NAND256W3A?srsltid=AfmBOoqWVFEtRdYKOohBaCeSeRtZ3tlxIbY-aqEn1JG7Wl7xxhRV0o2v)
-9.
+4. [NAND Flash ECC Algorithm (Error Checking & Correction)](https://www.elnec.com/sw/samsung_ecc_algorithm_for_256b.pdf)
+5. [NAND flash replacement on EFM32GG starter kit](https://community.silabs.com/s/question/0D51M00007xeRcrSAE/nand-flash-replacement-on-efm32gg-starter-kit?language=sv)
+6. [NAND128-A NAND256-A](https://www.mouser.com/catalog/specsheets/stmicroelectronics_xxx-a.pdf)
+7. [NAND128-A, NAND256-A, NAND512-A, NAND01G-A](https://www.jotrin.com/product/parts/NAND256W3A?srsltid=AfmBOoqWVFEtRdYKOohBaCeSeRtZ3tlxIbY-aqEn1JG7Wl7xxhRV0o2v)
