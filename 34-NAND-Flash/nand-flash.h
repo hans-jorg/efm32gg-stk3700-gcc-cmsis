@@ -3,10 +3,10 @@
 
 /**
  * @file nand-flash.h
- * @brief Interface routine for the ST NAND256 Flash device in the EFM32GG-STK3700 board
+ * @brief Interface routines for the ST NAND256 Flash device in the EFM32GG-STK3700 board
  *
  * @note
- *      It will be used as the device interface for the FatFS middleware
+ *      They will be used as the device interface for the FatFS middleware
  *
  *      It does not have Garbage Collection nor Wear-Leveling mechanims
  *
@@ -18,27 +18,54 @@
 #include <stdint.h>
 
 /**
- *  @brief  NAND features
+ *  @brief  NAND parameters (all sizes in bytes)
  */
-#define NAND_CAPACITY               (32*1024*1024)
+
+// Capacities
+#define NAND_CAPACITY               (32*1024L*1024L)
+#define NAND_PAGEMAXCOUNT           (65536L)
+#define NAND_BLOCKMAXCOUNT          (2048L)
+#define NAND_PAGESPERBLOCK          (32)
+
+// maximal address for pages and blocks
+#define NAND_PAGEADDRMAX            (NAND_PAGEMAXCOUNT-1)
+#define NAND_BLOCKADDRMAX           (NAND_BLOCKMAXCOUNT-1)
+
+// Page, Block and Spare size
 #define NAND_PAGESIZE               (512)
 #define NAND_HALFPAGESIZE           (256)
 #define NAND_SPARESIZE              (16L)
-#define NAND_FULLPAGESIZE           (NAND_PAGESIZE+16)
-#define NAND_PAGESPERBLOCK          (32)
-#define NAND_BLOCKSIZE              (NAND_PAGESPERBLOCK*NAND_PAGESIZE)
-#define NAND_PAGECOUNT              (NAND_CAPACITY/NAND_PAGESIZE)
-#define NAND_BLOCKCOUNT             (NAND_PAGECOUNT/NAND_PAGESPERBLOCK)
+#define NAND_FULLPAGESIZE           (NAND_PAGESIZE+NAND_SPARESIZE)
+#define NAND_BLOCKSZE               (NAND_PAGESIZE*NAND_PAGESPERBLOCK)
 
-#define NAND_COLUMN_POS             (0)
+// NAND_PAGESIZE demands 9 bits for addressing inside a page
+// NAND_BLOCKMAXCOUNT demands 14 bits for addressing inside a block
 #define NAND_PAGEADDRESS_POS        (9)
 #define NAND_BLOCKADDRESS_POS       (14)
 
-#define NAND_PAGEADDRMASK           ((NAND_PAGECOUNT-1)<<NAND_PAGEADDRESS_POS)
-#define NAND_BLOCKADDRMASK          ((NAND_BLOCKCOUNT-1)<<NAND_BLOCKADDRESS_POS)
+// Converting Page Address and Block Address to a Full Address
+#define NAND_FULLADDR_FROM_PAGEADDR(PAGEADDR)   ((PAGEADDR)<<NAND_PAGEADDRESS_POS)
+#define NAND_FULLADDR_FROM_BLOCKADDR(BLOCKADDR) ((BLOCKADDR)<<NAND_BLOCKADDRESS_POS)
+
+#define NAND_PAGECOUNT2             (NAND_CAPACITY/NAND_PAGESIZE)
+#define NAND_BLOCKCOUNT2            (NAND_PAGECOUNT/NAND_PAGESPERBLOCK)
+
+// These symbols are for full addresses
+#define NAND_PAGEADDRMASK           ((NAND_PAGEADDRMAX)<<NAND_PAGEADDRESS_POS)
+#define NAND_BLOCKADDRMASK          ((NAND_BLOCKADDRMAX)<<NAND_BLOCKADDRESS_POS)
 #define NAND_COPYREGIONMASK         (0x1000000)
 #define NAND_MAXADDRESS             (NAND_CAPACITY-1)
 
+// Consistency
+/*
+ *
+ * #if   (NAND_PAGECOUNT) != (NAND_PAGECOUNT2)       \
+ *    || (NAND_BLOCKCOUNT) != (NAND_BLOCKCOUNT2)
+ *    #error "NAND Flash parameters with errors"
+ * #endif
+ */
+
+// Align macros
 #define NAND_ALIGNTOHALFPAGEADDRESS(A)   ((A)&0x1FFFF00)
 #define NAND_ALIGNTOPAGEADDRESS(A)       ((A)&0x1FFFE00)
 #define NAND_ALIGNBLOCKADDRESS(A)        ((A)&0x1FFC000)
@@ -72,17 +99,17 @@ int32_t  NAND_CheckReadyStatus(void);
 int32_t  NAND_WaitUntilReadyPin(void);
 int32_t  NAND_CheckReadyPin(void);
 
-int32_t  NAND_ReadPage(uint32_t addr, uint8_t *data);
-int32_t  NAND_ReadFullPage(uint32_t addr, uint8_t *data);
-int32_t  NAND_ReadSpare(uint32_t addr, uint8_t *data);
+int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t *data);
 
-int32_t  NAND_WritePage(uint32_t addr, uint8_t *data);
-int32_t  NAND_WriteFullPage(uint32_t addr, uint8_t *data);
-int32_t  NAND_WriteSpare(uint32_t addr, uint8_t *data);
+int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t *data);
 
 int32_t  NAND_ReadSignature(uint8_t *data);
 int32_t  NAND_EraseBlock(uint32_t blockaddr);
-int32_t  NAND_CopyBack(uint32_t srcaddr, uint32_t dstaddr);
+int32_t  NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst);
 
 // For debug
 void     NAND_EnableWriteProtect(void);
