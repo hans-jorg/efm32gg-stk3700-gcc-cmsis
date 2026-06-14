@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Embedded ARM",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "../../Gecko_SDK/platform/Device/SiliconLabs/EFM32GG/Include",
+                "../../Gecko_SDK//platform/CMSIS"
+            ],
+            "defines": [
+                "EFM32GG990F1024",
+                "DEBUG",
+                "_DEBUG"
+            ],
+            "compilerPath": "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-arm",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
