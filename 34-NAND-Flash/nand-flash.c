@@ -731,7 +731,7 @@ static void CopyToFlash(uint8_t *data, uint16_t n) {
  *  @brief  Return signature of device
  */
 
-int32_t  NAND_ReadSignature(uint8_t *data) {
+int32_t  NAND_ReadSignature(uint8_t data[NAND_SIGNATURESIZE]) {
 int32_t rc;
 
     EnableCE();
@@ -751,7 +751,7 @@ int32_t rc;
   *
   * @note    Read a 16 byte from NAND device
   */
-int32_t NAND_ReadSpare(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -780,7 +780,7 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Read a page (512 bytes) from NAND device starting at a given
   *          page aligned address
   */
-int32_t NAND_ReadPage(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -808,7 +808,7 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Read a page (528 bytes) from NAND device starting at a given
   *          page address
   */
-int32_t NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -838,7 +838,7 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    Write a 16 bytes onto NAND device
   */
-int32_t NAND_WriteSpare(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -869,7 +869,7 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Write a page (512 bytes) into NAND device starting at given page
   *          address
   */
-int32_t NAND_WritePage(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -902,7 +902,7 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    A confirm command is needed after a half page
   */
-int32_t NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data) {
+int32_t NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
 int32_t rc;
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
@@ -931,13 +931,13 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 /*********************** Erase Routines ***************************************/
 
 /**
-  * @brief   NAND_BlockErase
+  * @brief   NAND_EraseBlock
   *
   * @note    Erase a full block of 32 pages
   */
 int32_t NAND_EraseBlock(uint32_t blockaddr) {
     int32_t rc;
-    uint32_t addr = NAND_FULLADDR_FROM_BLOCKADDR(blockaddr);
+    uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(blockaddr);
 
     if( !IsBlockAddress(addr)) {
         return -1;

@@ -2,15 +2,21 @@
 #define NAND_FLASH_H
 
 /**
- * @file nand-flash.h
- * @brief Interface routines for the ST NAND256 Flash device in the EFM32GG-STK3700 board
+ * @file nand-flash.h @brief Interface routines for the ST NAND256 Flash device in the
+ * EFM32GG-STK3700 board
  *
- * @note
- *      They will be used as the device interface for the FatFS middleware
+ * @note They will be used as the device interface for the Flash middleware
  *
- *      It does not have Garbage Collection nor Wear-Leveling mechanims
+ * @note All addresses are page addresses. This means an address in the range 0..65535.
+ *       This means the 9 low-order bits of the byte address are zero.
+ *       Access is always to a full page access, so the ECC can be used.
  *
- * @version 1.0.0
+ * @note Block address is a page address of the first page. This means that with the 5 low order
+ *       bits set to 0.
+ *
+ * @note It does not have Garbage Collection nor Wear-Leveling mechanims
+ *
+ * @version 1.1.0
  * Date:    7 October 2023
  *
  */
@@ -37,6 +43,7 @@
 #define NAND_SPARESIZE              (16L)
 #define NAND_FULLPAGESIZE           (NAND_PAGESIZE+NAND_SPARESIZE)
 #define NAND_BLOCKSZE               (NAND_PAGESIZE*NAND_PAGESPERBLOCK)
+#define NAND_SIGNATURESIZE          (3)
 
 // NAND_PAGESIZE demands 9 bits for addressing inside a page
 // NAND_BLOCKMAXCOUNT demands 14 bits for addressing inside a block
@@ -44,8 +51,19 @@
 #define NAND_BLOCKADDRESS_POS       (14)
 
 // Converting Page Address and Block Address to a Full Address
-#define NAND_FULLADDR_FROM_PAGEADDR(PAGEADDR)   ((PAGEADDR)<<NAND_PAGEADDRESS_POS)
-#define NAND_FULLADDR_FROM_BLOCKADDR(BLOCKADDR) ((BLOCKADDR)<<NAND_BLOCKADDRESS_POS)
+#define NAND_FULLADDR_FROM_PAGEADDR(PAGEADDR)   \
+            ((PAGEADDR)<<NAND_PAGEADDRESS_POS)
+
+/*
+ * This are not needed anymore because block address is the page address of the first page.
+ * This means the 5 low-order bits are zero
+ * #define NAND_FULLADDR_FROM_BLOCKADDR(BLOCKADDR) \
+ * ((BLOCKADDR)<<NAND_BLOCKADDRESS_POS)
+ * #define NAND_BLOCKADDR_FROM_PAGEADDR(PAGEADDR)  \
+ * ((PAGEADDR>>(NAND_BLOCKADDRESS_POS-NAND_PAGEADDRESS_POS)))
+ *
+ */
+#define NAND_ALIGN_BLOCKADDRMASK(PAGEADDR)  ((PAGEADDR)&(~0x1F))
 
 #define NAND_PAGECOUNT2             (NAND_CAPACITY/NAND_PAGESIZE)
 #define NAND_BLOCKCOUNT2            (NAND_PAGECOUNT/NAND_PAGESPERBLOCK)
@@ -99,15 +117,15 @@ int32_t  NAND_CheckReadyStatus(void);
 int32_t  NAND_WaitUntilReadyPin(void);
 int32_t  NAND_CheckReadyPin(void);
 
-int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t *data);
-int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data);
-int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
+int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
 
-int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t *data);
-int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data);
-int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t *data);
+int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
+int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
 
-int32_t  NAND_ReadSignature(uint8_t *data);
+int32_t  NAND_ReadSignature(uint8_t data[3]);
 int32_t  NAND_EraseBlock(uint32_t blockaddr);
 int32_t  NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst);
 

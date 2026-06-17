@@ -167,7 +167,7 @@ int errorsinpage = 0;
             printf("Enter the page number: ");
             fgets(line,10,stdin);
             pagenumber = atoi(line);
-            pageaddr = pagenumber<<NAND_PAGEADDRESS_POS;
+            pageaddr = pagenumber;
             printf("\nReading spare\n");
             rc = NAND_ReadSpare(pageaddr, spare);
             if( rc == 0 ) {
@@ -215,7 +215,7 @@ int errorsinpage = 0;
             printf("Enter the number of page to be written: ");
             fgets(line,10,stdin);
             pagenumber = atoi(line);
-            pageaddr = pagenumber<<NAND_PAGEADDRESS_POS;
+            pageaddr = pagenumber;
             printf("Writing a page into page %d at address %08X\n",
                 (int) pagenumber,(unsigned) pageaddr);
             // Fill data to be written
@@ -260,8 +260,8 @@ int errorsinpage = 0;
             printf("Enter the number of a page inside the block: ");
             fgets(line,10,stdin);
             pagenumber = atoi(line);
-            uint32_t pageaddr = pagenumber<<NAND_PAGEADDRESS_POS;
-            uint32_t blockaddr = NAND_ALIGNBLOCKADDRESS(pageaddr);
+            uint32_t pageaddr = pagenumber;
+            uint32_t blockaddr = NAND_ALIGN_BLOCKADDRMASK(pageaddr);
             printf("Erasing block at %08X containing page #%08X\n",
                     (unsigned) blockaddr,
                     (unsigned) pagenumber);
