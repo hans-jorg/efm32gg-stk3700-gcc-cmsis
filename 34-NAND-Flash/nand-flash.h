@@ -74,6 +74,27 @@
 #define NAND_COPYREGIONMASK         (0x1000000)
 #define NAND_MAXADDRESS             (NAND_CAPACITY-1)
 
+/**
+ *  @brief  Spare area (C) layout
+ *
+ *  @note   The position of Bad Block flag is set by the manufacturer
+ *
+ *  @note
+ *          "Every block, whose first page has a byte at the position 6 of
+ *           the spare area different for 0xFF IS a bad block"
+ *
+ * @note    The 6th byte has index 5 in C
+ */
+///@{
+#define NAND_OKVALUE              '\xFF'
+#define NAND_BADBLOCKFLAG_POS       (5)
+
+#define NAND_CHECKSUM_POS_0         (0)
+#define NAND_CHECKSUM_POS_1         (1)
+#define NAND_CHECKSUM_POS_2         (2)
+///@}
+
+
 // Consistency
 /*
  *
@@ -117,13 +138,15 @@ int32_t  NAND_CheckReadyStatus(void);
 int32_t  NAND_WaitUntilReadyPin(void);
 int32_t  NAND_CheckReadyPin(void);
 
+int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
 int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
 int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
-int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
+int32_t  NAND_ReadFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
 
+int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
 int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
 int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
-int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
+int32_t  NAND_WriteFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
 
 int32_t  NAND_ReadSignature(uint8_t data[3]);
 int32_t  NAND_EraseBlock(uint32_t blockaddr);
