@@ -94,6 +94,20 @@
 #define NAND_CHECKSUM_POS_2         (2)
 ///@}
 
+typedef enum {
+                    NAND_OK                      =    0,
+                    NAND_CORRECTEABLE_ERROR      =    1,
+                    NAND_CHECKSUM_ERROR          =    2,
+                    NAND_BUSY                    =    3,
+                    NAND_READY                   =    4,
+                    NAND_MULTIPLE_ERRORS         =   -1,
+                    NAND_ERROR                   =   -2,
+                    NAND_IRRECOVERABLE_ERROR     =   -3,
+                    NAND_TIMEOUT_ERROR           =   -4,
+                    NAND_INVALID_ADDRESS         =   -5,
+} NAND_RC;
+
+///@}
 
 // Consistency
 /*
@@ -125,32 +139,32 @@
                     |NAND_STATUS_ERROR   )
 ///@}
 
-int32_t  NAND_Init(void);
+NAND_RC  NAND_Init(void);
 uint32_t NAND_Status(void);
 
-int32_t  NAND_Ready(void);
-int32_t  NAND_Busy(void);
-int32_t  NAND_Error(void);
+NAND_RC  NAND_Ready(void);
+NAND_RC  NAND_Busy(void);
+NAND_RC  NAND_Error(void);
 
-int32_t  NAND_WaitUntilReadyStatus(void);
-int32_t  NAND_CheckReadyStatus(void);
+NAND_RC  NAND_WaitUntilReadyStatus(void);
+NAND_RC  NAND_CheckReadyStatus(void);
 
-int32_t  NAND_WaitUntilReadyPin(void);
-int32_t  NAND_CheckReadyPin(void);
+NAND_RC  NAND_WaitUntilReadyPin(void);
+NAND_RC  NAND_CheckReadyPin(void);
 
-int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
-int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
-int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
-int32_t  NAND_ReadFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+NAND_RC  NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
+NAND_RC  NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
+NAND_RC  NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+NAND_RC  NAND_ReadFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
 
-int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
-int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
-int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
-int32_t  NAND_WriteFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+NAND_RC  NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]);
+NAND_RC  NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]);
+NAND_RC  NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
+NAND_RC  NAND_WriteFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]);
 
-int32_t  NAND_ReadSignature(uint8_t data[3]);
-int32_t  NAND_EraseBlock(uint32_t blockaddr);
-int32_t  NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst);
+NAND_RC  NAND_ReadSignature(uint8_t data[3]);
+NAND_RC  NAND_EraseBlock(uint32_t blockaddr);
+NAND_RC  NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst);
 
 // For debug
 void     NAND_EnableWriteProtect(void);

@@ -84,6 +84,21 @@
 
 
 /**
+ *  @brief  Which parity table to use.
+ *
+ *  @note   There are two: one faster but demands a 256-byte table.
+ *          The other is somewhat slower but only uses 32 bytes
+ */
+#define PARITYBYTETABLE
+
+/**
+ *  @brief  The EFM32GG hardware can calculate the hamming encoding. When this flag is
+ *          defined, both the software implementation and hardware implementation are
+ *          used and the results are compared
+ */
+#define VERIFYDEVICEHAMMING
+
+/**
  *  @brief  NAND256 address parameters
  *
  *  @note
@@ -136,7 +151,7 @@
 #define ADDRESSMASK                 NAND_MAXADDRESS
 #define GETCOLUMNADDRESS(A)         ((A)&0xPAGEMASK)
 
-#define IsPageAddress(A)             (((A)&PAGEMASK)==0)
+#define IsPageAddress(A)            (((A)&PAGEMASK)==0)
 #define IsBlockAddress(A)           (((A)&BLOCKMASK)==0)
 ///@}
 
@@ -216,6 +231,19 @@
 #define WR_STROBETIME                       (2)
 ///@}
 
+///@{
+/*
+ *  @note  These symbols are used as place holders.
+ *         They must be different from the any code used by the DEVICE
+ */
+#define FULLADDRESS                          (0xFA)
+#define SHORTADDRESS                         (0x5A)
+///@}
+
+typedef struct {
+    uint8_t     n;
+    uint8_t    *v;
+} Command_TypeDef;
 
 /**
  *  @brief  NAND Command Table
@@ -257,21 +285,6 @@
 #define CMD_RESET                              11
 #define CMD_CONFIRM                            12
 
-///@{
-/*
- *  @note  These symbols are used as place holders.
- *         They must be different from the any code used by the DEVICE
- */
-#define FULLADDRESS                          (0xFA)
-#define SHORTADDRESS                         (0x5A)
-///@}
-
-typedef struct {
-    uint8_t     n;
-    uint8_t    *v;
-} Command_TypeDef;
-
-
 /// NAND Flash commands table
 const Command_TypeDef CommandList[] = {
     {   2, (uint8_t []) {0x00, FULLADDRESS } },          //  0: Read A
@@ -302,7 +315,7 @@ const Command_TypeDef CommandList[] = {
 
 ///@}
 /**
- * @brief  Adresses used to access NAND Flash
+ * @brief  Addresses used to access NAND Flash
  */
 ///@{
 static  uint8_t *const pntData     = (uint8_t *) 0x80000000;
@@ -319,7 +332,8 @@ static  uint8_t *const pntCommand  = (uint8_t *) 0x82000000;
 /*
  *  @brief  Nano delay
  */
-void nano_delay(uint32_t n) {
+static void
+nano_delay(uint32_t n) {
     while(n--) {
         __NOP();
     }
@@ -329,8 +343,10 @@ void nano_delay(uint32_t n) {
 
 /**
  *  @brief  Send Command
+ *
+ *  @param  cmd:index of command as in the CommandList
  */
-static int32_t
+static NAND_RC
 SendCommand(int32_t cmd, uint32_t address) {
     for(int32_t i=0;i<CommandList[cmd].n;i++) {
         uint8_t command =  CommandList[cmd].v[i];
@@ -340,7 +356,7 @@ SendCommand(int32_t cmd, uint32_t address) {
             NAND_ADDRESS = address&0xFF;
             address >>= 8;
             NAND_ADDRESS = address&0xFF;
-            // Only for 512 MB and 1 GB devices
+            // Only for 512 MB or larger devices
             // address >>= 8;
             // NAND_ADDRESS = address&0xFF;
         } else if ( command == SHORTADDRESS ) {
@@ -348,7 +364,7 @@ SendCommand(int32_t cmd, uint32_t address) {
             NAND_ADDRESS = address&0xFF;
             address >>= 8;
             NAND_ADDRESS = address&0xFF;
-            // Only for 512 MB and 1 GB devices
+            // Only for 512 MB or larger devices
             // address >>= 8;
             // NAND_ADDRESS = address&0xFF;
         } else {
@@ -357,10 +373,11 @@ SendCommand(int32_t cmd, uint32_t address) {
 
     }
 
-    int32_t rc = NAND_WaitUntilReadyPin();
-    rc = NAND_WaitUntilReadyPin();
+    NAND_RC rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc; // Nonzero if OK
+    return NAND_OK;
 }
 
 /*********************** Pin control routines *********************************/
@@ -375,45 +392,53 @@ SendCommand(int32_t cmd, uint32_t address) {
  * @note   They hid the signal polarity
  */
 
-static inline void EnablePWR(void) {
+static inline void
+EnablePWR(void) {
     // Set to High (positive logic)
     GPIO_SetPins(PWR_GPIO, PWR_PINMASK);
     NAND_WaitUntilReadyPin();
 }
 
-static inline void DisablePWR(void) {
+static inline void
+DisablePWR(void) {
     // Set to  Low (positive logic)
     GPIO_ClearPins(PWR_GPIO, PWR_PINMASK);
 }
 
-static inline void EnableCE(void) {
+static inline void
+EnableCE(void) {
     // Set to Low (Active Low)
     GPIO_ClearPins(CE_GPIO, CE_PINMASK);
 }
 
-static inline void DisableCE(void) {
+static inline void
+DisableCE(void) {
     // Set to High (Active Low)
     GPIO_SetPins(CE_GPIO, CE_PINMASK);
 }
 
-static inline void EnableWP(void) {
+static inline void
+EnableWP(void) {
     // Set to Low due to the negative logic
     GPIO_ClearPins(WP_GPIO, WP_PINMASK);
 }
 
-static inline void DisableWP(void) {
+static inline void
+DisableWP(void) {
     // Set to High due to the negative logic
     GPIO_SetPins(WP_GPIO, WP_PINMASK);
 }
 
 // For debug mainly
-void  NAND_EnableWriteProtect(void) {
+void
+NAND_EnableWriteProtect(void) {
     // Enable Write Protect using the WP pin
     EnableWP();
 }
 
 // For debug mainly
-void  NAND_DisableWriteProtect(void) {
+void
+NAND_DisableWriteProtect(void) {
     // Disable Write Protect using the WP pin
     DisableWP();
 }
@@ -424,7 +449,8 @@ void  NAND_DisableWriteProtect(void) {
 /**
  *  @brief  Enable EBI clock
  */
-static inline void EnableEBIClock(void) {
+static inline void
+EnableEBIClock(void) {
     CMU->HFPERCLKDIV  |= CMU_HFPERCLKDIV_HFPERCLKEN;// Enable HFPERCLK
     CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_EBI;      // Enable EBI Clock
 }
@@ -436,7 +462,8 @@ static inline void EnableEBIClock(void) {
  *         The pins directly controlled by EBI are configured elsewhere
  *
  */
-static inline void ConfigGPIOPins(void) {
+static inline void
+ConfigGPIOPins(void) {
 
     // Write Protect, Chip Enable and Power Enable output pins
     GPIO_ConfigPins(WP_GPIO, WP_PINMASK, WP_PINMODE);
@@ -457,7 +484,8 @@ static inline void ConfigGPIOPins(void) {
  *  @note   Pins are configured as Push-Pull before enabling EBI.
  *          This is done in the code example from SiLabs
  */
-static inline void ConfigEBIPins(void) {
+static inline void
+ConfigEBIPins(void) {
 
     // Configure pins before commit them to EBI
     GPIO_ConfigPins(AD_GPIO,AD_PINMASK,GPIO_MODE_PUSHPULL);
@@ -508,7 +536,8 @@ static inline void ConfigEBIPins(void) {
  *
  */
 
-static inline void ConfigEBI(void) {
+static inline void
+ConfigEBI(void) {
 
     // Enable clock for the EBI module (just in case)
     EnableEBIClock();
@@ -579,7 +608,8 @@ static inline void ConfigEBI(void) {
  * @return 0 if OK, negative in case of error
  */
 
-int32_t NAND_Init(void) {
+NAND_RC
+NAND_Init(void) {
 
     ConfigGPIOPins();
     ConfigEBIPins();
@@ -592,7 +622,7 @@ int32_t NAND_Init(void) {
     EnableWP();
 
     int32_t rc = NAND_Status();
-    return rc;
+    return rc; // NAND_Status
 }
 
 /*********************** ECC routines *************************************************/
@@ -634,11 +664,12 @@ int32_t NAND_Init(void) {
 /**
  *  @brief  Test if the parameter is a power of 2
  */
-static inline int ispower2(unsigned m ) {
+static inline int
+ispower2(unsigned m ) {
     return (m&(m-1))==0;
 }
 
-
+#ifdef VERIFYDEVICEHAMMING
 /**
  *  @brief  Parity table for a 8-bit byte
  *
@@ -651,9 +682,6 @@ static inline int ispower2(unsigned m ) {
  *          the 32-bit value and 0x80000000>>(n&0x1F) to get the bit
  */
 
-#define PARITYBYTETABLE
-
-
 #ifdef PARITYBYTETABLE
 /*
  *  @note   Only bit 0 is used for paritytable8
@@ -661,7 +689,7 @@ static inline int ispower2(unsigned m ) {
 
 /*********************** Status routines **************************************/
 
-static uint8_t paritytable8[] __attribute__((unused)) = {
+static uint8_t paritytable8[] = {
     0,   // 0b00000000 = 0x00
     1,   // 0b00000001 = 0x01
     1,   // 0b00000010 = 0x02
@@ -941,7 +969,8 @@ static uint32_t paritytable32[] = {
 
 #endif // PARITYBYTETABLE
 
-static int  h2d_encode( uint8_t *data, uint32_t *pecc) {
+static NAND_RC
+h2d_encode( uint8_t *data, uint32_t *pecc) {
 const uint8_t maskq1  = 0x55;  // 0x0x0x0x: Only odd bits
 const uint8_t maskp1  = 0xAA;  // x0x0x0x0: Only even bits
 const uint8_t maskq2  = 0x33;  // 00xx00xx: Bits 5,4,1,0
@@ -980,8 +1009,10 @@ uint32_t wp = 0; // parity word
     wp |= (p4<<5)| (q4<<4)| (p2<<3)| (q2<<2)| (p1<<1)| (q1<<0);
 
     *pecc = wp;
-    return 0;
+    return NAND_OK;
 }
+#endif // VERIFYDEVICEHAMMING
+
 
 /**
  *  @brief  Verify ECC
@@ -1017,22 +1048,20 @@ uint32_t wp = 0; // parity word
  *        -1: Errors in multiple bits
  */
 
-
-static int h2d_verify( uint32_t wp1, uint32_t wp2, uint16_t *ppos, uint8_t *pbit) {
+static NAND_RC
+h2d_verify( uint32_t wp1, uint32_t wp2, uint16_t *ppos, uint8_t *pbit) {
 
     // Calculate syndrome = XOR of parity words
     uint32_t syndrome = wp1^wp2;
 
-    //printf("Syndrome = %06X (=%024b)\n",syndrome,syndrome);
-
     // If syndrome is all zero, no error
     if( syndrome == 0 ) {
-        return 0;
+        return NAND_OK;
     }
 
     // When only one bit set, there is an error in the ECC field
     if( ispower2(syndrome) ) {
-        return 2;
+        return NAND_CHECKSUM_ERROR;
     }
 
     // For all valid (?) syndrome (Pn,Qn) pairs
@@ -1043,7 +1072,7 @@ static int h2d_verify( uint32_t wp1, uint32_t wp2, uint16_t *ppos, uint8_t *pbit
     uint32_t e = ((ps)^(qs<<1))^0xAAAAAA;
 
     if( e != 0 ) {
-        return -1;
+        return NAND_MULTIPLE_ERRORS;
     }
 
     uint32_t w = ps;
@@ -1064,9 +1093,8 @@ static int h2d_verify( uint32_t wp1, uint32_t wp2, uint16_t *ppos, uint8_t *pbit
     *ppos = pos;
     *pbit = bit;
 
-    return 1;
+    return NAND_CORRECTEABLE_ERROR;
 }
-
 
 /*********************** Status routines **************************************/
 
@@ -1081,7 +1109,7 @@ uint8_t status;
     status = NAND_DATA;
     DisableCE();
 
-    return status&NAND_STATUS_ALL;
+    return status&NAND_STATUS_ALL; // Show only the valid status bits
 }
 
 /**
@@ -1091,14 +1119,18 @@ uint8_t status;
  *
  *  @returns 0 when error!
  */
-int32_t  NAND_WaitUntilReadyStatus(void) {
+NAND_RC
+NAND_WaitUntilReadyStatus(void) {
 
     nano_delay(NANO_DELAY);
     uint32_t timeout = NAND_TIMEOUT;
+
     do {
         NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
     } while ( --timeout && (NAND_DATA&NAND_STATUS_READY) );
-    return NAND_DATA&NAND_STATUS_READY;
+
+    return ((NAND_DATA&NAND_STATUS_READY) != 0) ? NAND_READY : NAND_TIMEOUT_ERROR;
+
 }
 
 /**
@@ -1108,11 +1140,13 @@ int32_t  NAND_WaitUntilReadyStatus(void) {
  *
  *  @returns 0 when Busy
  */
-int32_t  NAND_CheckReadyStatus(void) {
+NAND_RC
+NAND_CheckReadyStatus(void) {
 
     nano_delay(NANO_DELAY);
     NAND_COMMAND = CommandList[CMD_READSTATUS].v[0];
-    return NAND_DATA&NAND_STATUS_READY;
+
+    return (NAND_DATA&NAND_STATUS_READY) ? NAND_READY : NAND_BUSY;
 }
 
 ///@{
@@ -1122,14 +1156,16 @@ int32_t  NAND_CheckReadyStatus(void) {
  * @note
  */
 
-int32_t  NAND_Ready(void) {
+NAND_RC
+NAND_Ready(void) {
 
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)!=0;
+    return ((GPIO_ReadPins(RB_GPIO)&RB_PINMASK)!=0) ? NAND_READY : NAND_BUSY;
 }
 
-int32_t  NAND_Busy(void) {
+NAND_RC
+NAND_Busy(void) {
 
-    return !NAND_Ready();
+    return ((GPIO_ReadPins(RB_GPIO)&RB_PINMASK)!=0) ? NAND_BUSY : NAND_READY;
 }
 
 /**
@@ -1139,13 +1175,15 @@ int32_t  NAND_Busy(void) {
  *
  *  @returns 0 when error!
  */
-int32_t  NAND_WaitUntilReadyPin(void) {
+NAND_RC
+NAND_WaitUntilReadyPin(void) {
 
     nano_delay(NANO_DELAY);
     uint32_t timeout = NAND_TIMEOUT;
     while ( --timeout && ( (GPIO_ReadPins(RB_GPIO)&RB_PINMASK)==0) )
         {}
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
+
+    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK) ? NAND_READY : NAND_TIMEOUT_ERROR;
 }
 
 /**
@@ -1155,10 +1193,11 @@ int32_t  NAND_WaitUntilReadyPin(void) {
  *
  *  @returns 0 when Busy
  */
-int32_t  NAND_CheckReadyPin(void) {
+NAND_RC
+NAND_CheckReadyPin(void) {
 
     nano_delay(NANO_DELAY);
-    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK);
+    return (GPIO_ReadPins(RB_GPIO)&RB_PINMASK) ? NAND_READY : NAND_BUSY;
 }
 ///@}
 
@@ -1169,12 +1208,13 @@ int32_t  NAND_CheckReadyPin(void) {
  *
  *  @note   Preparation to use DMA
  */
-static int32_t CopyToFlash(uint8_t *data, uint16_t n) {
+static NAND_RC
+CopyToFlash(uint8_t *data, uint16_t n) {
 
     for(uint16_t i=0;i<n;i++) {
         NAND_DATA = data[i];
     }
-    return 0;
+    return NAND_OK;
 }
 
 /**
@@ -1182,12 +1222,13 @@ static int32_t CopyToFlash(uint8_t *data, uint16_t n) {
  *
  *  @note   Preparation to use DMA
  */
-static int32_t CopyFromFlash(uint8_t *data, uint16_t n) {
+static NAND_RC
+CopyFromFlash(uint8_t *data, uint16_t n) {
 
     for(uint16_t i=0;i<n;i++) {
         data[i] = NAND_DATA;
     }
-    return 0;
+    return NAND_OK;
 }
 
 /**
@@ -1195,10 +1236,11 @@ static int32_t CopyFromFlash(uint8_t *data, uint16_t n) {
  *
  *  @note   Prepared to use DMA
  */
-static int32_t CopyFromFlashECC(uint8_t *data, uint16_t n, uint32_t *pchksum) {
+static NAND_RC
+CopyFromFlashECC(uint8_t *data, uint16_t n, uint32_t *pchksum) {
 
     if( n != NAND_PAGESIZE ) // Must be 512!!!
-        return -1;
+        return NAND_IRRECOVERABLE_ERROR;
 
     // read Areas A and B (page area)
     EBI->CMD = EBI_CMD_ECCCLEAR;
@@ -1213,7 +1255,7 @@ static int32_t CopyFromFlashECC(uint8_t *data, uint16_t n, uint32_t *pchksum) {
     for(uint16_t i=0;i<NAND_SPARESIZE;i++) {
         data[NAND_PAGESIZE+i] = NAND_DATA;
     }
-    return 0;
+    return NAND_OK;
 }
 
 /**
@@ -1221,10 +1263,11 @@ static int32_t CopyFromFlashECC(uint8_t *data, uint16_t n, uint32_t *pchksum) {
  *
  *  @note   Prepared to use DMA
  */
-static int32_t CopyToFlashECC(uint8_t *data, uint16_t n) {
+static NAND_RC
+CopyToFlashECC(uint8_t *data, uint16_t n) {
 
     if( n != NAND_PAGESIZE ) // Must be 512!!!!
-        return -1;
+        return NAND_ERROR;
 
     EBI->CMD = EBI_CMD_ECCCLEAR;
     EBI->CMD = EBI_CMD_ECCSTART;
@@ -1234,13 +1277,13 @@ static int32_t CopyToFlashECC(uint8_t *data, uint16_t n) {
     EBI->CMD = EBI_CMD_ECCSTOP;
     // result in EBI->ECCPARITY;
     uint32_t chksum1 = EBI->ECCPARITY;
-#if 1
+#ifdef VERIFYDEVICEHAMMING
     uint32_t chksum2 =  data[NAND_PAGESIZE+NAND_CHECKSUM_POS_0]
                       +(data[NAND_PAGESIZE+NAND_CHECKSUM_POS_1]<<8)
                       +(data[NAND_PAGESIZE+NAND_CHECKSUM_POS_2]<<16);
 
     if( chksum1 != chksum2 )
-        return -2;
+        return NAND_IRRECOVERABLE_ERROR;
 #endif
     data[NAND_PAGESIZE+NAND_CHECKSUM_POS_0] = chksum1&0xFF;
     data[NAND_PAGESIZE+NAND_CHECKSUM_POS_1] = (chksum1>>8)&0xFF;
@@ -1250,7 +1293,7 @@ static int32_t CopyToFlashECC(uint8_t *data, uint16_t n) {
         NAND_DATA = data[i];
     }
 
-    return 0;
+    return NAND_OK;
 }
 
 /*********************** Read Routines ****************************************/
@@ -1259,19 +1302,25 @@ static int32_t CopyToFlashECC(uint8_t *data, uint16_t n) {
  *  @brief  Return signature of device
  */
 
-int32_t  NAND_ReadSignature(uint8_t data[NAND_SIGNATURESIZE]) {
-int32_t rc;
+NAND_RC
+NAND_ReadSignature(uint8_t data[NAND_SIGNATURESIZE]) {
 
     EnableCE();
     SendCommand(CMD_READSIGNATURE,0);
-    rc = NAND_WaitUntilReadyPin();
+
+    NAND_RC rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
     CopyFromFlash(data,2);
 
     DisableCE();
-    rc = NAND_Status();
 
-    return rc;
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
+
+    return NAND_OK;
 }
 
 /**
@@ -1279,27 +1328,30 @@ int32_t rc;
   *
   * @note    Read a 16 byte from NAND device
   */
-int32_t NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
-int32_t rc;
+NAND_RC
+NAND_ReadSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     SendCommand(CMD_READC,addr);
 
-    rc = NAND_WaitUntilReadyPin();
+    NAND_RC rc = NAND_WaitUntilReadyPin();
 
     if( rc != 0 ) {
         CopyFromFlash(data,NAND_SPARESIZE);
     }
 
     DisableCE();
-    rc = NAND_Status();
 
-    return rc;
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
+
+    return NAND_OK;
 }
 
 /**
@@ -1308,26 +1360,28 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Read a page (512 bytes) from NAND device starting at a given
   *          page aligned address
   */
-int32_t NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
-int32_t rc;
+NAND_RC
+NAND_ReadPage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
 uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     SendCommand(CMD_READA,addr);
-    rc = NAND_WaitUntilReadyPin();
-    if( rc != 0 ) {
+    NAND_RC rc = NAND_WaitUntilReadyPin();
+    if( rc == NAND_READY ) {
         CopyFromFlash(data,NAND_PAGESIZE);
     }
 
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /**
@@ -1336,27 +1390,29 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Read a page (528 bytes) from NAND device starting at a given
   *          page address
   */
-int32_t NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_ReadFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     SendCommand(CMD_READA,addr);
-    rc = NAND_WaitUntilReadyPin();
 
+    NAND_RC rc = NAND_WaitUntilReadyPin();
     if( rc != 0 ) {
         CopyFromFlash(data,NAND_FULLPAGESIZE);
     }
 
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /**
@@ -1365,36 +1421,36 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Read a page (528 bytes) from NAND device starting at a given
   *          page address
   */
-int32_t NAND_ReadFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_ReadFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     SendCommand(CMD_READA,addr);
-    rc = NAND_WaitUntilReadyPin();
 
+    NAND_RC rc;
+    rc = NAND_WaitUntilReadyPin();
     uint32_t checksum1 = 0;
     if( rc != 0 ) {
         CopyFromFlashECC(data,NAND_FULLPAGESIZE,&checksum1);
     }
 
-#if 1
-
+#ifdef VERIFYDEVICEHAMMING
     uint32_t checksum2 = 0;
     h2d_encode(data,&checksum2);
 
     // Verify
     if( checksum1 != checksum2 )
-        return -2;
-
+        return NAND_IRRECOVERABLE_ERROR;
 #endif
+
     DisableCE();
 
-    // Get Checksum from read data
+    // Get Checksum from read data (Little endian)
     uint32_t chksumread = data[NAND_PAGESIZE+NAND_CHECKSUM_POS_0]
                         +(data[NAND_PAGESIZE+NAND_CHECKSUM_POS_1]<<8)
                         +(data[NAND_PAGESIZE+NAND_CHECKSUM_POS_2]<<16);
@@ -1402,10 +1458,11 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
     uint16_t pos = 0;
     uint8_t bit = 0;
     rc = h2d_verify( chksumread, checksum1, &pos, &bit);
-    if( rc == 1 ) {
+    if( rc == NAND_CORRECTEABLE_ERROR ) {
         data[pos] ^= (1<<bit);
     }
     //rc = NAND_Status();
+    // Same return values as ReadFullPageECC
     return rc;
 }
 
@@ -1416,18 +1473,19 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    Write a 16 bytes onto NAND device
   */
-int32_t NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_WriteSpare(uint32_t pageaddr, uint8_t data[NAND_SPARESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     DisableWP();
     SendCommand(CMD_PROGRAMA,addr);
-    rc = NAND_WaitUntilReadyPin();
+
+    NAND_RC rc = NAND_WaitUntilReadyPin();
 
     CopyToFlash(data, NAND_SPARESIZE);
 
@@ -1436,9 +1494,11 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /**
@@ -1447,18 +1507,22 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   * @note    Write a page (512 bytes) into NAND device starting at given page
   *          address
   */
-int32_t NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_WritePage(uint32_t pageaddr, uint8_t data[NAND_PAGESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
     EnableCE();
     DisableWP();
 
     SendCommand(CMD_PROGRAMA,addr);
+
+    NAND_RC rc;
     rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
     CopyToFlash(data, NAND_PAGESIZE);
 
@@ -1467,9 +1531,11 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /**
@@ -1480,19 +1546,23 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    A confirm command is needed after a half page
   */
-int32_t NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_WriteFullPage(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     DisableWP();
 
     SendCommand(CMD_PROGRAMA,addr);
+
+    NAND_RC rc;
     rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
     CopyToFlash(data, NAND_FULLPAGESIZE);
 
@@ -1501,9 +1571,11 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /**
@@ -1514,19 +1586,23 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    A confirm command is needed after a half page
   */
-int32_t NAND_WriteFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
-int32_t rc;
-uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
+NAND_RC
+NAND_WriteFullPageECC(uint32_t pageaddr, uint8_t data[NAND_FULLPAGESIZE]) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
 
     if( !IsPageAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     DisableWP();
 
     SendCommand(CMD_PROGRAMA,addr);
+    NAND_RC rc;
     rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
+
     uint32_t chksum = 0;
     h2d_encode(data, &chksum);
     data[NAND_PAGESIZE+NAND_CHECKSUM_POS_0] = chksum&0xFF;
@@ -1540,9 +1616,11 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 
@@ -1553,26 +1631,31 @@ uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr);
   *
   * @note    Erase a full block of 32 pages
   */
-int32_t NAND_EraseBlock(uint32_t blockaddr) {
-    int32_t rc;
-    uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(blockaddr);
+NAND_RC
+NAND_EraseBlock(uint32_t blockaddr) {
+const uint32_t addr = NAND_FULLADDR_FROM_PAGEADDR(blockaddr);
 
     if( !IsBlockAddress(addr)) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     EnableCE();
     DisableWP();
 
     SendCommand(CMD_ERASEBLOCK,addr);
+    NAND_RC rc;
     rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
 
 /*********************** Copy Back Routine ************************************/
@@ -1581,25 +1664,30 @@ int32_t NAND_EraseBlock(uint32_t blockaddr) {
   *
   * @note    Copy the page at *pageaddr_src* to the page addressed by *pageaddr_dst*
   */
-int32_t  NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst) {
-int32_t rc;
+NAND_RC
+NAND_CopyBack(uint32_t pageaddr_src, uint32_t pageaddr_dst) {
+
 uint32_t srcaddr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr_src);
 uint32_t dstaddr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr_dst);
 
     if( ! (IsPageAddress(srcaddr)&&IsPageAddress(dstaddr)) ) {
-        return -1;
+        return NAND_INVALID_ADDRESS;
     }
 
     // They must have the same value for the highest address bit
     if( ((srcaddr^dstaddr)&NAND_COPYREGIONMASK) != 0 ) {
-        return -2;
+        return NAND_IRRECOVERABLE_ERROR;
     }
 
     EnableCE();
     DisableWP();
 
     SendCommand(CMD_COPYBACK1, srcaddr);
+
+    NAND_RC rc;
     rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
     SendCommand(CMD_COPYBACK2, dstaddr);
     rc = NAND_WaitUntilReadyPin();
@@ -1607,7 +1695,9 @@ uint32_t dstaddr = NAND_FULLADDR_FROM_PAGEADDR(pageaddr_dst);
     EnableWP();
     DisableCE();
 
-    rc = NAND_Status();
+    rc = NAND_WaitUntilReadyPin();
+    if( rc != NAND_READY )
+        return NAND_ERROR;
 
-    return rc;
+    return NAND_OK;
 }
